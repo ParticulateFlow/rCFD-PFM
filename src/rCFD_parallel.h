@@ -269,7 +269,7 @@
 			{
 				if(myid == 0){
 				
-					for(i_host = 1; i_host < (node_last+1); i_host++){
+					for(i_host = 0; i_host < (node_last+1); i_host++){
 						
 						MPI_cells.number_of_host_cells_per_node[i_host] = 0;
 					}

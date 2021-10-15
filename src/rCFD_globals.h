@@ -46,13 +46,7 @@
 	static	Norm_type			Norms;
 			
 	static 	C2C_type 			***C2Cs = NULL;  			/* [states, phases, frames] */
-
-	static 	C2C_MPI_type		C2Cs_MPI;
-#if 0	
-	static	MPI_cells_type		MPI_cells;
 	
-	static	MPI_faces_type		MPI_faces;
-#endif
 	static 	Balance_type		**Balance = NULL;	
 #endif
 

@@ -540,41 +540,4 @@
 			
 			number_of_jump_files, File_Dict->Jump_filename);
 	}
-
-#if 0
-	void rCFD_default_MPI_Faces(Solver_Dict_type *Solver_Dict, MPI_faces_type *MPI_faces)
-	{
-		Domain 	*d=Get_Domain(1);
-		Thread	*t;
-		int		i_face;
-		
-		thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){begin_f_loop(i_face,t){
-				
-			if(PRINCIPAL_FACE_P(i_face,t)){
-				
-				MPI_faces->principal_face[i_face] = 1;
-			}
-			else{
-				
-				MPI_faces->principal_face[i_face] = 0;
-			}
-
-		}end_f_loop(i_face,t)}}
-	}
-		
-	void rCFD_default_MPI_Cells(Solver_Dict_type *Solver_Dict, MPI_cells_type *MPI_cells)
-	{
-		int	i_cell;
-		
-		Domain 	*d=Get_Domain(1);
-		Thread	*t;
-		
-		thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_all(i_cell,t){
-				
-				MPI_cells->host_of_cell[i_cell] = C_PART(i_cell,t);
-
-		}end_c_loop_all(i_cell,t)}}		
-	}
-		
-#endif
 #endif	

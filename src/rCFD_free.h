@@ -363,47 +363,7 @@
 			
 			free(C2Cs_MPI.shifts_in);
 		}
-#if 0
-		if(MPI_cells.number_of_ext_cells_per_node != NULL){
-			
-			free(MPI_cells.number_of_ext_cells_per_node);
-		}
-		
-		if(MPI_cells.number_of_host_cells_per_node != NULL){
-			
-			free(MPI_cells.number_of_host_cells_per_node);
-		}
-		
-		if(MPI_cells.host_of_cell != NULL){
-			
-			free(MPI_cells.host_of_cell);
-		}
-		
-		if(MPI_cells.host_of_ext_cells != NULL){
-			
-			free(MPI_cells.host_of_ext_cells);
-		}
-		
-		if(MPI_cells.hosting_cell_index != NULL){
-			
-			free(MPI_cells.hosting_cell_index);
-		}
 
-		if(MPI_cells.host2ext_index != NULL){
-
-			free(MPI_cells.host2ext_index);
-		}			
-		
-		if(MPI_cells.data != NULL){
-			
-			free(MPI_cells.data);
-		}
-
-		if(MPI_faces.principal_face != NULL){
-			
-			free(MPI_faces.principal_face);
-		}
-#endif		
 		if(Balance != NULL){
 			
 			loop_phases{

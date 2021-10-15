@@ -296,56 +296,7 @@
 		int					**in2out;
 	  
 	 } C2C_type;
-
-	typedef struct C2C_MPI_shift_struct
-	{
-		int			c0,node0;
-		int 		c1,node1;
-		double		w0;
-
-		double		*data;
-		
-	} C2C_MPI_shift_type;
-		
-	typedef struct C2C_MPI_struct
-	{
-		short				format;
-
-		int 				max_number_of_MPI_shifts;
-		
-		C2C_MPI_shift_type	*shifts_in;
-		
-		int					number_of_shifts_in; /* temporally use in C2Cs_prepare */
-			  
-	 } C2C_MPI_type;
-#if 0 /* MPI_types */
-	typedef struct MPI_cells_struct
-	{
-		int		number_of_ext_cells;
-
-		int		*number_of_ext_cells_per_node;
-
-		int		*number_of_host_cells_per_node;
-							
-		int		*host_of_cell;				/* all nodes, list of host of all cells */
-
-		int		*host_of_ext_cells;			/* node-0, list of all ext. cells */
-		
-		int		*hosting_cell_index;		/* all nodes, list of cells, which host ext. cells of other nodes */
-
-		int		*host2ext_index;	
-		
-		double	*data;
-		
-	} MPI_cells_type;
-	
-	typedef struct MPI_faces_struct
-	{
-		int		*principal_face;
-		
-	} MPI_faces_type;
-#endif		
-	
+	 
 	typedef struct Balance_struct
 	{
 		double		mass_integral, mass_integral_target;

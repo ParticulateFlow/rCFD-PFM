@@ -1224,7 +1224,7 @@
 					
 					if(size > 0){
 						
-						MPI_size = size * Phase_Dict->number_of_data;
+						MPI_size = size * Phase_Dict[i_phase].number_of_data;
 						
 						list_of_double=(double*)malloc(MPI_size * sizeof(double));
 						

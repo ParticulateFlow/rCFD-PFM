@@ -132,7 +132,7 @@
 		int 		i_node, i_cell, i_list, i_host;
 		int 		size;
 		int 		*list_of_int = NULL;
-		double 		*list_of_real = NULL;
+		double 		*list_of_double = NULL;
 		
 		/* P1: allocate MPI_cells */
 		{
@@ -195,7 +195,7 @@
 					
 					list_of_int = (int*)malloc( Cell_Dict->number_of_ext_cells * sizeof(int));
 					
-					list_of_real = (double*)malloc( 3 * Cell_Dict->number_of_ext_cells * sizeof(double));
+					list_of_double = (double*)malloc( 3 * Cell_Dict->number_of_ext_cells * sizeof(double));
 					
 					i_list = 0;
 					
@@ -203,20 +203,20 @@
 						
 						list_of_int[i_list] = MPI_cells.host_of_cell[i_cell];
 						
-						list_of_real[(3 * i_list)] = 		C.x[i_cell][0];
-						list_of_real[(3 * i_list + 1)] = 	C.x[i_cell][1];
-						list_of_real[(3 * i_list + 2)] = 	C.x[i_cell][2];
+						list_of_double[(3 * i_list)] = 		C.x[i_cell][0];
+						list_of_double[(3 * i_list + 1)] = 	C.x[i_cell][1];
+						list_of_double[(3 * i_list + 2)] = 	C.x[i_cell][2];
 						
 						i_list++;
 					}
 					
 					PRF_CSEND_INT(node_zero, list_of_int, Cell_Dict->number_of_ext_cells, myid);
 
-					PRF_CSEND_REAL(node_zero, list_of_real, (3 * Cell_Dict->number_of_ext_cells), myid);
+					PRF_CSEND_REAL(node_zero, list_of_double, (3 * Cell_Dict->number_of_ext_cells), myid);
 					
 					free(list_of_int);
 					
-					free(list_of_real);
+					free(list_of_double);
 				}
 				
 				if(myid == 0){
@@ -241,26 +241,26 @@
 						
 						list_of_int = (int*)malloc(MPI_cells.number_of_ext_cells_per_node[i_node] * sizeof(int));
 					
-						list_of_real = (double*)malloc( 3 * MPI_cells.number_of_ext_cells_per_node[i_node] * sizeof(double));
+						list_of_double = (double*)malloc( 3 * MPI_cells.number_of_ext_cells_per_node[i_node] * sizeof(double));
 						
 						PRF_CRECV_INT(i_node, list_of_int, MPI_cells.number_of_ext_cells_per_node[i_node], i_node);
 
-						PRF_CRECV_REAL(i_node, list_of_real, (3 * MPI_cells.number_of_ext_cells_per_node[i_node]), i_node);
+						PRF_CRECV_REAL(i_node, list_of_double, (3 * MPI_cells.number_of_ext_cells_per_node[i_node]), i_node);
 						
 						for(i_cell = 0; i_cell < MPI_cells.number_of_ext_cells_per_node[i_node]; i_cell++){
 							
 							MPI_cells.host_of_ext_cells[i_list] = list_of_int[i_cell];
 							
-							tmp_x[(3 * i_list)] = 		list_of_real[(3 * i_cell)];
-							tmp_x[(3 * i_list + 1)] = 	list_of_real[(3 * i_cell + 1)];
-							tmp_x[(3 * i_list + 2)] = 	list_of_real[(3 * i_cell + 2)];
+							tmp_x[(3 * i_list)] = 		list_of_double[(3 * i_cell)];
+							tmp_x[(3 * i_list + 1)] = 	list_of_double[(3 * i_cell + 1)];
+							tmp_x[(3 * i_list + 2)] = 	list_of_double[(3 * i_cell + 2)];
 										
 							i_list++;
 						}
 						
 						free(list_of_int);
 						
-						free(list_of_real);
+						free(list_of_double);
 					}
 				}
 			}
@@ -307,7 +307,7 @@
 			{
 				if(myid == 0){
 					
-					list_of_real = (double*)malloc( 3 * MPI_cells.number_of_host_cells_per_node[0] * sizeof(double));
+					list_of_double = (double*)malloc( 3 * MPI_cells.number_of_host_cells_per_node[0] * sizeof(double));
 					
 					i_list = 0;
 					
@@ -317,9 +317,9 @@
 						
 						if(i_host == 0){
 							
-							list_of_real[(3 * i_list)] = 		tmp_x[(3 * i_cell)]; 
-							list_of_real[(3 * i_list + 1)] = 	tmp_x[(3 * i_cell + 1)]; 
-							list_of_real[(3 * i_list + 2)] = 	tmp_x[(3 * i_cell + 2)]; 
+							list_of_double[(3 * i_list)] = 		tmp_x[(3 * i_cell)]; 
+							list_of_double[(3 * i_list + 1)] = 	tmp_x[(3 * i_cell + 1)]; 
+							list_of_double[(3 * i_list + 2)] = 	tmp_x[(3 * i_cell + 2)]; 
 							
 							i_list++;
 						}
@@ -331,23 +331,23 @@
 						
 						loop_cells_ptr{
 							
-							if( (C.x[i_cell][0] == list_of_real[(3 * i_list + 0)]) && 
-								(C.x[i_cell][1] == list_of_real[(3 * i_list + 1)]) &&
-								(C.x[i_cell][2] == list_of_real[(3 * i_list + 2)])){
+							if( (C.x[i_cell][0] == list_of_double[(3 * i_list + 0)]) && 
+								(C.x[i_cell][1] == list_of_double[(3 * i_list + 1)]) &&
+								(C.x[i_cell][2] == list_of_double[(3 * i_list + 2)])){
 								   
 								MPI_cells.hosting_cell_index[i_list] = i_cell;
 							}
 						}
 					}				
 					
-					free(list_of_real);
+					free(list_of_double);
 					
 					/* send tmp_x to Nodes */
 					for(i_node = 1; i_node < (node_last+1); i_node++){
 						
 						PRF_CSEND_INT(i_node, &MPI_cells.number_of_host_cells_per_node[i_node], 1, node_zero);
 						
-						list_of_real = (double*)malloc( 3 * MPI_cells.number_of_host_cells_per_node[i_node] * sizeof(double));
+						list_of_double = (double*)malloc( 3 * MPI_cells.number_of_host_cells_per_node[i_node] * sizeof(double));
 						
 						i_list = 0;
 						
@@ -357,17 +357,17 @@
 							
 							if(i_host == i_node){
 								
-								list_of_real[(3 * i_list)] = 		tmp_x[(3 * i_cell)]; 
-								list_of_real[(3 * i_list + 1)] = 	tmp_x[(3 * i_cell + 1)]; 
-								list_of_real[(3 * i_list + 2)] = 	tmp_x[(3 * i_cell + 2)]; 
+								list_of_double[(3 * i_list)] = 		tmp_x[(3 * i_cell)]; 
+								list_of_double[(3 * i_list + 1)] = 	tmp_x[(3 * i_cell + 1)]; 
+								list_of_double[(3 * i_list + 2)] = 	tmp_x[(3 * i_cell + 2)]; 
 								
 								i_list++;
 							}
 						}
 						
-						PRF_CSEND_REAL(i_node, list_of_real, (3 * MPI_cells.number_of_host_cells_per_node[i_node]), node_zero);
+						PRF_CSEND_REAL(i_node, list_of_double, (3 * MPI_cells.number_of_host_cells_per_node[i_node]), node_zero);
 						
-						free(list_of_real);
+						free(list_of_double);
 					}
 				
 					free(tmp_x);
@@ -379,24 +379,24 @@
 					
 					MPI_cells.hosting_cell_index = (int*)malloc(size * sizeof(int));
 					
-					list_of_real = (double*)malloc(3 * size * sizeof(double));
+					list_of_double = (double*)malloc(3 * size * sizeof(double));
 					
-					PRF_CRECV_REAL(node_zero, list_of_real, 3 * size, node_zero);
+					PRF_CRECV_REAL(node_zero, list_of_double, 3 * size, node_zero);
 					
 					for(i_list = 0; i_list < size; i_list++){
 						
 						loop_cells_ptr{
 							
-							if( (C.x[i_cell][0] == list_of_real[(3 * i_list + 0)]) && 
-								(C.x[i_cell][1] == list_of_real[(3 * i_list + 1)]) &&
-								(C.x[i_cell][2] == list_of_real[(3 * i_list + 2)])){
+							if( (C.x[i_cell][0] == list_of_double[(3 * i_list + 0)]) && 
+								(C.x[i_cell][1] == list_of_double[(3 * i_list + 1)]) &&
+								(C.x[i_cell][2] == list_of_double[(3 * i_list + 2)])){
 								   
 								MPI_cells.hosting_cell_index[i_list] = i_cell;
 							}
 						}
 					}					
 					
-					free(list_of_real);
+					free(list_of_double);
 				}
 			}
 		}	
@@ -415,7 +415,7 @@
 		int                 i_state, i_phase, i_frame, i_out, i_node, i_C2C;
 		int                 size, max_size, index_in_total_list;
 		int                 *list_of_int = NULL;
-		double              *list_of_real = NULL;
+		double              *list_of_double = NULL;
 		
 		C2C_type            tmp_C2Cs;
 		
@@ -475,7 +475,7 @@
 								if(size > 0){
 									
 									list_of_int=(int*)malloc(size * sizeof(int));
-									list_of_real=(real*)malloc(size * sizeof(double));
+									list_of_double=(double*)malloc(size * sizeof(double));
 									
 									loop_C2Cs_size{ 
 									
@@ -507,13 +507,13 @@
 									
 									loop_C2Cs_size{ 
 									
-										list_of_real[i_C2C] = C2Cs[current_pattern].shifts_in[i_C2C].w0;
+										list_of_double[i_C2C] = C2Cs[current_pattern].shifts_in[i_C2C].w0;
 									}
 									
-									PRF_CSEND_REAL(node_zero, list_of_real, size, myid);
+									PRF_CSEND_REAL(node_zero, list_of_double, size, myid);
 									
 									free(list_of_int);
-									free(list_of_real);
+									free(list_of_double);
 								}
 							}
 				  
@@ -542,7 +542,7 @@
 									if(size > 0){
 						  
 										list_of_int=(int*)malloc(size * sizeof(int));
-										list_of_real=(real*)malloc(size * sizeof(real));
+										list_of_double=(double*)malloc(size * sizeof(real));
 								
 										PRF_CRECV_INT(i_node, list_of_int, size, i_node); 
 										
@@ -572,15 +572,15 @@
 											C2Cs_MPI.shifts_in[index_in_total_list + i_C2C].node1 = list_of_int[i_C2C]; 
 										}
 								
-										PRF_CRECV_REAL(i_node, list_of_real, size, i_node); 
+										PRF_CRECV_REAL(i_node, list_of_double, size, i_node); 
 										
 										loop_C2Cs_size{ 
 										
-											C2Cs_MPI.shifts_in[index_in_total_list + i_C2C].w0 = list_of_real[i_C2C]; 
+											C2Cs_MPI.shifts_in[index_in_total_list + i_C2C].w0 = list_of_double[i_C2C]; 
 										}
 										
 										free(list_of_int);
-										free(list_of_real);
+										free(list_of_double);
 									}
 									
 									C2Cs[current_pattern].number_of_shifts_to_node_zero[i_node] = size;
@@ -681,7 +681,7 @@
 										}
 								
 										list_of_int=(int*)malloc(size * sizeof(int));
-										list_of_real=(real*)malloc(size * sizeof(real));
+										list_of_double=(double*)malloc(size * sizeof(real));
 								
 										loop_C2Cs_size{ 
 										
@@ -713,13 +713,13 @@
 								
 										loop_C2Cs_size{
 											
-											list_of_real[i_C2C] = tmp_C2Cs.shifts_out[i_C2C].w0;
+											list_of_double[i_C2C] = tmp_C2Cs.shifts_out[i_C2C].w0;
 										}
 										
-										PRF_CSEND_REAL(i_node, list_of_real, size, node_zero);
+										PRF_CSEND_REAL(i_node, list_of_double, size, node_zero);
 
 										free(list_of_int); 
-										free(list_of_real);
+										free(list_of_double);
 									
 										free(tmp_C2Cs.shifts_out);  
 									}
@@ -741,7 +741,7 @@
 									C2Cs[current_pattern].shifts_out = (C2C_shift_type*)malloc(size * sizeof(C2C_shift_type));
 							
 									list_of_int=(int*)malloc(size * sizeof(int));
-									list_of_real=(real*)malloc(size * sizeof(real));
+									list_of_double=(double*)malloc(size * sizeof(real));
 									
 									PRF_CRECV_INT(node_zero, list_of_int, size, node_zero);
 
@@ -771,15 +771,15 @@
 										C2Cs[current_pattern].shifts_out[i_C2C].node1=list_of_int[i_C2C];
 									}
 							
-									PRF_CRECV_REAL(node_zero, list_of_real, size, node_zero);
+									PRF_CRECV_REAL(node_zero, list_of_double, size, node_zero);
 
 									loop_C2Cs_size{
 										
-										C2Cs[current_pattern].shifts_out[i_C2C].w0=list_of_real[i_C2C];
+										C2Cs[current_pattern].shifts_out[i_C2C].w0=list_of_double[i_C2C];
 									}
 									
 									free(list_of_int);
-									free(list_of_real); 
+									free(list_of_double); 
 									
 								} 
 								
@@ -863,28 +863,28 @@
 		
 		int		size;
 		
-		double	*list_of_real;
+		double	*list_of_double;
 				
 		/* MPI.1 Node-0 fills MPI_cells.data */
 		{
 			if(myid > 0){
 			
-				list_of_real = (double*)malloc(Cell_Dict->number_of_ext_cells * sizeof(double));
+				list_of_double = (double*)malloc(Cell_Dict->number_of_ext_cells * sizeof(double));
 				
 				i_list = 0;
 				
 				loop_ext_cells_ptr{
 					
-					list_of_real[i_list] = cell_data[i_cell];
+					list_of_double[i_list] = cell_data[i_cell];
 					
 					i_list++;
 				}
 				
 				PRF_CSEND_INT(node_zero, &Cell_Dict->number_of_ext_cells, 1, myid);
 				
-				PRF_CSEND_REAL(node_zero, list_of_real, Cell_Dict->number_of_ext_cells, myid);
+				PRF_CSEND_REAL(node_zero, list_of_double, Cell_Dict->number_of_ext_cells, myid);
 				
-				free(list_of_real);
+				free(list_of_double);
 			}
 			
 			if(myid == 0){
@@ -902,18 +902,18 @@
 					
 					PRF_CRECV_INT(i_node, &size, 1, i_node);
 					
-					list_of_real = (double*)malloc(size * sizeof(double));
+					list_of_double = (double*)malloc(size * sizeof(double));
 					
-					PRF_CRECV_REAL(i_node, list_of_real, size, i_node);
+					PRF_CRECV_REAL(i_node, list_of_double, size, i_node);
 					
 					for(i_cell = 0; i_cell < size; i_cell++){
 						
-						MPI_cells.data[i_list] = list_of_real[i_cell];
+						MPI_cells.data[i_list] = list_of_double[i_cell];
 						
 						i_list++;
 					}
 					
-					free(list_of_real);
+					free(list_of_double);
 				}
 			}
 		}
@@ -928,18 +928,18 @@
 					
 					PRF_CSEND_INT(i_node, &MPI_cells.number_of_host_cells_per_node[i_node], 1, node_zero);
 					
-					list_of_real = (double*)malloc(MPI_cells.number_of_host_cells_per_node[i_node] * sizeof(double));
+					list_of_double = (double*)malloc(MPI_cells.number_of_host_cells_per_node[i_node] * sizeof(double));
 					
 					for(i_cell = 0; i_cell < MPI_cells.number_of_host_cells_per_node[i_node]; i_cell++){
 						
-						list_of_real[i_cell] = MPI_cells.data[MPI_cells.host2ext_index[i_list]];
+						list_of_double[i_cell] = MPI_cells.data[MPI_cells.host2ext_index[i_list]];
 						
 						i_list++;
 					}
 					
-					PRF_CSEND_REAL(i_node, list_of_real, MPI_cells.number_of_host_cells_per_node[i_node], node_zero);
+					PRF_CSEND_REAL(i_node, list_of_double, MPI_cells.number_of_host_cells_per_node[i_node], node_zero);
 					
-					free(list_of_real);
+					free(list_of_double);
 				}			
 			}
 		}
@@ -953,29 +953,29 @@
 				
 				size = MPI_cells.number_of_host_cells_per_node[0];
 				
-				list_of_real = (double*)malloc(size * sizeof(double));
+				list_of_double = (double*)malloc(size * sizeof(double));
 				
 				for(i_cell = 0; i_cell < size; i_cell++){
 					
-					list_of_real[i_cell] = MPI_cells.data[MPI_cells.host2ext_index[i_cell]];
+					list_of_double[i_cell] = MPI_cells.data[MPI_cells.host2ext_index[i_cell]];
 				}
 				
 				for(i_list = 0; i_list < size; i_list++){
 					
-					cell_data[MPI_cells.hosting_cell_index[i_list]] += list_of_real[i_list];
+					cell_data[MPI_cells.hosting_cell_index[i_list]] += list_of_double[i_list];
 				}
 				
 				for(i_list = 0; i_list < size; i_list++){
 					
-					list_of_real[i_list] = cell_data[MPI_cells.hosting_cell_index[i_list]];
+					list_of_double[i_list] = cell_data[MPI_cells.hosting_cell_index[i_list]];
 				}
 				
 				for(i_cell = 0; i_cell < size; i_cell++){
 						
-					MPI_cells.data[MPI_cells.host2ext_index[i_cell]] = list_of_real[i_cell];
+					MPI_cells.data[MPI_cells.host2ext_index[i_cell]] = list_of_double[i_cell];
 				}
 				
-				free(list_of_real);
+				free(list_of_double);
 				
 				/* Node-0 collects MPI_cells.data from other nodes */
 				
@@ -985,18 +985,18 @@
 				
 					PRF_CRECV_INT(i_node, &size, 1, i_node);
 					
-					list_of_real = (double*)malloc(size * sizeof(double));
+					list_of_double = (double*)malloc(size * sizeof(double));
 					
-					PRF_CRECV_REAL(i_node, list_of_real, size, i_node);
+					PRF_CRECV_REAL(i_node, list_of_double, size, i_node);
 					
 					for(i_cell = 0; i_cell < size; i_cell++){
 						
-						MPI_cells.data[MPI_cells.host2ext_index[i_list]] = list_of_real[i_cell];
+						MPI_cells.data[MPI_cells.host2ext_index[i_list]] = list_of_double[i_cell];
 						
 						i_list++;
 					}
 					
-					free(list_of_real);
+					free(list_of_double);
 				}
 			}
 
@@ -1005,25 +1005,25 @@
 
 				PRF_CRECV_INT(node_zero, &size, 1, node_zero);
 				
-				list_of_real = (double*)malloc(size * sizeof(double));
+				list_of_double = (double*)malloc(size * sizeof(double));
 				
-				PRF_CRECV_REAL(node_zero, list_of_real, size, node_zero);
+				PRF_CRECV_REAL(node_zero, list_of_double, size, node_zero);
 				
 				for(i_list = 0; i_list < size; i_list++){
 				
-					cell_data[MPI_cells.hosting_cell_index[i_list]] += list_of_real[i_list];
+					cell_data[MPI_cells.hosting_cell_index[i_list]] += list_of_double[i_list];
 				}
 			
 				for(i_list = 0; i_list < size; i_list++){
 				
-					list_of_real[i_list] = cell_data[MPI_cells.hosting_cell_index[i_list]];
+					list_of_double[i_list] = cell_data[MPI_cells.hosting_cell_index[i_list]];
 				}
 
 				PRF_CSEND_INT(node_zero, &size, 1, myid);
 				
-				PRF_CSEND_REAL(node_zero, list_of_real, size, myid);
+				PRF_CSEND_REAL(node_zero, list_of_double, size, myid);
 
-				free(list_of_real);
+				free(list_of_double);
 			}
 		}
 		
@@ -1037,18 +1037,18 @@
 					
 					PRF_CSEND_INT(i_node, &MPI_cells.number_of_ext_cells_per_node[i_node], 1, node_zero);
 					
-					list_of_real = (double*)malloc(MPI_cells.number_of_ext_cells_per_node[i_node] * sizeof(double));
+					list_of_double = (double*)malloc(MPI_cells.number_of_ext_cells_per_node[i_node] * sizeof(double));
 					
 					for(i_cell = 0; i_cell < MPI_cells.number_of_ext_cells_per_node[i_node]; i_cell++){
 						
-						list_of_real[i_cell] = MPI_cells.data[i_list];
+						list_of_double[i_cell] = MPI_cells.data[i_list];
 						
 						i_list++;
 					}
 					
-					PRF_CSEND_REAL(i_node, list_of_real, MPI_cells.number_of_ext_cells_per_node[i_node], node_zero);
+					PRF_CSEND_REAL(i_node, list_of_double, MPI_cells.number_of_ext_cells_per_node[i_node], node_zero);
 					
-					free(list_of_real);
+					free(list_of_double);
 				}
 				
 				i_list = 0;
@@ -1066,20 +1066,20 @@
 				
 				PRF_CRECV_INT(node_zero, &size, 1, node_zero);
 				
-				list_of_real = (double*)malloc(size * sizeof(double));
+				list_of_double = (double*)malloc(size * sizeof(double));
 				
-				PRF_CRECV_REAL(node_zero, list_of_real, size, node_zero);
+				PRF_CRECV_REAL(node_zero, list_of_double, size, node_zero);
 				
 				i_list = 0;
 				
 				loop_ext_cells_ptr{
 					
-					cell_data[i_cell] = list_of_real[i_list];
+					cell_data[i_cell] = list_of_double[i_list];
 					
 					i_list++;
 				}
 				
-				free(list_of_real);
+				free(list_of_double);
 			}
 		}
 		
@@ -1094,7 +1094,7 @@
 		
 		double	w0, data0;
 
-		double	*list_of_real = NULL;
+		double	*list_of_double = NULL;
 
 		/* C2.a: fill local C2Cs.shifts_out and send it to Node-0 */
 		{
@@ -1108,7 +1108,7 @@
 		  
 					MPI_size = size * Phase_Dict[i_phase].number_of_data;
 					
-					list_of_real = (double*)malloc(MPI_size * sizeof(double));
+					list_of_double = (double*)malloc(MPI_size * sizeof(double));
 					
 					loop_C2Cs_size{
 
@@ -1118,7 +1118,7 @@
 							
 							i_list =  Phase_Dict[i_phase].number_of_data * i_C2C + i_data;
 			   
-							list_of_real[i_list] = C->data[i_phase][c0][i_data];
+							list_of_double[i_list] = C->data[i_phase][c0][i_data];
 							
 							if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
 							
@@ -1140,9 +1140,9 @@
 						}
 					}
 					
-					PRF_CSEND_REAL(node_zero, list_of_real, MPI_size, myid);
+					PRF_CSEND_REAL(node_zero, list_of_double, MPI_size, myid);
 			  
-					free(list_of_real);
+					free(list_of_double);
 				}
 			}
 		
@@ -1186,9 +1186,9 @@
 
 						MPI_size = size * Phase_Dict[i_phase].number_of_data;   
 						
-						list_of_real = (real*)malloc(MPI_size * sizeof(double));
+						list_of_double = (double*)malloc(MPI_size * sizeof(double));
 						
-						PRF_CRECV_REAL(i_node, list_of_real, MPI_size, i_node);
+						PRF_CRECV_REAL(i_node, list_of_double, MPI_size, i_node);
 					
 						loop_C2Cs_size{
 					   
@@ -1198,11 +1198,11 @@
 								
 								i_list = Phase_Dict[i_phase].number_of_data * i_C2C + i_data;
 
-								C2Cs_MPI.shifts_in[MPI_index].data[i_data] = list_of_real[i_list]; 
+								C2Cs_MPI.shifts_in[MPI_index].data[i_data] = list_of_double[i_list]; 
 							}
 						}
 
-						free(list_of_real);                 
+						free(list_of_double);                 
 					}
 				}
 			}
@@ -1226,7 +1226,7 @@
 						
 						MPI_size = size * Phase_Dict->number_of_data;
 						
-						list_of_real=(real*)malloc(MPI_size * sizeof(double));
+						list_of_double=(double*)malloc(MPI_size * sizeof(double));
 						
 						loop_C2Cs_size{
 						
@@ -1234,11 +1234,11 @@
 								
 								i_list = Phase_Dict[i_phase].number_of_data * i_C2C + i_data;
 						
-								list_of_real[i_list] = C2Cs_MPI.shifts_in[(index_in_total_list + i_C2C)].data[i_data];
+								list_of_double[i_list] = C2Cs_MPI.shifts_in[(index_in_total_list + i_C2C)].data[i_data];
 							}
 						}
 
-						PRF_CSEND_REAL(i_node, list_of_real, MPI_size, node_zero);
+						PRF_CSEND_REAL(i_node, list_of_double, MPI_size, node_zero);
 						
 						index_in_total_list += size;
 					}
@@ -1258,9 +1258,9 @@
 			  
 					MPI_size = size * Phase_Dict[i_phase].number_of_data;
 					
-					list_of_real=(real*)malloc(MPI_size * sizeof(double));
+					list_of_double=(double*)malloc(MPI_size * sizeof(double));
 					
-					PRF_CRECV_REAL(node_zero, list_of_real, MPI_size, node_zero); 
+					PRF_CRECV_REAL(node_zero, list_of_double, MPI_size, node_zero); 
 				}
 			}
 		}
@@ -1289,7 +1289,7 @@
 							
 							i_list = i_C2C * Phase_Dict[i_phase].number_of_data + i_data;
 							
-							data0 = list_of_real[i_list];
+							data0 = list_of_double[i_list];
 						}
 										
 						C->data_shift[i_phase][c1][i_data] =  
@@ -1312,7 +1312,7 @@
 				}
 			}
 				
-			free(list_of_real);
+			free(list_of_double);
 		}		
 	}
 #endif

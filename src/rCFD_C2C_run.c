@@ -1318,7 +1318,7 @@ DEFINE_ON_DEMAND(rCFD_run)
             /* AD2: Access data after swap */
             {
 #if RP_NODE                 
-                rCFD_user_access_data_after_swap(Balance, Phase_Dict, &Cell_Dict, &C, i_phase); 
+                rCFD_user_access_data_after_swap(Balance, Phase_Dict, Data_Dict, &Cell_Dict, &C, i_phase); 
 #endif              
             }
             

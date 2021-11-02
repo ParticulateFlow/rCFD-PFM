@@ -60,6 +60,7 @@
 		short	number_of_drift_loops;
 		
 		short	balance_correction_update;
+		short	control_conc_sum_on;
 		
 	} Solver_Dict_type;
 

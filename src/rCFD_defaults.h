@@ -17,7 +17,7 @@
 */	
 
 	#define		Global_Version_Year		2021
-	#define		Global_Version_Month	10
+	#define		Global_Version_Month	11
 	
 	#define		Global_Verbal			1
 	
@@ -64,6 +64,7 @@
 		Solver_Dict->number_of_drift_loops = 	1;
 		
 		Solver_Dict->balance_correction_update = 1;
+		Solver_Dict->control_conc_sum_on = 1;
 		
 		if(Transcript){
 							

@@ -848,7 +848,7 @@ DEFINE_ON_DEMAND(rCFD_run)
     
     double      w0, data0, vol_flip;
 	double		drift_volume, drift_mass, local_mass_c0, local_mass_c1, local_mass;
-    double      flux_in, flux_out, data_in_mean, data_out_mean, flux_mean;
+    double      sum_of_conc, flux_in, flux_out, data_in_mean, data_out_mean, flux_mean;
 
     FILE        *f_out = NULL;
 #else
@@ -1327,6 +1327,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                 
                 /* Update balances */
                 {
+										
                     /* B1: mass_integral, mass_integral_global */
                     {
 #if RP_NODE                     
@@ -1649,8 +1650,37 @@ DEFINE_ON_DEMAND(rCFD_run)
 #endif                  
                 }           
 
+				/* Adjust conc. data, such that sum(conc) = 1 */
+				if(Solver_Dict.control_conc_sum_on){
+#if RP_NODE 								
+					loop_cells{
+		
+						sum_of_conc = 0.0;
+		
+						loop_data{
+						
+							if(Data_Dict[i_phase][i_data].type == concentration_data){
+								
+								sum_of_conc += C.data[i_phase][i_cell][i_data];
+							}
+						}
+		
+						loop_data{
+							
+							if(Data_Dict[i_phase][i_data].type == concentration_data){
+								
+								if(sum_of_conc > 0.0){
+									
+									C.data[i_phase][i_cell][i_data] /= sum_of_conc;
+								}
+							}
+						}
+					}
+#endif						
+				}
+				
             }
-            
+			
         }   /* loop_phases */
         
         Solver.global_run_counter++;    

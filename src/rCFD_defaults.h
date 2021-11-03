@@ -416,8 +416,6 @@
 				c0 = F_C0(f, t);
 
 				c1 = F_C1(f, t);
-				
-				/*if((c0 < Cell_Dict->number_of_cells) && (c1 < Cell_Dict->number_of_cells)){*/
 					
 				F->c0[i_face] = c0;
 				
@@ -431,14 +429,8 @@
 				}
 				
 				i_face++;
-				/*}*/
 
 		}end_f_loop(f,t)}}
-		
-		/* correct Face_Dict 
-		{
-			Face_Dict->number_of_faces = i_face;
-		}*/
 	}
 	
 	void rCFD_default_Tracer(Solver_Dict_type *Solver_Dict, Tracer_type *Tracer)

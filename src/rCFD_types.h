@@ -208,9 +208,19 @@
 
 	typedef struct Face_Dict_struct
 	{		
-		int	number_of_faces;
+		int		number_of_faces;
 		
 	} Face_Dict_type;
+	
+	typedef struct Topo_Dict_struct
+	{
+		int		number_of_layers;
+		
+		Cell_Dict_type	*Cell_Dict;
+		
+		Face_Dict_type	*Face_Dict;
+		
+	} Topo_Dict_type;
 	
 	/* B. Global Vars */
 	

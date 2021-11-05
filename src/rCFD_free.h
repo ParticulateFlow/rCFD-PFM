@@ -51,7 +51,7 @@
 		}
 		
 #if RP_NODE
-		int 	i_phase, i_frame, i_data, i_C2C, i_node, i_cell, i_face;
+		int 	i_phase, i_frame, i_data, i_C2C, i_node, i_cell, i_face, i_layer;
 		
 		int 	size;
 		
@@ -60,6 +60,8 @@
 			free(Tracer_Dict.random_walk);	
 		}
 		
+		i_layer = 0; 	/* for the moment, we only consider the base grid */
+
 		if(C.x != NULL){
 			
 			loop_cells{
@@ -248,7 +250,19 @@
 			
 			free(F.area);
 		}
+
+		/* free Topo_Dict after C and F */
 		
+		if(Topo_Dict.Cell_Dict != NULL){
+			
+			free(Topo_Dict.Cell_Dict);
+		}
+		
+		if(Topo_Dict.Face_Dict != NULL){
+			
+			free(Topo_Dict.Face_Dict);
+		}
+						
 		if(Tracer.monitor_counter != NULL){ 
 		
 			free(Tracer.monitor_counter);	

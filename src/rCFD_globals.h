@@ -21,6 +21,9 @@
 	static	Solver_type			Solver;
 	
 	static	Rec_type			Rec;
+
+	static 	Topo_Dict_type		Topo_Dict;
+	
 	
 #if RP_NODE
 	static 	Tracer_Dict_type	Tracer_Dict;
@@ -32,11 +35,13 @@
 	static 	Data_Dict_type		**Data_Dict = NULL;
 	
 	static 	Balance_Dict_type	**Balance_Dict = NULL;
-	
+
+#if 0	
 	static	Cell_Dict_type		Cell_Dict;
 	
 	static	Face_Dict_type		Face_Dict;
-	
+#endif	
+
 	static 	Cell_type			C;
 	
 	static	Face_type			F;

@@ -238,65 +238,80 @@
 		}
 	}	
 	
-	void rCFD_default_Cell_Dict(Solver_Dict_type *Solver_Dict, Cell_Dict_type *Cell_Dict)
+	void rCFD_default_Topo_Dict(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict)
 	{
-		Domain 	*d=Get_Domain(1);
-		Thread	*t;
-		cell_t 	c;
-
-		int		number_of_local_cells = 0, number_of_local_internal_cells = 0;
+		Topo_Dict->number_of_layers = 1;
 		
-		int 	only_one_fluid_cell_thread = 0;
+		Topo_Dict->Cell_Dict = NULL;
 		
-		thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
-
-			only_one_fluid_cell_thread++;
+		Topo_Dict->Face_Dict = NULL;
+	}
+	
+	void rCFD_default_Cell_Dict(Solver_Dict_type *Solver_Dict, Cell_Dict_type *Cell_Dict, const short i_layer)
+	{
+		if(i_layer == 0){
 			
-			begin_c_loop_all(c,t){
+			Domain 	*d=Get_Domain(1);
+			Thread	*t;
+			cell_t 	c;
+
+			int		number_of_local_cells = 0, number_of_local_internal_cells = 0;
+			
+			int 	only_one_fluid_cell_thread = 0;
+			
+			thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
+
+				only_one_fluid_cell_thread++;
 				
-				number_of_local_cells++;
+				begin_c_loop_all(c,t){
+					
+					number_of_local_cells++;
 
-			}end_c_loop_all(c,t)
+				}end_c_loop_all(c,t)
 
-			begin_c_loop_int(c,t){
+				begin_c_loop_int(c,t){
+					
+					number_of_local_internal_cells++;
+
+				}end_c_loop_int(c,t)
 				
-				number_of_local_internal_cells++;
-
-			}end_c_loop_int(c,t)
+			}}
 			
-		}}
-		
-		only_one_fluid_cell_thread = PRF_GIHIGH1(only_one_fluid_cell_thread);
+			only_one_fluid_cell_thread = PRF_GIHIGH1(only_one_fluid_cell_thread);
 
-		if(only_one_fluid_cell_thread > 1){
+			if(only_one_fluid_cell_thread > 1){
+				
+				Message0("\n... WARNING: found more than one fluid cell thread ...\n");
+			}
+				
+			Cell_Dict->number_of_cells = number_of_local_cells;	
+
+			Cell_Dict->number_of_int_cells = number_of_local_internal_cells;
+
+			Cell_Dict->number_of_ext_cells = number_of_local_cells - number_of_local_internal_cells;
 			
-			Message0("\n... WARNING: found more than one fluid cell thread ...\n");
+			Cell_Dict->number_of_user_vars = 0;
 		}
-			
-		Cell_Dict->number_of_cells = number_of_local_cells;	
-
-		Cell_Dict->number_of_int_cells = number_of_local_internal_cells;
-
-		Cell_Dict->number_of_ext_cells = number_of_local_cells - number_of_local_internal_cells;
-		
-		Cell_Dict->number_of_user_vars = 0;
 	}
 		
-	void rCFD_default_Face_Dict(Solver_Dict_type *Solver_Dict, Face_Dict_type *Face_Dict)
+	void rCFD_default_Face_Dict(Solver_Dict_type *Solver_Dict, Face_Dict_type *Face_Dict, const short i_layer)
 	{
-		Domain 	*d=Get_Domain(1);
-		Thread	*t;
-		face_t 	f;
+		if(i_layer == 0){
+			
+			Domain 	*d=Get_Domain(1);
+			Thread	*t;
+			face_t 	f;
 
-		int		number_of_local_faces = 0;
-		
-		thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){begin_f_loop(f,t){
-				
-				number_of_local_faces++;
+			int		number_of_local_faces = 0;
+			
+			thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){begin_f_loop(f,t){
+					
+					number_of_local_faces++;
 
-		}end_f_loop(f,t)}}
-		
-		Face_Dict->number_of_faces = number_of_local_faces;
+			}end_f_loop(f,t)}}
+			
+			Face_Dict->number_of_faces = number_of_local_faces;
+		}
 	}
 
 	/* B. default vars settings */
@@ -308,129 +323,135 @@
 		Solver->global_run_counter = 	0;			
 	}	
 
-	void rCFD_default_Cell(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Cell_Dict_type *Cell_Dict, Cell_type *C)
+	void rCFD_default_Cell(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Topo_Dict_type *Topo_Dict, Cell_type *C, const short i_layer)
 	{
-		int	i_phase, i_cell, i_frame, i_user, i_data, i_dim;
-		
-		Domain 	*d=Get_Domain(1);
-		Thread	*t;
-		double	x[3];
-		
-		thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_all(i_cell,t){
-				
-				C_CENTROID(x, i_cell, t);
-				
-				loop_dim{
+		if(i_layer == 0){
+			
+			int	i_phase, i_cell, i_frame, i_user, i_data, i_dim;
+			
+			Domain 	*d=Get_Domain(1);
+			Thread	*t;
+			double	x[3];
+			
+			thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_all(i_cell,t){
 					
-					C->x[i_cell][i_dim] = x[i_dim];
-				}
-				
-				C->volume[i_cell] = C_VOLUME(i_cell, t);
-				
-		}end_c_loop_all(i_cell,t)}}
-	
-		loop_phases_ptr{
-			
-			loop_cells_ptr{
-				
-				C->average_velocity[i_phase][i_cell] = 	0.0;				
-				C->crossing_time[i_phase][i_cell] = 	0.0;
-			}
-		}
+					C_CENTROID(x, i_cell, t);
+					
+					loop_dim{
+						
+						C->x[i_cell][i_dim] = x[i_dim];
+					}
+					
+					C->volume[i_cell] = C_VOLUME(i_cell, t);
+					
+			}end_c_loop_all(i_cell,t)}}
 		
-		loop_cells_ptr{
-			
-			C->hit_by_other_cell[i_cell] = 0;
-			C->island_id[i_cell] = 0;
-			
-			C->weight_after_shift[i_cell] = 0.0;
-			C->weight_after_swap[i_cell] = 	0.0;
-		}
-		
-		if(C->vof != NULL){
-				
-			loop_frames_ptr{
+			loop_phases_ptr{
 				
 				loop_cells_ptr{
 					
-					loop_phases_ptr{
+					C->average_velocity[i_phase][i_cell] = 	0.0;				
+					C->crossing_time[i_phase][i_cell] = 	0.0;
+				}
+			}
+			
+			loop_cells_ptr{
+				
+				C->hit_by_other_cell[i_cell] = 0;
+				C->island_id[i_cell] = 0;
+				
+				C->weight_after_shift[i_cell] = 0.0;
+				C->weight_after_swap[i_cell] = 	0.0;
+			}
+			
+			if(C->vof != NULL){
 					
-						if(i_phase == 0){
-							
-							C->vof[i_frame][i_cell][i_phase] = 1.0;
-						}
-						else{
+				loop_frames_ptr{
+					
+					loop_cells_ptr{
 						
-							C->vof[i_frame][i_cell][i_phase] = 0.0;
+						loop_phases_ptr{
+						
+							if(i_phase == 0){
+								
+								C->vof[i_frame][i_cell][i_phase] = 1.0;
+							}
+							else{
+							
+								C->vof[i_frame][i_cell][i_phase] = 0.0;
+							}
 						}
+					}
+				}		
+			}
+			
+			loop_phases_ptr{
+				
+				loop_cells_ptr{
+					
+					loop_data{
+					
+						C->data[i_phase][i_cell][i_data] = 		0.0;
+						C->data_shift[i_phase][i_cell][i_data] = 0.0;
+						C->data_swap[i_phase][i_cell][i_data] = 	0.0;
 					}
 				}
 			}		
-		}
-		
-		loop_phases_ptr{
-			
-			loop_cells_ptr{
+
+			if(C->drift_exchange != NULL){
 				
-				loop_data{
-				
-					C->data[i_phase][i_cell][i_data] = 		0.0;
-					C->data_shift[i_phase][i_cell][i_data] = 0.0;
-					C->data_swap[i_phase][i_cell][i_data] = 	0.0;
+				loop_cells_ptr{
+					
+					C->drift_exchange[i_cell] = 0.0;
 				}
 			}
-		}		
-
-		if(C->drift_exchange != NULL){
 			
-			loop_cells_ptr{
+			if(C->user != NULL){
 				
-				C->drift_exchange[i_cell] = 0.0;
-			}
-		}
-		
-		if(C->user != NULL){
-			
-			loop_cells_ptr{
-				
-				for(i_user = 0; i_user < Cell_Dict->number_of_user_vars; i_user++){
+				loop_cells_ptr{
 					
-					C->user[i_cell][i_user] = 0.0;
+					for(i_user = 0; i_user < Topo_Dict->Cell_Dict[i_layer].number_of_user_vars; i_user++){
+						
+						C->user[i_cell][i_user] = 0.0;
+					}
 				}
 			}
 		}
 	}
 	
-	void rCFD_default_Face(Solver_Dict_type *Solver_Dict, Cell_Dict_type *Cell_Dict, Face_Dict_type *Face_Dict, Face_type *F)
+	void rCFD_default_Face(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict, Face_type *F, const short i_layer)
 	{
-		Domain 	*d=Get_Domain(1);
-		Thread	*t;
-		int		f, i_face, c0, c1, i_dim;
-		
-		double	A[3];
-		
-		i_face = 0;
-		
-		thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){begin_f_loop(f,t){
-				
-				c0 = F_C0(f, t);
-
-				c1 = F_C1(f, t);
+		if(i_layer == 0){
+			
+			Domain 	*d=Get_Domain(1);
+			Thread	*t;
+			int		f, i_face, c0, c1, i_dim;
+			
+			double	A[3];
+			
+			i_face = 0;
+			
+			thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){begin_f_loop(f,t){
 					
-				F->c0[i_face] = c0;
-				
-				F->c1[i_face] = c1;
-				
-				F_AREA(A, f, t);
-				
-				loop_dim{
-					
-					F->area[i_face][i_dim] = A[i_dim];
-				}
-				
-				i_face++;
+					c0 = F_C0(f, t);
 
-		}end_f_loop(f,t)}}
+					c1 = F_C1(f, t);
+						
+					F->c0[i_face] = c0;
+					
+					F->c1[i_face] = c1;
+					
+					F_AREA(A, f, t);
+					
+					loop_dim{
+						
+						F->area[i_face][i_dim] = A[i_dim];
+					}
+					
+					i_face++;
+
+			}end_f_loop(f,t)}}
+		}
 	}
 	
 	void rCFD_default_Tracer(Solver_Dict_type *Solver_Dict, Tracer_type *Tracer)

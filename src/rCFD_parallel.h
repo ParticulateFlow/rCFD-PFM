@@ -127,7 +127,7 @@
 #if 1 /* init */
 #if RP_NODE
 
-	void init_parallel_grid(Solver_Dict_type *Solver_Dict, Cell_Dict_type *Cell_Dict, Face_Dict_type *Face_Dict)
+	void init_parallel_grid(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict, const short i_layer)
 	{
 		int 		i_node, i_cell, i_list, i_host;
 		int 		size;
@@ -136,13 +136,13 @@
 		
 		/* P1: allocate MPI_cells */
 		{
-			MPI_cells.host_of_cell = (int*)malloc(Cell_Dict->number_of_cells * sizeof(int));
+			MPI_cells.host_of_cell = (int*)malloc(_pCell_Dict.number_of_cells * sizeof(int));
 
 			MPI_cells.hosting_cell_index = NULL;
 
 			if(myid > 0){
 				
-				PRF_CSEND_INT(node_zero, &Cell_Dict->number_of_ext_cells, 1, myid);
+				PRF_CSEND_INT(node_zero, &_pCell_Dict.number_of_ext_cells, 1, myid);
 				
 				MPI_cells.number_of_ext_cells = -1;
 				
@@ -163,10 +163,10 @@
 				
 				MPI_cells.number_of_host_cells_per_node = (int*)malloc((node_last+1) * sizeof(int));	
 				
-				MPI_cells.number_of_ext_cells_per_node[0] = Cell_Dict->number_of_ext_cells;
+				MPI_cells.number_of_ext_cells_per_node[0] = _pCell_Dict.number_of_ext_cells;
 				
 				/* get number_of_ext_cells (sum up all nodes) */
-				MPI_cells.number_of_ext_cells = Cell_Dict->number_of_ext_cells;
+				MPI_cells.number_of_ext_cells = _pCell_Dict.number_of_ext_cells;
 				
 				for(i_node = 1; i_node < (node_last+1); i_node++){
 					
@@ -193,9 +193,9 @@
 			{
 				if(myid > 0){
 					
-					list_of_int = (int*)malloc( Cell_Dict->number_of_ext_cells * sizeof(int));
+					list_of_int = (int*)malloc( _pCell_Dict.number_of_ext_cells * sizeof(int));
 					
-					list_of_double = (double*)malloc( 3 * Cell_Dict->number_of_ext_cells * sizeof(double));
+					list_of_double = (double*)malloc( 3 * _pCell_Dict.number_of_ext_cells * sizeof(double));
 					
 					i_list = 0;
 					
@@ -210,9 +210,9 @@
 						i_list++;
 					}
 					
-					PRF_CSEND_INT(node_zero, list_of_int, Cell_Dict->number_of_ext_cells, myid);
+					PRF_CSEND_INT(node_zero, list_of_int, _pCell_Dict.number_of_ext_cells, myid);
 
-					PRF_CSEND_REAL(node_zero, list_of_double, (3 * Cell_Dict->number_of_ext_cells), myid);
+					PRF_CSEND_REAL(node_zero, list_of_double, (3 * _pCell_Dict.number_of_ext_cells), myid);
 					
 					free(list_of_int);
 					
@@ -403,7 +403,7 @@
 
 		/* P3. allocate and set MPI_faces */
 		{
-			MPI_faces.principal_face = (int*)malloc(Face_Dict->number_of_faces * sizeof(int));
+			MPI_faces.principal_face = (int*)malloc(_pFace_Dict.number_of_faces * sizeof(int));
 			
 			rCFD_default_MPI_Faces(Solver_Dict, &MPI_faces);
 		}		
@@ -857,7 +857,7 @@
 #if 1 /* corona cell communication */
 #if RP_NODE
 
-	void sum_up_parallel_corona_cells(Solver_Dict_type *Solver_Dict, Cell_Dict_type *Cell_Dict, double *cell_data)
+	void sum_up_parallel_corona_cells(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict, double *cell_data, const short i_layer)
 	{
 		int		i_cell, i_list, i_node;
 		
@@ -869,7 +869,7 @@
 		{
 			if(myid > 0){
 			
-				list_of_double = (double*)malloc(Cell_Dict->number_of_ext_cells * sizeof(double));
+				list_of_double = (double*)malloc(_pCell_Dict.number_of_ext_cells * sizeof(double));
 				
 				i_list = 0;
 				
@@ -880,9 +880,9 @@
 					i_list++;
 				}
 				
-				PRF_CSEND_INT(node_zero, &Cell_Dict->number_of_ext_cells, 1, myid);
+				PRF_CSEND_INT(node_zero, &_pCell_Dict.number_of_ext_cells, 1, myid);
 				
-				PRF_CSEND_REAL(node_zero, list_of_double, Cell_Dict->number_of_ext_cells, myid);
+				PRF_CSEND_REAL(node_zero, list_of_double, _pCell_Dict.number_of_ext_cells, myid);
 				
 				free(list_of_double);
 			}
@@ -943,8 +943,7 @@
 				}			
 			}
 		}
-		
-		
+				
 		/* MPI.3 Node-0 collects updated data into MPI_cells.data */
 		{
 			if(myid == 0){

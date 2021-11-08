@@ -5,6 +5,7 @@
 #include "rCFD_parallel.h"
 #include "rCFD_defaults.h"
 #include "rCFD_macros.h"
+#include "rCFD_init.h"
 #include "rCFD_free.h"
 
 #include "rCFD_user.h"
@@ -33,7 +34,10 @@
 DEFINE_ON_DEMAND(rCFD_init_all)
 /*************************************************************************************/
 {
-    /* D1. Solver_Dict & Solver */
+	init_all();
+	
+#if 0	
+	/* D1. Solver_Dict & Solver */
     {
         rCFD_default_Solver_Dict(&Solver_Dict);
         
@@ -479,7 +483,7 @@ DEFINE_ON_DEMAND(rCFD_init_all)
         init_parallel_grid(&Solver_Dict, &Topo_Dict, i_layer);
 #endif
     }       
-    
+#endif   
 }
 
 /*************************************************************************************/

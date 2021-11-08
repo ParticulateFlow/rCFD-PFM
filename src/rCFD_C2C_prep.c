@@ -58,7 +58,7 @@
 */
 
 /*************************************************************************************/
-DEFINE_ON_DEMAND(rCFD_init_Solver)
+DEFINE_ON_DEMAND(rCFD_init_prep)
 /*************************************************************************************/
 {
 	/* D1. Solver_Dict & Solver */
@@ -263,7 +263,7 @@ DEFINE_ON_DEMAND(rCFD_analyse_CFD)
 			
 			w0 = (double)Solver_Dict.analyse_CFD_count;
 		
-			C.average_velocity[i_phase][i_cell] = (w0 * C_UDMI(c,t, v_mag_av) + v_mag) / (w0 + 1.0);
+			C.average_velocity[i_phase][i_cell] = (w0 * C.average_velocity[i_phase][i_cell] + v_mag) / (w0 + 1.0);
 							   
 			L = pow(C_VOLUME(c,t),1./3.);
 		

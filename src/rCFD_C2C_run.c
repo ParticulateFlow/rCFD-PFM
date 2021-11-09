@@ -34,10 +34,10 @@
 DEFINE_ON_DEMAND(rCFD_init_all)
 /*************************************************************************************/
 {
-	init_all();
-	
-#if 0	
-	/* D1. Solver_Dict & Solver */
+    init_all();
+    
+#if 0   
+    /* D1. Solver_Dict & Solver */
     {
         rCFD_default_Solver_Dict(&Solver_Dict);
         
@@ -93,8 +93,8 @@ DEFINE_ON_DEMAND(rCFD_init_all)
         rCFD_user_set_Rec_Dict(&Solver_Dict, &Rec_Dict);    
     }   
 
-    /* D7. Data_Dict */	
-	{
+    /* D7. Data_Dict */ 
+    {
 #if RP_NODE     
         int i_phase;
         
@@ -129,33 +129,33 @@ DEFINE_ON_DEMAND(rCFD_init_all)
 #endif      
     }
 
-	/* D9. Topo_Dict */
+    /* D9. Topo_Dict */
     {
-		rCFD_default_Topo_Dict(&Solver_Dict, &Topo_Dict);
-		
-		rCFD_user_set_Topo_Dict(&Solver_Dict, &Topo_Dict);
-		
-#if RP_NODE		
-		int i_layer;
-		
-		Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Topo_Dict.number_of_layers * sizeof(Cell_Dict_type));
-		
-		Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Topo_Dict.number_of_layers * sizeof(Face_Dict_type));
+        rCFD_default_Topo_Dict(&Solver_Dict, &Topo_Dict);
+        
+        rCFD_user_set_Topo_Dict(&Solver_Dict, &Topo_Dict);
+        
+#if RP_NODE     
+        int i_layer;
+        
+        Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Topo_Dict.number_of_layers * sizeof(Cell_Dict_type));
+        
+        Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Topo_Dict.number_of_layers * sizeof(Face_Dict_type));
 
-		loop_layers{
-				
-			rCFD_default_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
+        loop_layers{
+                
+            rCFD_default_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
 
-			rCFD_user_set_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
+            rCFD_user_set_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
 
-			rCFD_default_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);
+            rCFD_default_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);
 
-			rCFD_user_set_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);			
-		}	
-#endif	
-	
+            rCFD_user_set_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);          
+        }   
+#endif  
+    
     } 
-	
+    
 #if 0
     /* D9. Cell_Dict */
     {
@@ -181,92 +181,92 @@ DEFINE_ON_DEMAND(rCFD_init_all)
     {
 #if RP_NODE     
         int     i_phase, i_frame, i_cell, i_layer;
-		
-		loop_layers{
-			
-			if(i_layer == 0){
-			
-				C.x = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-				
-				loop_cells{
-					
-					C.x[i_cell] = (double*)malloc( 3 * sizeof(double));
-				}
-				
-				C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-				
-				C.average_velocity =    (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
-				C.crossing_time =       (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
-				
-				loop_phases{
-					
-					C.average_velocity[i_phase] =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));            
-					C.crossing_time[i_phase] =      (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-				}
+        
+        loop_layers{
+            
+            if(i_layer == 0){
+            
+                C.x = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                
+                loop_cells{
+                    
+                    C.x[i_cell] = (double*)malloc( 3 * sizeof(double));
+                }
+                
+                C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+                
+                C.average_velocity =    (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
+                C.crossing_time =       (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
+                
+                loop_phases{
+                    
+                    C.average_velocity[i_phase] =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));            
+                    C.crossing_time[i_phase] =      (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+                }
 
-				C.hit_by_other_cell =   (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
+                C.hit_by_other_cell =   (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
 
-				C.island_id =           (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
-				
-				C.weight_after_shift =  (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-				C.weight_after_swap =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+                C.island_id =           (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
+                
+                C.weight_after_shift =  (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+                C.weight_after_swap =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
 
-				C.vof = (double***)malloc(Solver_Dict.number_of_frames * sizeof(double**));
-				
-				loop_frames{
-					
-					C.vof[i_frame] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-					
-					loop_cells{
-						
-						C.vof[i_frame][i_cell] = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
-					}
-				}
+                C.vof = (double***)malloc(Solver_Dict.number_of_frames * sizeof(double**));
+                
+                loop_frames{
+                    
+                    C.vof[i_frame] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                    
+                    loop_cells{
+                        
+                        C.vof[i_frame][i_cell] = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+                    }
+                }
 
-				C.data =        (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-				C.data_shift =  (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-				C.data_swap =   (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-				
-				loop_phases{
-					
-					C.data[i_phase] =       (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-					C.data_shift[i_phase] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-					C.data_swap[i_phase] =  (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-					
-					loop_cells{
-						
-						C.data[i_phase][i_cell] =       (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-						C.data_shift[i_phase][i_cell] = (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-						C.data_swap[i_phase][i_cell] =  (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-					}
-				}       
-				
-				if(Solver_Dict.data_drifting_on){
-					
-					C.drift_exchange = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-				}
-				else{
-					
-					C.drift_exchange = NULL;
-				}       
-				
-				if(_Cell_Dict.number_of_user_vars > 0){
-					
-					C.user = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-					
-					loop_cells{
-						
-						C.user[i_cell] = (double*)malloc(_Cell_Dict.number_of_user_vars * sizeof(double));
-					}
-				}
-				else{
-					
-					C.user = NULL;
-				}
-						
-				rCFD_default_Cell(&Solver_Dict, Phase_Dict, &Topo_Dict, &C, i_layer);
-			}
-		}
+                C.data =        (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+                C.data_shift =  (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+                C.data_swap =   (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+                
+                loop_phases{
+                    
+                    C.data[i_phase] =       (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                    C.data_shift[i_phase] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                    C.data_swap[i_phase] =  (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                    
+                    loop_cells{
+                        
+                        C.data[i_phase][i_cell] =       (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                        C.data_shift[i_phase][i_cell] = (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                        C.data_swap[i_phase][i_cell] =  (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                    }
+                }       
+                
+                if(Solver_Dict.data_drifting_on){
+                    
+                    C.drift_exchange = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+                }
+                else{
+                    
+                    C.drift_exchange = NULL;
+                }       
+                
+                if(_Cell_Dict.number_of_user_vars > 0){
+                    
+                    C.user = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                    
+                    loop_cells{
+                        
+                        C.user[i_cell] = (double*)malloc(_Cell_Dict.number_of_user_vars * sizeof(double));
+                    }
+                }
+                else{
+                    
+                    C.user = NULL;
+                }
+                        
+                rCFD_default_Cell(&Solver_Dict, Phase_Dict, &Topo_Dict, &C, i_layer);
+            }
+        }
 #endif  
     }   
 
@@ -276,23 +276,23 @@ DEFINE_ON_DEMAND(rCFD_init_all)
         int i_face, i_layer;
         
         loop_layers{
-			
-			if(i_layer == 0){
-				
-				F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
+            
+            if(i_layer == 0){
+                
+                F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
         
-				F.c1 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
-				
-				F.area = (double**)malloc(_Face_Dict.number_of_faces * sizeof(double*));
-				
-				loop_faces{
-					
-					F.area[i_face] = (double*)malloc( 3 * sizeof(double));
-				}
+                F.c1 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
+                
+                F.area = (double**)malloc(_Face_Dict.number_of_faces * sizeof(double*));
+                
+                loop_faces{
+                    
+                    F.area[i_face] = (double*)malloc( 3 * sizeof(double));
+                }
 
-				rCFD_default_Face(&Solver_Dict, &Topo_Dict, &F, i_layer);
-			}
-		}
+                rCFD_default_Face(&Solver_Dict, &Topo_Dict, &F, i_layer);
+            }
+        }
 #endif      
     }
     
@@ -428,58 +428,58 @@ DEFINE_ON_DEMAND(rCFD_init_all)
     /* G1 + G6: Init data fields and update balances */
     {
 #if RP_NODE     
-        int	i_layer, i_frame, i_phase, i_data, i_cell;
-		
-		i_layer = 0; 	/* user initialization just for base layer of grid, migh be changed to loop_layers in future */
-				
-		rCFD_user_init_Data(&Solver_Dict, Balance, Phase_Dict, Data_Dict, &Topo_Dict, &C, i_layer);
-		
-		i_frame = 0;
-		
-		loop_int_cells{
-			
-			loop_phases{
-			
-				loop_data{
-					
-					if(Data_Dict[i_phase][i_data].type == temperature_data){
-						
-						Balance[i_phase][i_data].mass_integral += (C.data[i_phase][i_cell][i_data] - Phase_Dict[i_phase].reference_temperature) * 
-					
-							Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
-					}
-					else{
-						
-						Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data] * 
-					
-							Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
-					}
-				}
-			}       
-		}
+        int i_layer, i_frame, i_phase, i_data, i_cell;
+        
+        i_layer = 0;    /* user initialization just for base layer of grid, migh be changed to loop_layers in future */
+                
+        rCFD_user_init_Data(&Solver_Dict, Balance, Phase_Dict, Data_Dict, &Topo_Dict, &C, i_layer);
+        
+        i_frame = 0;
+        
+        loop_int_cells{
+            
+            loop_phases{
+            
+                loop_data{
+                    
+                    if(Data_Dict[i_phase][i_data].type == temperature_data){
+                        
+                        Balance[i_phase][i_data].mass_integral += (C.data[i_phase][i_cell][i_data] - Phase_Dict[i_phase].reference_temperature) * 
+                    
+                            Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                    }
+                    else{
+                        
+                        Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data] * 
+                    
+                            Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                    }
+                }
+            }       
+        }
 
-		loop_phases{
-			
-			loop_data{
-							
-				Balance[i_phase][i_data].mass_integral_target = Balance[i_phase][i_data].mass_integral;
-				
-				Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
+        loop_phases{
+            
+            loop_data{
+                            
+                Balance[i_phase][i_data].mass_integral_target = Balance[i_phase][i_data].mass_integral;
+                
+                Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
 
-				Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;
-			}
-		}
-		
-		rCFD_user_post(&Solver_Dict, Phase_Dict, &Topo_Dict, &C);	/* post-process initialization */
+                Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;
+            }
+        }
+        
+        rCFD_user_post(&Solver_Dict, Phase_Dict, &Topo_Dict, &C);   /* post-process initialization */
 #endif
     }       
 
     /* P: Parallel grid communication */
     {
 #if RP_NODE
-		/* for the moment, just consider MPI communication for i_layer = 0 */
-		int i_layer = 0;
-		
+        /* for the moment, just consider MPI communication for i_layer = 0 */
+        int i_layer = 0;
+        
         init_parallel_grid(&Solver_Dict, &Topo_Dict, i_layer);
 #endif
     }       
@@ -803,13 +803,13 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 #endif
     }
 
-	/* D. set up parallel C2C communication */
-	{
-#if RP_NODE		
-		init_parallel_C2Cs(&Solver_Dict, Phase_Dict, C2Cs);
+    /* D. set up parallel C2C communication */
+    {
+#if RP_NODE     
+        init_parallel_C2Cs(&Solver_Dict, Phase_Dict, C2Cs);
 #endif
-	}
-	
+    }
+    
     /* E. Message & Transcript */
     {
 #if RP_NODE
@@ -898,7 +898,7 @@ DEFINE_ON_DEMAND(rCFD_run)
     int         i_tmp;
     
     double      w0, data0, vol_flip;
-	double		drift_volume, drift_mass, local_mass_c0, local_mass_c1, local_mass;
+    double      drift_volume, drift_mass, local_mass_c0, local_mass_c1, local_mass;
     double      sum_of_conc, flux_in, flux_out, data_in_mean, data_out_mean, flux_mean;
 
     FILE        *f_out = NULL;
@@ -969,773 +969,773 @@ DEFINE_ON_DEMAND(rCFD_run)
         }
                     
         loop_phases{
-			
-			loop_layers{
             
-				/* I: Initialization (weights, data_shift, data_swap, mass_drift) */
-				{
+            loop_layers{
+            
+                /* I: Initialization (weights, data_shift, data_swap, mass_drift) */
+                {
 #if RP_HOST
-					rand_per_phase_loop = (double)rand()/(double)RAND_MAX;  /* [0..1] */
+                    rand_per_phase_loop = (double)rand()/(double)RAND_MAX;  /* [0..1] */
 #endif
-					host_to_node_real_1(rand_per_phase_loop);
+                    host_to_node_real_1(rand_per_phase_loop);
 #if RP_NODE
 
-					loop_cells{
-						
-						C.weight_after_shift[i_cell] =  0.0;
-						C.weight_after_swap[i_cell] =   0.0;
-						
-						loop_data{
-							
-							C.data_shift[i_phase][i_cell][i_data] = 0.0;
-							C.data_swap[i_phase][i_cell][i_data] =  0.0;
-						}
-					}
-					
-					/* init Balance.node2node_flux */
-					loop_data{
-				
-						if(Balance_Dict[i_phase][i_data].type == per_node_balancing){               
-						
-							for(i_node = 0; i_node < (node_last + 1); i_node++){
-								
-								for(i_node2 = 0; i_node2 < (node_last + 1); i_node2++){
-									
-									Balance[i_phase][i_data].node2node_flux[i_node][i_node2] = 0.0;
-									Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2] = 0.0;
-								}
-							}
-						}
-					}
+                    loop_cells{
+                        
+                        C.weight_after_shift[i_cell] =  0.0;
+                        C.weight_after_swap[i_cell] =   0.0;
+                        
+                        loop_data{
+                            
+                            C.data_shift[i_phase][i_cell][i_data] = 0.0;
+                            C.data_swap[i_phase][i_cell][i_data] =  0.0;
+                        }
+                    }
+                    
+                    /* init Balance.node2node_flux */
+                    loop_data{
+                
+                        if(Balance_Dict[i_phase][i_data].type == per_node_balancing){               
+                        
+                            for(i_node = 0; i_node < (node_last + 1); i_node++){
+                                
+                                for(i_node2 = 0; i_node2 < (node_last + 1); i_node2++){
+                                    
+                                    Balance[i_phase][i_data].node2node_flux[i_node][i_node2] = 0.0;
+                                    Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2] = 0.0;
+                                }
+                            }
+                        }
+                    }
 #endif          
-				}
-		
-				/* AD1: Access data before shift */     
-				{
+                }
+        
+                /* AD1: Access data before shift */     
+                {
 #if RP_NODE
-					rCFD_user_access_data_before_shift(Balance, Phase_Dict, &Topo_Dict, &C, &Rec, i_phase, i_layer);
+                    rCFD_user_access_data_before_shift(Balance, Phase_Dict, &Topo_Dict, &C, &Rec, i_phase, i_layer);
 #endif                  
-				}
-				
-				/* C: Convection, cell-to-cell shifts */
-				{
-	#if RP_NODE         
-					if(Solver_Dict.data_convection_on){
-						
-						if(rand_per_phase_loop <= Phase_Dict[i_phase].shift_probability){
-						
-							/* C1,2 C2C shifts (local, cross-partitions) */
-							loop_islands{
-								
-								i_frame = Rec.global_frame[i_island];
-								
-								/* C1: local shifts */
-								{
-									loop_offset0    = C2Cs[current_pattern].island_offsets[i_island];
-									loop_offset1    = C2Cs[current_pattern].island_offsets[(i_island + 1)];
-									
-									/*Message0("\n\n loop_offset0 %d, loop_offset1 %d\\", loop_offset0, loop_offset1);*/
+                }
+                
+                /* C: Convection, cell-to-cell shifts */
+                {
+    #if RP_NODE         
+                    if(Solver_Dict.data_convection_on){
+                        
+                        if(rand_per_phase_loop <= Phase_Dict[i_phase].shift_probability){
+                        
+                            /* C1,2 C2C shifts (local, cross-partitions) */
+                            loop_islands{
+                                
+                                i_frame = Rec.global_frame[i_island];
+                                
+                                /* C1: local shifts */
+                                {
+                                    loop_offset0    = C2Cs[current_pattern].island_offsets[i_island];
+                                    loop_offset1    = C2Cs[current_pattern].island_offsets[(i_island + 1)];
+                                    
+                                    /*Message0("\n\n loop_offset0 %d, loop_offset1 %d\\", loop_offset0, loop_offset1);*/
 
-									i_tmp = 0;
-									
-									for(i_C2C = loop_offset0; i_C2C < loop_offset1; i_C2C++){
-										
-										c0 = C2Cs[current_pattern].shifts[i_C2C].c0;
-										c1 = C2Cs[current_pattern].shifts[i_C2C].c1;
-										w0 = C2Cs[current_pattern].shifts[i_C2C].w0;
-									
-										if(w0 > 0.0){
-								 
-											i_tmp++;
-											
-											loop_data{
-									 
-												data0 = C.data[i_phase][c0][i_data];
+                                    i_tmp = 0;
+                                    
+                                    for(i_C2C = loop_offset0; i_C2C < loop_offset1; i_C2C++){
+                                        
+                                        c0 = C2Cs[current_pattern].shifts[i_C2C].c0;
+                                        c1 = C2Cs[current_pattern].shifts[i_C2C].c1;
+                                        w0 = C2Cs[current_pattern].shifts[i_C2C].w0;
+                                    
+                                        if(w0 > 0.0){
+                                 
+                                            i_tmp++;
+                                            
+                                            loop_data{
+                                     
+                                                data0 = C.data[i_phase][c0][i_data];
 
-												C.data_shift[i_phase][c1][i_data] =
-												
-													(w0 * data0 + C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data])/
-													
-													(w0 +  C.weight_after_shift[c1]);                                       
-											}
-								 
-											C.weight_after_shift[c1] += w0;
-										}
-									}
-									
-									/*Message0("\n\n i_tmp = %d\n\n", i_tmp);*/
-								}
-							
-								/* C2: cross-partition shifts */
-								{
-									shift_parallel_C2C_data(&Solver_Dict, Phase_Dict, Balance_Dict, &C2Cs[current_pattern], &C, Balance, i_phase, i_island);
-								}
-							
-							} /* loop_islands */
-							
-							/* C3: fill holes */
-							{   
-								number_of_unhit_cells = 1;
-								
-								number_of_fill_loops = 0;
-														
-								while((number_of_unhit_cells > 0) && (number_of_fill_loops < Solver_Dict.max_fill_loops)){
-									
-									number_of_fill_loops++;
+                                                C.data_shift[i_phase][c1][i_data] =
+                                                
+                                                    (w0 * data0 + C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data])/
+                                                    
+                                                    (w0 +  C.weight_after_shift[c1]);                                       
+                                            }
+                                 
+                                            C.weight_after_shift[c1] += w0;
+                                        }
+                                    }
+                                    
+                                    /*Message0("\n\n i_tmp = %d\n\n", i_tmp);*/
+                                }
+                            
+                                /* C2: cross-partition shifts */
+                                {
+                                    shift_parallel_C2C_data(&Solver_Dict, Phase_Dict, Balance_Dict, &C2Cs[current_pattern], &C, Balance, i_phase, i_island);
+                                }
+                            
+                            } /* loop_islands */
+                            
+                            /* C3: fill holes */
+                            {   
+                                number_of_unhit_cells = 1;
+                                
+                                number_of_fill_loops = 0;
+                                                        
+                                while((number_of_unhit_cells > 0) && (number_of_fill_loops < Solver_Dict.max_fill_loops)){
+                                    
+                                    number_of_fill_loops++;
 
-									/* fill holes by face swaps */
-									loop_faces{
+                                    /* fill holes by face swaps */
+                                    loop_faces{
 
-										c0 = F.c0[i_face];
-										c1 = F.c1[i_face];
-									
-										if((C.weight_after_shift[c0] > 0.)&&(C.weight_after_shift[c1] == 0.0)){
-											
-											c = c0; c0 = c1; c1 = c;
-										}
-									  
-										if((C.weight_after_shift[c1] > 0.)&&(C.weight_after_shift[c0] == 0.0)){
-									  
-											loop_data{
-												
-												C.data_swap[i_phase][c0][i_data] = 
-												
-													(C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data] + 
-													
-													 C.weight_after_swap[c0] * C.data_swap[i_phase][c0][i_data]) / 
-													
-													(C.weight_after_shift[c1] + C.weight_after_swap[c0]);
-											}
-																	  
-											C.weight_after_swap[c0] += C.weight_after_shift[c1];
-										}                       
-									}
-							
-									number_of_unhit_cells = 0;
-									
-									loop_cells{
-								   
-										if(C.weight_after_swap[i_cell] > 0.0){
-											
-											loop_data{
-												
-												C.data_shift[i_phase][i_cell][i_data] = C.data_swap[i_phase][i_cell][i_data];
-											}
+                                        c0 = F.c0[i_face];
+                                        c1 = F.c1[i_face];
+                                    
+                                        if((C.weight_after_shift[c0] > 0.)&&(C.weight_after_shift[c1] == 0.0)){
+                                            
+                                            c = c0; c0 = c1; c1 = c;
+                                        }
+                                      
+                                        if((C.weight_after_shift[c1] > 0.)&&(C.weight_after_shift[c0] == 0.0)){
+                                      
+                                            loop_data{
+                                                
+                                                C.data_swap[i_phase][c0][i_data] = 
+                                                
+                                                    (C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data] + 
+                                                    
+                                                     C.weight_after_swap[c0] * C.data_swap[i_phase][c0][i_data]) / 
+                                                    
+                                                    (C.weight_after_shift[c1] + C.weight_after_swap[c0]);
+                                            }
+                                                                      
+                                            C.weight_after_swap[c0] += C.weight_after_shift[c1];
+                                        }                       
+                                    }
+                            
+                                    number_of_unhit_cells = 0;
+                                    
+                                    loop_cells{
+                                   
+                                        if(C.weight_after_swap[i_cell] > 0.0){
+                                            
+                                            loop_data{
+                                                
+                                                C.data_shift[i_phase][i_cell][i_data] = C.data_swap[i_phase][i_cell][i_data];
+                                            }
 
-											C.weight_after_shift[i_cell] = C.weight_after_swap[i_cell];
-											
-											C.weight_after_swap[i_cell] = 0.0;
-										}
-										
-										if(C.weight_after_swap[i_cell] == 0.0){
-											
-											number_of_unhit_cells++;
-										}
-										 
-									}
+                                            C.weight_after_shift[i_cell] = C.weight_after_swap[i_cell];
+                                            
+                                            C.weight_after_swap[i_cell] = 0.0;
+                                        }
+                                        
+                                        if(C.weight_after_swap[i_cell] == 0.0){
+                                            
+                                            number_of_unhit_cells++;
+                                        }
+                                         
+                                    }
 
-									number_of_unhit_cells = PRF_GISUM1(number_of_unhit_cells);
-								}
+                                    number_of_unhit_cells = PRF_GISUM1(number_of_unhit_cells);
+                                }
 
-								/* data = data_update */
-								loop_cells{
-								
-									loop_data{
-										
-										C.data[i_phase][i_cell][i_data] = C.data_shift[i_phase][i_cell][i_data];
-									}   
-								}   
-							}
-						}
-					}
-	#endif      
-				}
+                                /* data = data_update */
+                                loop_cells{
+                                
+                                    loop_data{
+                                        
+                                        C.data[i_phase][i_cell][i_data] = C.data_shift[i_phase][i_cell][i_data];
+                                    }   
+                                }   
+                            }
+                        }
+                    }
+    #endif      
+                }
 
-				/* D: Diffusion, face swaps */
-				{               
-					/* D.1 Drifting */
-					if(Solver_Dict.data_drifting_on){
-						
-						/* Existing Limitations (10/21)
-						
-							L1: drifting of concentration might lead to conc > 1. 
-						*/
+                /* D: Diffusion, face swaps */
+                {               
+                    /* D.1 Drifting */
+                    if(Solver_Dict.data_drifting_on){
+                        
+                        /* Existing Limitations (10/21)
+                        
+                            L1: drifting of concentration might lead to conc > 1. 
+                        */
 #if RP_NODE
-						loop_data{
-								
-							if(Data_Dict[i_phase][i_data].drifting_data){
-								
-								for(i_drift = 0; i_drift < Solver_Dict.number_of_drift_loops; i_drift++){
-													
-									/* init C.drift_exchange */
-									loop_cells{
+                        loop_data{
+                                
+                            if(Data_Dict[i_phase][i_data].drifting_data){
+                                
+                                for(i_drift = 0; i_drift < Solver_Dict.number_of_drift_loops; i_drift++){
+                                                    
+                                    /* init C.drift_exchange */
+                                    loop_cells{
 
-										C.drift_exchange[i_cell] = 0.0;
-									}
-									
-									/* set C.drift_exchange */
-									loop_faces{
-										
-										if(valid_parallel_face){
-											
-											c0 = F.c0[i_face];
-											c1 = F.c1[i_face];
-											
-											i_frame_c0 = Rec.global_frame[C.island_id[c0]]; 
-											i_frame_c1 = Rec.global_frame[C.island_id[c1]]; 
-											
-											local_mass_c0 = C.volume[c0] * C.vof[i_frame_c0][c0][i_phase] * Phase_Dict[i_phase].density;
-											local_mass_c1 = C.volume[c1] * C.vof[i_frame_c1][c1][i_phase] * Phase_Dict[i_phase].density;
-												
-											/* don't drift across interfaces */
-											if(local_mass_c0 * local_mass_c1 > 0.0){
-												
-												drift_volume = 0.0;
-												
-												loop_dim{
-													
-													drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * F.area[i_face][i_dim] * Phase_Dict[i_phase].time_step / 
-												
-														(double)Solver_Dict.number_of_drift_loops;
-												}
-												
-												/* flip cells, such that flux is from c0 to c1 */
-												if(drift_volume < 0.0){
-													
-													c = c0; c0 = c1; c1 = c;
-													
-													i_frame = i_frame_c0; i_frame_c0 = i_frame_c1; i_frame_c1 = i_frame;
-													
-													local_mass = local_mass_c0; local_mass_c0 = local_mass_c1; local_mass_c1 = local_mass;
-													
-													drift_volume *= -1.0;
-												}
-																																			
-												drift_mass = C.data[i_phase][c0][i_data] * drift_volume * C.vof[i_frame_c0][c0][i_phase] * Phase_Dict[i_phase].density;
-													
-												C.drift_exchange[c0] -= drift_mass; 
-												C.drift_exchange[c1] += drift_mass;     
-											}                                           
-										}                               
-									}
-									
-									/* parallel exchange of drift_mass */
-									{
-										sum_up_parallel_corona_cells(&Solver_Dict, &Topo_Dict, C.drift_exchange, i_layer); 
-									}
-									
-									/* adjust data by C.drift_exchange */
-									loop_cells{
+                                        C.drift_exchange[i_cell] = 0.0;
+                                    }
+                                    
+                                    /* set C.drift_exchange */
+                                    loop_faces{
+                                        
+                                        if(valid_parallel_face){
+                                            
+                                            c0 = F.c0[i_face];
+                                            c1 = F.c1[i_face];
+                                            
+                                            i_frame_c0 = Rec.global_frame[C.island_id[c0]]; 
+                                            i_frame_c1 = Rec.global_frame[C.island_id[c1]]; 
+                                            
+                                            local_mass_c0 = C.volume[c0] * C.vof[i_frame_c0][c0][i_phase] * Phase_Dict[i_phase].density;
+                                            local_mass_c1 = C.volume[c1] * C.vof[i_frame_c1][c1][i_phase] * Phase_Dict[i_phase].density;
+                                                
+                                            /* don't drift across interfaces */
+                                            if(local_mass_c0 * local_mass_c1 > 0.0){
+                                                
+                                                drift_volume = 0.0;
+                                                
+                                                loop_dim{
+                                                    
+                                                    drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * F.area[i_face][i_dim] * Phase_Dict[i_phase].time_step / 
+                                                
+                                                        (double)Solver_Dict.number_of_drift_loops;
+                                                }
+                                                
+                                                /* flip cells, such that flux is from c0 to c1 */
+                                                if(drift_volume < 0.0){
+                                                    
+                                                    c = c0; c0 = c1; c1 = c;
+                                                    
+                                                    i_frame = i_frame_c0; i_frame_c0 = i_frame_c1; i_frame_c1 = i_frame;
+                                                    
+                                                    local_mass = local_mass_c0; local_mass_c0 = local_mass_c1; local_mass_c1 = local_mass;
+                                                    
+                                                    drift_volume *= -1.0;
+                                                }
+                                                                                                                                            
+                                                drift_mass = C.data[i_phase][c0][i_data] * drift_volume * C.vof[i_frame_c0][c0][i_phase] * Phase_Dict[i_phase].density;
+                                                    
+                                                C.drift_exchange[c0] -= drift_mass; 
+                                                C.drift_exchange[c1] += drift_mass;     
+                                            }                                           
+                                        }                               
+                                    }
+                                    
+                                    /* parallel exchange of drift_mass */
+                                    {
+                                        sum_up_parallel_corona_cells(&Solver_Dict, &Topo_Dict, C.drift_exchange, i_layer); 
+                                    }
+                                    
+                                    /* adjust data by C.drift_exchange */
+                                    loop_cells{
 
-										i_frame = Rec.global_frame[C.island_id[i_cell]];        
-										
-										local_mass = C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase] * Phase_Dict[i_phase].density;
+                                        i_frame = Rec.global_frame[C.island_id[i_cell]];        
+                                        
+                                        local_mass = C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase] * Phase_Dict[i_phase].density;
 
-										if(local_mass > 0.0){
-											
-											C.data[i_phase][i_cell][i_data] = ((C.data[i_phase][i_cell][i_data] * local_mass) + C.drift_exchange[i_cell]) / 
-											
-												local_mass;
-										}
-									}
-								}
-							}
-						}
+                                        if(local_mass > 0.0){
+                                            
+                                            C.data[i_phase][i_cell][i_data] = ((C.data[i_phase][i_cell][i_data] * local_mass) + C.drift_exchange[i_cell]) / 
+                                            
+                                                local_mass;
+                                        }
+                                    }
+                                }
+                            }
+                        }
 #endif              
-					}
+                    }
 
-					/* D.2 Physical diffusion */
-					if(Solver_Dict.face_diffusion_on){
+                    /* D.2 Physical diffusion */
+                    if(Solver_Dict.face_diffusion_on){
 #if RP_NODE                     
-						/* TODO: allow for more diff. loops, account for heterogeneous diffusion */
-						
-						/* Init data_swap */
-						loop_cells{
-							
-							loop_data{
-								
-								C.data_swap[i_phase][i_cell][i_data] = 0.0;
-							}           
-						}   
+                        /* TODO: allow for more diff. loops, account for heterogeneous diffusion */
+                        
+                        /* Init data_swap */
+                        loop_cells{
+                            
+                            loop_data{
+                                
+                                C.data_swap[i_phase][i_cell][i_data] = 0.0;
+                            }           
+                        }   
 
-						/* define swap masses */
-						loop_faces{
+                        /* define swap masses */
+                        loop_faces{
 
-							c0 = F.c0[i_face];
-							c1 = F.c1[i_face];
-							
-							loop_data{
-								
-								if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
-									
-									c = c0; c0 = c1; c1 = c;
-								}
-							  
-								if(C.data[i_phase][c1][i_data] > C.data[i_phase][c0][i_data]){
-									
-									if(C.volume[c0] < C.volume[c1]){
-										
-										vol_flip = C.volume[c0] * Data_Dict[i_phase][i_data].physical_diff;
-									}
-									else{
-										vol_flip = C.volume[c1] * Data_Dict[i_phase][i_data].physical_diff;
-									}
-									
-									C.data_swap[i_phase][c1][i_data] -= vol_flip * 
-									
-										(C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                            c0 = F.c0[i_face];
+                            c1 = F.c1[i_face];
+                            
+                            loop_data{
+                                
+                                if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
+                                    
+                                    c = c0; c0 = c1; c1 = c;
+                                }
+                              
+                                if(C.data[i_phase][c1][i_data] > C.data[i_phase][c0][i_data]){
+                                    
+                                    if(C.volume[c0] < C.volume[c1]){
+                                        
+                                        vol_flip = C.volume[c0] * Data_Dict[i_phase][i_data].physical_diff;
+                                    }
+                                    else{
+                                        vol_flip = C.volume[c1] * Data_Dict[i_phase][i_data].physical_diff;
+                                    }
+                                    
+                                    C.data_swap[i_phase][c1][i_data] -= vol_flip * 
+                                    
+                                        (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
 
-									C.data_swap[i_phase][c0][i_data] += vol_flip * 
-									
-										(C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
-								}
-							}   
-						}
-			
-						/* update data by data_swap */
-						loop_cells{
-							
-							loop_data{
-					  
-								C.data[i_phase][i_cell][i_data] += C.data_swap[i_phase][i_cell][i_data] / C.volume[i_cell];
+                                    C.data_swap[i_phase][c0][i_data] += vol_flip * 
+                                    
+                                        (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                }
+                            }   
+                        }
+            
+                        /* update data by data_swap */
+                        loop_cells{
+                            
+                            loop_data{
+                      
+                                C.data[i_phase][i_cell][i_data] += C.data_swap[i_phase][i_cell][i_data] / C.volume[i_cell];
 
-								C.data_swap[i_phase][i_cell][i_data] = 0.0;
-							}
-						}                                           
+                                C.data_swap[i_phase][i_cell][i_data] = 0.0;
+                            }
+                        }                                           
 #endif  
-					}
-					
-					/* D.3 Binarization */
-					if(Solver_Dict.data_binarization_on){
+                    }
+                    
+                    /* D.3 Binarization */
+                    if(Solver_Dict.data_binarization_on){
 #if RP_NODE         
-						/* data as outer loop, because it is unlikely that many data get binarized */
-						loop_data{
+                        /* data as outer loop, because it is unlikely that many data get binarized */
+                        loop_data{
 
-							if(Data_Dict[i_phase][i_data].type == binary_data){
-							
-								/* Init data_swap */
-								loop_cells{
+                            if(Data_Dict[i_phase][i_data].type == binary_data){
+                            
+                                /* Init data_swap */
+                                loop_cells{
 
-									C.data_swap[i_phase][i_cell][i_data] = 0.0;
-								}   
+                                    C.data_swap[i_phase][i_cell][i_data] = 0.0;
+                                }   
 
-								/* Artificial Diffusion (mass neutral) */
-								loop_faces{
+                                /* Artificial Diffusion (mass neutral) */
+                                loop_faces{
 
-									c0 = F.c0[i_face];
-									c1 = F.c1[i_face];
-										
-									if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
-										
-										c = c0; c0 = c1; c1 = c;
-									}
-								  
-									if(C.data[i_phase][c1][i_data] > C.data[i_phase][c0][i_data]){
-										
-										if(C.volume[c0] < C.volume[c1]){
-											
-											vol_flip = C.volume[c0] * Data_Dict[i_phase][i_data].binarization_art_diff;
-										}
-										else{
-											vol_flip = C.volume[c1] * Data_Dict[i_phase][i_data].binarization_art_diff;
-										}
-										
-										C.data_swap[i_phase][c1][i_data] -= vol_flip * 
-										
-											(C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                    c0 = F.c0[i_face];
+                                    c1 = F.c1[i_face];
+                                        
+                                    if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
+                                        
+                                        c = c0; c0 = c1; c1 = c;
+                                    }
+                                  
+                                    if(C.data[i_phase][c1][i_data] > C.data[i_phase][c0][i_data]){
+                                        
+                                        if(C.volume[c0] < C.volume[c1]){
+                                            
+                                            vol_flip = C.volume[c0] * Data_Dict[i_phase][i_data].binarization_art_diff;
+                                        }
+                                        else{
+                                            vol_flip = C.volume[c1] * Data_Dict[i_phase][i_data].binarization_art_diff;
+                                        }
+                                        
+                                        C.data_swap[i_phase][c1][i_data] -= vol_flip * 
+                                        
+                                            (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
 
-										C.data_swap[i_phase][c0][i_data] += vol_flip * 
-										
-											(C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
-									}
-								}   
-								
-								/* Binarization (mass acting) */
-								loop_cells{
+                                        C.data_swap[i_phase][c0][i_data] += vol_flip * 
+                                        
+                                            (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                    }
+                                }   
+                                
+                                /* Binarization (mass acting) */
+                                loop_cells{
 
-									if(C.data[i_phase][i_cell][i_data] > 0.5){
-											
-										C.data[i_phase][i_cell][i_data] = 1.0;
-									}
-									else{ 
-										
-										C.data[i_phase][i_cell][i_data] = 0.0;
-									}   
-								}
-							}           
-						}       
+                                    if(C.data[i_phase][i_cell][i_data] > 0.5){
+                                            
+                                        C.data[i_phase][i_cell][i_data] = 1.0;
+                                    }
+                                    else{ 
+                                        
+                                        C.data[i_phase][i_cell][i_data] = 0.0;
+                                    }   
+                                }
+                            }           
+                        }       
 #endif          
-					}       
-				}
-				
-				/* AD2: Access data after swap */
-				{
+                    }       
+                }
+                
+                /* AD2: Access data after swap */
+                {
 #if RP_NODE                 
-					rCFD_user_access_data_after_swap(Balance, Phase_Dict, Data_Dict, &Topo_Dict, &C, i_phase, i_layer); 
+                    rCFD_user_access_data_after_swap(Balance, Phase_Dict, Data_Dict, &Topo_Dict, &C, i_phase, i_layer); 
 #endif              
-				}
-				
-				/* Balance correction */
-				{
-					
-					/* Update balances */
-					{
-											
-						/* B1: mass_integral, mass_integral_global */
-						{
-	#if RP_NODE                     
-							loop_data{
+                }
+                
+                /* Balance correction */
+                {
+                    
+                    /* Update balances */
+                    {
+                                            
+                        /* B1: mass_integral, mass_integral_global */
+                        {
+    #if RP_NODE                     
+                            loop_data{
 
-								Balance[i_phase][i_data].mass_integral = 0.0;
-							}               
-								
-							loop_int_cells{
-							
-								i_frame = Rec.global_frame[C.island_id[i_cell]];
-								
-								loop_data{
-									
-									if(Data_Dict[i_phase][i_data].type == temperature_data){
-										
-										Balance[i_phase][i_data].mass_integral += (C.data[i_phase][i_cell][i_data] - Phase_Dict[i_phase].reference_temperature) * 
-										
-											C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity;
-									}
-									else{
-										
-										Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data] * 
-										
-											C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase] * Phase_Dict[i_phase].density;
-									}
-								}
-							}
-														
-							loop_data{
-								
-								Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral); 
-							}
-	#endif                      
-						}
+                                Balance[i_phase][i_data].mass_integral = 0.0;
+                            }               
+                                
+                            loop_int_cells{
+                            
+                                i_frame = Rec.global_frame[C.island_id[i_cell]];
+                                
+                                loop_data{
+                                    
+                                    if(Data_Dict[i_phase][i_data].type == temperature_data){
+                                        
+                                        Balance[i_phase][i_data].mass_integral += (C.data[i_phase][i_cell][i_data] - Phase_Dict[i_phase].reference_temperature) * 
+                                        
+                                            C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity;
+                                    }
+                                    else{
+                                        
+                                        Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data] * 
+                                        
+                                            C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase] * Phase_Dict[i_phase].density;
+                                    }
+                                }
+                            }
+                                                        
+                            loop_data{
+                                
+                                Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral); 
+                            }
+    #endif                      
+                        }
 
-						/* B2: data_int_target += sources */
-						{
-	#if RP_NODE
-							loop_data{ 
-								
-								Balance[i_phase][i_data].mass_integral_target += Balance[i_phase][i_data].mass_source;
-								
-								Balance[i_phase][i_data].mass_integral_target_global += PRF_GRSUM1(Balance[i_phase][i_data].mass_source);
-								
-								Balance[i_phase][i_data].mass_source = 0.0;
-							}
-	#endif                      
-						}
-						
-						/* B3: mass_integral_target += node2node fluxes */
-						{
-	#if RP_NODE         
-							loop_data{
-								
-								if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
-										
-									/* ToDo efficiency of multiple MPI comm ? */
-									for(i_node = 0; i_node < (node_last + 1); i_node++){
-										
-										for(i_node2 = 0; i_node2 < (node_last + 1); i_node2++){
-											
-											Balance[i_phase][i_data].node2node_flux[i_node][i_node2] = 
-												
-												PRF_GRSUM1(Balance[i_phase][i_data].node2node_flux[i_node][i_node2]);
+                        /* B2: data_int_target += sources */
+                        {
+    #if RP_NODE
+                            loop_data{ 
+                                
+                                Balance[i_phase][i_data].mass_integral_target += Balance[i_phase][i_data].mass_source;
+                                
+                                Balance[i_phase][i_data].mass_integral_target_global += PRF_GRSUM1(Balance[i_phase][i_data].mass_source);
+                                
+                                Balance[i_phase][i_data].mass_source = 0.0;
+                            }
+    #endif                      
+                        }
+                        
+                        /* B3: mass_integral_target += node2node fluxes */
+                        {
+    #if RP_NODE         
+                            loop_data{
+                                
+                                if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
+                                        
+                                    /* ToDo efficiency of multiple MPI comm ? */
+                                    for(i_node = 0; i_node < (node_last + 1); i_node++){
+                                        
+                                        for(i_node2 = 0; i_node2 < (node_last + 1); i_node2++){
+                                            
+                                            Balance[i_phase][i_data].node2node_flux[i_node][i_node2] = 
+                                                
+                                                PRF_GRSUM1(Balance[i_phase][i_data].node2node_flux[i_node][i_node2]);
 
-											Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2] = 
-												
-												PRF_GRSUM1(Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2]);
-										}
-									}
-									
-									flux_in = 0.0; flux_out = 0.0;
-									
-									data_in_mean = 0.0; data_out_mean = 0.0;
+                                            Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2] = 
+                                                
+                                                PRF_GRSUM1(Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2]);
+                                        }
+                                    }
+                                    
+                                    flux_in = 0.0; flux_out = 0.0;
+                                    
+                                    data_in_mean = 0.0; data_out_mean = 0.0;
 
-									for(i_node = 0; i_node < (node_last + 1); i_node++){
-									
-										flux_in += Balance[i_phase][i_data].node2node_flux[i_node][myid];
-										data_in_mean += Balance[i_phase][i_data].node2node_data_flux[i_node][myid];
+                                    for(i_node = 0; i_node < (node_last + 1); i_node++){
+                                    
+                                        flux_in += Balance[i_phase][i_data].node2node_flux[i_node][myid];
+                                        data_in_mean += Balance[i_phase][i_data].node2node_data_flux[i_node][myid];
 
-										flux_out += Balance[i_phase][i_data].node2node_flux[myid][i_node];
-										data_out_mean += Balance[i_phase][i_data].node2node_data_flux[myid][i_node];
-									}
-									
-									if(flux_in > 0.0){
-										
-										data_in_mean /= flux_in;
-									}
-									
-									if(flux_out > 0.0){
-										
-										data_out_mean /= flux_out;
-									}
-									
+                                        flux_out += Balance[i_phase][i_data].node2node_flux[myid][i_node];
+                                        data_out_mean += Balance[i_phase][i_data].node2node_data_flux[myid][i_node];
+                                    }
+                                    
+                                    if(flux_in > 0.0){
+                                        
+                                        data_in_mean /= flux_in;
+                                    }
+                                    
+                                    if(flux_out > 0.0){
+                                        
+                                        data_out_mean /= flux_out;
+                                    }
+                                    
 
-									flux_mean = (flux_in + flux_out) / 2.;
-									
-									Balance[i_phase][i_data].mass_integral_target += flux_mean * (data_in_mean - data_out_mean);
-									
-									/* ToDo: check that sum of local balances fulfill global balance */
-								}
-							}
-	#endif                      
-						}
+                                    flux_mean = (flux_in + flux_out) / 2.;
+                                    
+                                    Balance[i_phase][i_data].mass_integral_target += flux_mean * (data_in_mean - data_out_mean);
+                                    
+                                    /* ToDo: check that sum of local balances fulfill global balance */
+                                }
+                            }
+    #endif                      
+                        }
 
-						/* B4: mass_integral, mass_integral_target */
-						{
-	#if RP_NODE
-							loop_data{ 
-							
-								if(Balance_Dict[i_phase][i_data].type == global_balancing){
-									
-									Balance[i_phase][i_data].mass_integral = Balance[i_phase][i_data].mass_integral_global;
-									
-									Balance[i_phase][i_data].mass_integral_target = Balance[i_phase][i_data].mass_integral_target_global;
-								}
-							}
-	#endif                      
-						}
+                        /* B4: mass_integral, mass_integral_target */
+                        {
+    #if RP_NODE
+                            loop_data{ 
+                            
+                                if(Balance_Dict[i_phase][i_data].type == global_balancing){
+                                    
+                                    Balance[i_phase][i_data].mass_integral = Balance[i_phase][i_data].mass_integral_global;
+                                    
+                                    Balance[i_phase][i_data].mass_integral_target = Balance[i_phase][i_data].mass_integral_target_global;
+                                }
+                            }
+    #endif                      
+                        }
 
-						/* B5:  data_int_error  */
-						{
-	#if RP_NODE                     
-							if(Solver.global_run_counter == 0){
-								
-								loop_data{       
-									
-									Balance[i_phase][i_data].mass_error =       
-									
-										Balance[i_phase][i_data].mass_integral_target - Balance[i_phase][i_data].mass_integral;
-									
-									Balance[i_phase][i_data].mass_error_prev = Balance[i_phase][i_data].mass_error;                             
-								}
-							}               
-							else{
-								
-								loop_data{
-									
-									Balance[i_phase][i_data].mass_error_prev = Balance[i_phase][i_data].mass_error;                             
+                        /* B5:  data_int_error  */
+                        {
+    #if RP_NODE                     
+                            if(Solver.global_run_counter == 0){
+                                
+                                loop_data{       
+                                    
+                                    Balance[i_phase][i_data].mass_error =       
+                                    
+                                        Balance[i_phase][i_data].mass_integral_target - Balance[i_phase][i_data].mass_integral;
+                                    
+                                    Balance[i_phase][i_data].mass_error_prev = Balance[i_phase][i_data].mass_error;                             
+                                }
+                            }               
+                            else{
+                                
+                                loop_data{
+                                    
+                                    Balance[i_phase][i_data].mass_error_prev = Balance[i_phase][i_data].mass_error;                             
 
-									Balance[i_phase][i_data].mass_error =       
-									
-										Balance[i_phase][i_data].mass_integral_target - Balance[i_phase][i_data].mass_integral;
-								} 
-							}   
-	#endif                      
-						}
+                                    Balance[i_phase][i_data].mass_error =       
+                                    
+                                        Balance[i_phase][i_data].mass_integral_target - Balance[i_phase][i_data].mass_integral;
+                                } 
+                            }   
+    #endif                      
+                        }
 
-						/* B6. Balance_face_swap */
-						{
-	#if RP_NODE                     
-							if((i_run % Solver_Dict.balance_correction_update) == 0){
-							
-								loop_data{
+                        /* B6. Balance_face_swap */
+                        {
+    #if RP_NODE                     
+                            if((i_run % Solver_Dict.balance_correction_update) == 0){
+                            
+                                loop_data{
 
-									/* smaller balance correction */
-									if((Balance[i_phase][i_data].mass_error_prev * Balance[i_phase][i_data].mass_error) <= 0.){ 
-								 
-										Balance[i_phase][i_data].face_swap /= 2.;
-										
-										if(Balance[i_phase][i_data].face_swap < Solver_Dict.face_swap_min){ 
-											
-											Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_min;
-										}
-										
-										if(Balance[i_phase][i_data].face_swap_loops > 1){
-											
-											Balance[i_phase][i_data].face_swap_loops /= 2.;
-										}
-									}
-									/* larger balance correction */
-									else{
-											
-										if(Balance[i_phase][i_data].face_swap >= Solver_Dict.face_swap_max_per_loop){
-											
-											Balance[i_phase][i_data].face_swap_loops *= 2.;
-										}
-										
-										Balance[i_phase][i_data].face_swap *= 2.;
-										
-										if(Balance[i_phase][i_data].face_swap > Solver_Dict.face_swap_max_per_loop){ 
-								
-											Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_max_per_loop;
-										}
+                                    /* smaller balance correction */
+                                    if((Balance[i_phase][i_data].mass_error_prev * Balance[i_phase][i_data].mass_error) <= 0.){ 
+                                 
+                                        Balance[i_phase][i_data].face_swap /= 2.;
+                                        
+                                        if(Balance[i_phase][i_data].face_swap < Solver_Dict.face_swap_min){ 
+                                            
+                                            Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_min;
+                                        }
+                                        
+                                        if(Balance[i_phase][i_data].face_swap_loops > 1){
+                                            
+                                            Balance[i_phase][i_data].face_swap_loops /= 2.;
+                                        }
+                                    }
+                                    /* larger balance correction */
+                                    else{
+                                            
+                                        if(Balance[i_phase][i_data].face_swap >= Solver_Dict.face_swap_max_per_loop){
+                                            
+                                            Balance[i_phase][i_data].face_swap_loops *= 2.;
+                                        }
+                                        
+                                        Balance[i_phase][i_data].face_swap *= 2.;
+                                        
+                                        if(Balance[i_phase][i_data].face_swap > Solver_Dict.face_swap_max_per_loop){ 
+                                
+                                            Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_max_per_loop;
+                                        }
 
-										if(Balance[i_phase][i_data].face_swap_loops > Solver_Dict.face_swap_max_loops){ 
-								
-											Balance[i_phase][i_data].face_swap_loops = Solver_Dict.face_swap_max_loops;
-										}
-									}   
-								}                           
-							}
-	#endif                      
-						}
+                                        if(Balance[i_phase][i_data].face_swap_loops > Solver_Dict.face_swap_max_loops){ 
+                                
+                                            Balance[i_phase][i_data].face_swap_loops = Solver_Dict.face_swap_max_loops;
+                                        }
+                                    }   
+                                }                           
+                            }
+    #endif                      
+                        }
 
-						/* B7. write global Balance (node-0) */
-						{
-	#if RP_NODE                     
-							if(myid == 0){
-								
-								loop_data{
-									
-									if( (Balance_Dict[i_phase][i_data].write_balance_to_file) &&
-										((Solver.global_run_counter % Balance_Dict[i_phase][i_data].write_balance_to_file_interval) == 0)){
-										
-										if((Solver.global_run_counter == 0) && (i_phase == 0) && (i_data == 0)){
+                        /* B7. write global Balance (node-0) */
+                        {
+    #if RP_NODE                     
+                            if(myid == 0){
+                                
+                                loop_data{
+                                    
+                                    if( (Balance_Dict[i_phase][i_data].write_balance_to_file) &&
+                                        ((Solver.global_run_counter % Balance_Dict[i_phase][i_data].write_balance_to_file_interval) == 0)){
+                                        
+                                        if((Solver.global_run_counter == 0) && (i_phase == 0) && (i_data == 0)){
 
-											f_out = fopen(File_Dict.Balance_filename, "w");                                     
-										}
-										else{
-											f_out = fopen(File_Dict.Balance_filename, "a");
-										}
-										
-										if(f_out){
-										
-											fprintf(f_out, "%d, %d, %d, %e, %e\n", Solver.global_run_counter, i_phase, i_data, 
-												
-												Balance[i_phase][i_data].mass_integral_global, Balance[i_phase][i_data].mass_integral_target_global);
-												
-											fclose(f_out);
-										}
-									}
-								}
-							}
-	#endif
-						}
-					}
-					
-					/* Balance correction by face swaps */
-					if(Solver_Dict.balance_correction_on){  
-	#if RP_NODE 
-						if((i_run % Solver_Dict.balance_correction_update) == 0){
+                                            f_out = fopen(File_Dict.Balance_filename, "w");                                     
+                                        }
+                                        else{
+                                            f_out = fopen(File_Dict.Balance_filename, "a");
+                                        }
+                                        
+                                        if(f_out){
+                                        
+                                            fprintf(f_out, "%d, %d, %d, %e, %e\n", Solver.global_run_counter, i_phase, i_data, 
+                                                
+                                                Balance[i_phase][i_data].mass_integral_global, Balance[i_phase][i_data].mass_integral_target_global);
+                                                
+                                            fclose(f_out);
+                                        }
+                                    }
+                                }
+                            }
+    #endif
+                        }
+                    }
+                    
+                    /* Balance correction by face swaps */
+                    if(Solver_Dict.balance_correction_on){  
+    #if RP_NODE 
+                        if((i_run % Solver_Dict.balance_correction_update) == 0){
 
-							/* max_swap_loops */
-							{
-								max_swap_loops = 1.0;   
-								
-								loop_data{
-									
-									if(Balance[i_phase][i_data].face_swap_loops > max_swap_loops){
-										
-										max_swap_loops = Balance[i_phase][i_data].face_swap_loops;
-									}
-								}
-							}
-							
-							
-							/* loop_swap (based on max_swap_loops) */
-							loop_max_swap_loops{
-								
-								/* init data_swap */
-								loop_cells{
-									
-									loop_data{
-										
-										if(Balance[i_phase][i_data].face_swap_loops >= i_swap){
-											
-											C.data_swap[i_phase][i_cell][i_data] = 0.0;
-										}
-									}           
-								}   
-								
-								/* loop faces and fill data_swap */ 
-								loop_faces{
+                            /* max_swap_loops */
+                            {
+                                max_swap_loops = 1.0;   
+                                
+                                loop_data{
+                                    
+                                    if(Balance[i_phase][i_data].face_swap_loops > max_swap_loops){
+                                        
+                                        max_swap_loops = Balance[i_phase][i_data].face_swap_loops;
+                                    }
+                                }
+                            }
+                            
+                            
+                            /* loop_swap (based on max_swap_loops) */
+                            loop_max_swap_loops{
+                                
+                                /* init data_swap */
+                                loop_cells{
+                                    
+                                    loop_data{
+                                        
+                                        if(Balance[i_phase][i_data].face_swap_loops >= i_swap){
+                                            
+                                            C.data_swap[i_phase][i_cell][i_data] = 0.0;
+                                        }
+                                    }           
+                                }   
+                                
+                                /* loop faces and fill data_swap */ 
+                                loop_faces{
 
-									c0 = F.c0[i_face];
-									c1 = F.c1[i_face];
-									
-									loop_data{
-										
-										if(Balance[i_phase][i_data].face_swap_loops >= i_swap){
-											
-											if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
-												
-												c = c0; c0 = c1; c1 = c;
-											}
-										  
-											if(C.data[i_phase][c1][i_data] > C.data[i_phase][c0][i_data]){
-												
-												if(C.volume[c0] < C.volume[c1]){
-													
-													vol_flip = C.volume[c0] * Balance[i_phase][i_data].face_swap;
-												}
-												else{
-													vol_flip = C.volume[c1] * Balance[i_phase][i_data].face_swap;
-												}
-												
-												if(Balance[i_phase][i_data].mass_integral > Balance[i_phase][i_data].mass_integral_target){
-													
-													C.data_swap[i_phase][c1][i_data] -= vol_flip * 
-												
-														(C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
-												}
-												else{
+                                    c0 = F.c0[i_face];
+                                    c1 = F.c1[i_face];
+                                    
+                                    loop_data{
+                                        
+                                        if(Balance[i_phase][i_data].face_swap_loops >= i_swap){
+                                            
+                                            if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
+                                                
+                                                c = c0; c0 = c1; c1 = c;
+                                            }
+                                          
+                                            if(C.data[i_phase][c1][i_data] > C.data[i_phase][c0][i_data]){
+                                                
+                                                if(C.volume[c0] < C.volume[c1]){
+                                                    
+                                                    vol_flip = C.volume[c0] * Balance[i_phase][i_data].face_swap;
+                                                }
+                                                else{
+                                                    vol_flip = C.volume[c1] * Balance[i_phase][i_data].face_swap;
+                                                }
+                                                
+                                                if(Balance[i_phase][i_data].mass_integral > Balance[i_phase][i_data].mass_integral_target){
+                                                    
+                                                    C.data_swap[i_phase][c1][i_data] -= vol_flip * 
+                                                
+                                                        (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                                }
+                                                else{
 
-													C.data_swap[i_phase][c0][i_data] += vol_flip * 
-													
-														(C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
-												}
-											}
-										}
-									}   
-								}
-								
-								/* update data by data_swap */
-								loop_cells{
-									
-									loop_data{
-										
-										if(Balance[i_phase][i_data].face_swap_loops >= i_swap){
-										
-											C.data[i_phase][i_cell][i_data] += C.data_swap[i_phase][i_cell][i_data] / C.volume[i_cell];
-										}
-									}
-									
-								}                               
-							}
-						}           
-	#endif                  
-					}           
+                                                    C.data_swap[i_phase][c0][i_data] += vol_flip * 
+                                                    
+                                                        (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                                }
+                                            }
+                                        }
+                                    }   
+                                }
+                                
+                                /* update data by data_swap */
+                                loop_cells{
+                                    
+                                    loop_data{
+                                        
+                                        if(Balance[i_phase][i_data].face_swap_loops >= i_swap){
+                                        
+                                            C.data[i_phase][i_cell][i_data] += C.data_swap[i_phase][i_cell][i_data] / C.volume[i_cell];
+                                        }
+                                    }
+                                    
+                                }                               
+                            }
+                        }           
+    #endif                  
+                    }           
 
-					/* Adjust conc. data, such that sum(conc) = 1 */
-					if(Solver_Dict.control_conc_sum_on){
-	#if RP_NODE 								
-						loop_cells{
-			
-							sum_of_conc = 0.0;
-			
-							loop_data{
-							
-								if(Data_Dict[i_phase][i_data].type == concentration_data){
-									
-									sum_of_conc += C.data[i_phase][i_cell][i_data];
-								}
-							}
-			
-							loop_data{
-								
-								if(Data_Dict[i_phase][i_data].type == concentration_data){
-									
-									if(sum_of_conc > 0.0){
-										
-										C.data[i_phase][i_cell][i_data] /= sum_of_conc;
-									}
-								}
-							}
-						}
-	#endif						
-					}
-					
-				}
-			
-			} /* loop_layers */
-			
+                    /* Adjust conc. data, such that sum(conc) = 1 */
+                    if(Solver_Dict.control_conc_sum_on){
+    #if RP_NODE                                 
+                        loop_cells{
+            
+                            sum_of_conc = 0.0;
+            
+                            loop_data{
+                            
+                                if(Data_Dict[i_phase][i_data].type == concentration_data){
+                                    
+                                    sum_of_conc += C.data[i_phase][i_cell][i_data];
+                                }
+                            }
+            
+                            loop_data{
+                                
+                                if(Data_Dict[i_phase][i_data].type == concentration_data){
+                                    
+                                    if(sum_of_conc > 0.0){
+                                        
+                                        C.data[i_phase][i_cell][i_data] /= sum_of_conc;
+                                    }
+                                }
+                            }
+                        }
+    #endif                      
+                    }
+                    
+                }
+            
+            } /* loop_layers */
+            
         }   /* loop_phases */
         
         Solver.global_run_counter++;    

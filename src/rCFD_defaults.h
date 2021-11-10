@@ -93,29 +93,27 @@
         /* Node-0 generates folder structure */
         if(myid == 0){
             
-            if( (mkdir("./DATA",0777) != 0) ||
-                (mkdir("./DATA/TMP",0777) != 0) ||
-                (mkdir("./REC",0777) != 0) ||
-                (mkdir("./DICT",0777) != 0) ||
-                (mkdir("./POST",0777) != 0) ){
+            if( (mkdir("./data",0777) != 0) ||
+                (mkdir("./data/tmp",0777) != 0) ||
+                (mkdir("./data/c2c",0777) != 0) ||
+                (mkdir("./rec",0777) != 0) ||
+                (mkdir("./post",0777) != 0) ){
                 
                 /*Message0("\nERROR rCFD_default_File_Dict");*/
             }
         }
         
-        File_Dict->tracer_start_position_filename   =   "./DATA/TMP/Tracer_start_pos.inj";
+        File_Dict->tracer_start_position_filename   =   "./data/tmp/Tracer_start_pos.inj";
         
-        File_Dict->C2C_filename =                       "./DATA/C2C/C2C";
+        File_Dict->C2C_filename =                       "./data/c2c/C2C";
         
-        File_Dict->Norm_filename =                      "./DATA/TMP/Norm";
+        File_Dict->Norm_filename =                      "./data/tmp/Norm";
         
-        File_Dict->Jump_filename =                      "./REC/Jump";
+        File_Dict->Jump_filename =                      "./rec/Jump";
 
-        File_Dict->Matrix_filename =                    "./REC/Matrix";
+        File_Dict->Matrix_filename =                    "./rec/Matrix";
 
-        File_Dict->Balance_filename =                   "./POST/Balance_monitor.out";       
-        
-        File_Dict->Dict_filename =                      "./DICT/Dict_protocol";
+        File_Dict->Balance_filename =                   "./post/Balance_monitor.out";       
     }
     
     void rCFD_default_Phase_Dict(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict)
@@ -543,7 +541,7 @@
                 
                 fprintf(f_out,"\n\nrCFD_default_Rec");
             
-                fprintf(f_out,"\n\n   Read %d jump files from %s", number_of_jump_files, File_Dict->Jump_filename);
+                fprintf(f_out,"\n\n   Read %d jump files from %s\n", number_of_jump_files, File_Dict->Jump_filename);
 
                 fclose(f_out);
             }

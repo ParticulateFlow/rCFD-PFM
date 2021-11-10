@@ -103,17 +103,17 @@
             }
         }
         
-        File_Dict->tracer_start_position_filename   =   "./data/tmp/Tracer_start_pos.inj";
+        File_Dict->tracer_start_position_filename   =   "./data/tmp/tracer_start_pos.inj";
         
-        File_Dict->C2C_filename =                       "./data/c2c/C2C";
+        File_Dict->C2C_filename =                       "./data/c2c/c2c";
         
-        File_Dict->Norm_filename =                      "./data/tmp/Norm";
+        File_Dict->Norm_filename =                      "./data/tmp/norm";
         
-        File_Dict->Jump_filename =                      "./rec/Jump";
+        File_Dict->Jump_filename =                      "./rec/jump";
 
-        File_Dict->Matrix_filename =                    "./rec/Matrix";
+        File_Dict->Matrix_filename =                    "./rec/matrix";
 
-        File_Dict->Balance_filename =                   "./post/Balance_monitor.out";       
+        File_Dict->Balance_filename =                   "./post/balance_monitor.out";       
     }
     
     void rCFD_default_Phase_Dict(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict)

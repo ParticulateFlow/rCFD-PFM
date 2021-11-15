@@ -50,6 +50,8 @@
     void rCFD_user_set_Solver_Dict(Solver_Dict_type *Solver_Dict)
     {
         Solver_Dict->max_number_of_cells_per_time_step =    30;
+
+        Solver_Dict->global_time_step =                     0.02;   
         
         Solver_Dict->number_of_frames =                     10;         
 
@@ -73,7 +75,7 @@
                 
                 Phase_Dict[i_phase].number_of_data = 6;
 
-                Phase_Dict[i_phase].time_step = 0.02;
+                Phase_Dict[i_phase].time_step = Solver_Dict->global_time_step;
                 
                 Phase_Dict[i_phase].density = 1000.0;
 

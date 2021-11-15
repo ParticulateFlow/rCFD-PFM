@@ -533,6 +533,8 @@
             }
         }
         
+        host_to_node_int_1(number_of_jump_files);
+        
         if(Transcript){
 
             FILE    *f_out = fopen("./Run.trn", "a");
@@ -547,9 +549,13 @@
             }
         
         }
-        
-        Message0("\n\n...rCFD_default_Rec -> Read %d jump files from %s", 
+
+#if RP_HOST     
+        if(number_of_jump_files > 0){
             
-            number_of_jump_files, File_Dict->Jump_filename);
+            Message("\n\n...rCFD_default_Rec -> Read %d jump files from %s", number_of_jump_files, File_Dict->Jump_filename);
+        }
+#endif      
+
     }
 #endif  

@@ -20,7 +20,7 @@
 
 /* Contents:
   
-    rCFD_init_Solver
+    rCFD_init_all
     
     rCFD_analyse_CFD
     
@@ -65,439 +65,12 @@ DEFINE_ON_DEMAND(rCFD_init_all)
 /*************************************************************************************/
 {
     init_all();
-#if 0   
-    /* D1. Solver_Dict & Solver */
-    {
-        rCFD_default_Solver_Dict(&Solver_Dict);
-        
-        rCFD_user_set_Solver_Dict(&Solver_Dict);
-        
-#if RP_NODE     
-        rCFD_default_Solver(&Solver);
-#endif      
-    }
-
-    /* D2. File_Dict */
-    {
-        rCFD_default_File_Dict(&Solver_Dict, &File_Dict);
-        
-        rCFD_user_set_File_Dict(&Solver_Dict, &File_Dict);
-    }
-
-    /* D3. Phase_Dict */
-    {
-#if RP_NODE     
-        Phase_Dict = (Phase_Dict_type*)malloc(Solver_Dict.number_of_phases * sizeof(Phase_Dict_type));
-        
-        rCFD_default_Phase_Dict(&Solver_Dict, Phase_Dict);
-        
-        rCFD_user_set_Phase_Dict(&Solver_Dict, Phase_Dict); 
-#endif      
-    }       
     
-    /* D4. Tracer_Dict */
-    {
-#if RP_NODE
-        Tracer_Dict.random_walk = (short*)malloc(Solver_Dict.number_of_phases * sizeof(short));
-        
-        rCFD_default_Tracer_Dict(&Solver_Dict, &Tracer_Dict);
-
-        rCFD_user_set_Tracer_Dict(&Solver_Dict, &Tracer_Dict);
-#endif      
-    }
-    
-    /* D5. Norm_Dict */
-    {
-#if RP_NODE
-        rCFD_default_Norm_Dict(&Solver_Dict, &Norm_Dict);
-
-        rCFD_user_set_Norm_Dict(&Solver_Dict, &Norm_Dict);
-#endif      
-    }   
-
-    /* D6. Rec_Dict */
-    {
-        rCFD_default_Rec_Dict(&Solver_Dict, &Rec_Dict);
-
-        rCFD_user_set_Rec_Dict(&Solver_Dict, &Rec_Dict);    
-    }   
-
-    /* D7. Data_Dict */ 
-    {
-#if RP_NODE     
-        int i_phase;
-        
-        Data_Dict = (Data_Dict_type**)malloc(Solver_Dict.number_of_phases * sizeof(Data_Dict_type*));
-        
-        loop_phases{
-            
-            Data_Dict[i_phase] = (Data_Dict_type*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(Data_Dict_type));
-        }   
-        
-        rCFD_default_Data_Dict(&Solver_Dict, Phase_Dict, Data_Dict);
-        
-        rCFD_user_set_Data_Dict(&Solver_Dict, Phase_Dict, Data_Dict);
-#endif      
-    }
-    
-    /* D8. Balance_Dict */
-    {
-#if RP_NODE
-        int i_phase;
-        
-        Balance_Dict = (Balance_Dict_type**)malloc(Solver_Dict.number_of_phases * sizeof(Balance_Dict_type*));
-        
-        loop_phases{
-            
-            Balance_Dict[i_phase] = (Balance_Dict_type*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(Balance_Dict_type));
-        }
-        
-        rCFD_default_Balance_Dict(&Solver_Dict, Phase_Dict, Balance_Dict);
-        
-        rCFD_user_set_Balance_Dict(&Solver_Dict, Phase_Dict, Balance_Dict);
-#endif      
-    }
-
-    /* D9. Topo_Dict */
-    {
-        rCFD_default_Topo_Dict(&Solver_Dict, &Topo_Dict);
-        
-        rCFD_user_set_Topo_Dict(&Solver_Dict, &Topo_Dict);
-        
-#if RP_NODE     
-        int i_layer;
-        
-        Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Topo_Dict.number_of_layers * sizeof(Cell_Dict_type));
-        
-        Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Topo_Dict.number_of_layers * sizeof(Face_Dict_type));
-
-        loop_layers{
-                
-            rCFD_default_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
-
-            rCFD_user_set_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
-
-            rCFD_default_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);
-
-            rCFD_user_set_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);          
-        }   
-#endif  
-    
-    } 
-    
-        
-    /* G1. Cells (first initialization) */
-    {
-#if RP_NODE     
-        int     i_phase, i_frame, i_cell, i_layer;
-        
-        loop_layers{
-            
-            if(i_layer == 0){
-            
-                C.x = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-                
-                loop_cells{
-                    
-                    C.x[i_cell] = (double*)malloc( 3 * sizeof(double));
-                }
-                
-                C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-                
-                C.average_velocity =    (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
-                C.crossing_time =       (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
-                
-                loop_phases{
-                    
-                    C.average_velocity[i_phase] =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));            
-                    C.crossing_time[i_phase] =      (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-                }
-
-                C.hit_by_other_cell =   (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
-
-                C.island_id =           (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
-                
-                C.weight_after_shift =  (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-                C.weight_after_swap =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-
-                C.vof = (double***)malloc(Solver_Dict.number_of_frames * sizeof(double**));
-                
-                loop_frames{
-                    
-                    C.vof[i_frame] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-                    
-                    loop_cells{
-                        
-                        C.vof[i_frame][i_cell] = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
-                    }
-                }
-
-                C.data =        (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-                C.data_shift =  (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-                C.data_swap =   (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-                
-                loop_phases{
-                    
-                    C.data[i_phase] =       (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-                    C.data_shift[i_phase] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-                    C.data_swap[i_phase] =  (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-                    
-                    loop_cells{
-                        
-                        C.data[i_phase][i_cell] =       (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-                        C.data_shift[i_phase][i_cell] = (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-                        C.data_swap[i_phase][i_cell] =  (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-                    }
-                }       
-                
-                if(Solver_Dict.data_drifting_on){
-                    
-                    C.drift_exchange = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-                }
-                else{
-                    
-                    C.drift_exchange = NULL;
-                }       
-                
-                if(_Cell_Dict.number_of_user_vars > 0){
-                    
-                    C.user = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-                    
-                    loop_cells{
-                        
-                        C.user[i_cell] = (double*)malloc(_Cell_Dict.number_of_user_vars * sizeof(double));
-                    }
-                }
-                else{
-                    
-                    C.user = NULL;
-                }
-                        
-                rCFD_default_Cell(&Solver_Dict, Phase_Dict, &Topo_Dict, &C, i_layer);
-            }
-        }
-#endif  
-    }   
-
-    /* G2. Faces */
-    {
-#if RP_NODE
-        int i_face, i_layer;
-        
-        loop_layers{
-            
-            if(i_layer == 0){
-                
-                F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
-        
-                F.c1 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
-                
-                F.area = (double**)malloc(_Face_Dict.number_of_faces * sizeof(double*));
-                
-                loop_faces{
-                    
-                    F.area[i_face] = (double*)malloc( 3 * sizeof(double));
-                }
-
-                rCFD_default_Face(&Solver_Dict, &Topo_Dict, &F, i_layer);
-            }
-        }
-#endif      
-    }
-    
-    /* G3. Tracer */
-    {
-#if RP_NODE
-
-        Tracer.monitor_counter = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-
-        Tracer.number_of_shifts = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-        
-        Tracer.shifts = (C2C_shift_type**)malloc(Solver_Dict.number_of_phases * sizeof(C2C_shift_type*));
-        
-        rCFD_default_Tracer(&Solver_Dict, &Tracer);
-
-#endif      
-    }
-
-    /* G4. Norms */
-    {
-#if RP_NODE
-        Domain  *d=Get_Domain(1);
-        Thread  *t;
-        cell_t  i_cell;
-        
-        int     number_of_norms = 0;
-        
-        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell,t){
-
-            if((i_cell % Norm_Dict.coarse_graining) == 0){
-                
-                number_of_norms++;              
-            }
-            
-        }end_c_loop_int(i_cell,t)}}
-        
-        Norms.number_of_norms = number_of_norms;
-        
-        Norms.norm = (double*)malloc(number_of_norms * sizeof(double));
-        
-        rCFD_default_Norms(&Solver_Dict, &Norms);
-        
-#endif      
-    }
-
-    /* G5. Rec */
-    {
-        int     i_state, i_state2, i_island;
-        
-        Rec.global_frame = (int*)malloc(Solver_Dict.number_of_islands * sizeof(int));
-        
-        Rec.jumps = (int****)malloc(Solver_Dict.number_of_states * sizeof(int***));
-        
-        loop_states{
-            
-            Rec.jumps[i_state] = (int***)malloc(Solver_Dict.number_of_states * sizeof(int**));
-            
-            loop_states2{
-                
-                Rec.jumps[i_state][i_state2] = (int**)malloc(Solver_Dict.number_of_islands * sizeof(int*));
-                
-                loop_islands{
-                    
-                    Rec.jumps[i_state][i_state2][i_island] = (int*)malloc(Solver_Dict.number_of_frames * sizeof(int));
-                }
-            }
-        }
-        
-        rCFD_default_Rec(&Solver_Dict, &File_Dict, &Rec_Dict, &Rec);
-    }   
-
-    /* G6. Balance (first initialization) */    
-    {
-#if RP_NODE
-        int i_phase, i_data, i_node, i_node2;
-        
-        Balance = (Balance_type**)malloc(Solver_Dict.number_of_phases * sizeof(Balance_type*));
-        
-        loop_phases{
-            
-            Balance[i_phase] = (Balance_type*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(Balance_type));
-            
-            loop_data{ 
-            
-                /* global_balancing */
-                if(Balance_Dict[i_phase][i_data].type == global_balancing){
-                                        
-                    Balance[i_phase][i_data].node2node_flux = NULL;
-                    Balance[i_phase][i_data].node2node_data_flux = NULL;
-                }
-                
-                /* per node balancing */
-                else if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
-                    
-                    Balance[i_phase][i_data].node2node_flux = (double**)malloc((node_last + 1) * sizeof(double*));
-                    Balance[i_phase][i_data].node2node_data_flux = (double**)malloc((node_last + 1) * sizeof(double*));
-                    
-                    for(i_node = 0; i_node < (node_last + 1); i_node++){
-                        
-                        Balance[i_phase][i_data].node2node_flux[i_node] = (double*)malloc((node_last + 1) * sizeof(double));
-                        Balance[i_phase][i_data].node2node_data_flux[i_node] = (double*)malloc((node_last + 1) * sizeof(double));
-                        
-                        for(i_node2 = 0; i_node2 < (node_last + 1); i_node2++){
-                            
-                            Balance[i_phase][i_data].node2node_flux[i_node][i_node2] = 0.0;
-                            Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2] = 0.0;
-                        }
-                    }
-                }
-                
-                Balance[i_phase][i_data].mass_integral = 0.0;
-                
-                Balance[i_phase][i_data].mass_integral_target = Balance[i_phase][i_data].mass_integral;
-                
-                Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
-
-                Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;
-                
-                Balance[i_phase][i_data].mass_source = 0.0;
-                
-                Balance[i_phase][i_data].mass_error = 0.0;
-
-                Balance[i_phase][i_data].mass_error_prev = 0.0;
-
-                Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_min;
-
-                Balance[i_phase][i_data].face_swap_loops = 1;               
-            }           
-        }
-#endif      
-    }
-
-    /* G1 + G6: Init data fields and update balances */
-    {
-#if RP_NODE     
-        int i_layer, i_frame, i_phase, i_data, i_cell;
-        
-        i_layer = 0;    /* user initialization just for base layer of grid, migh be changed to loop_layers in future */
-                
-        rCFD_user_init_Data(&Solver_Dict, Balance, Phase_Dict, Data_Dict, &Topo_Dict, &C, i_layer);
-        
-        i_frame = 0;
-        
-        loop_int_cells{
-            
-            loop_phases{
-            
-                loop_data{
-                    
-                    if(Data_Dict[i_phase][i_data].type == temperature_data){
-                        
-                        Balance[i_phase][i_data].mass_integral += (C.data[i_phase][i_cell][i_data] - Phase_Dict[i_phase].reference_temperature) * 
-                    
-                            Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
-                    }
-                    else{
-                        
-                        Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data] * 
-                    
-                            Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
-                    }
-                }
-            }       
-        }
-
-        loop_phases{
-            
-            loop_data{
-                            
-                Balance[i_phase][i_data].mass_integral_target = Balance[i_phase][i_data].mass_integral;
-                
-                Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
-
-                Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;
-            }
-        }
-        
-        rCFD_user_post(&Solver_Dict, Phase_Dict, &Topo_Dict, &C);   /* post-process initialization */
-#endif
-    }       
-
-    /* P: Parallel grid communication */
-    {
-#if RP_NODE
-        /* for the moment, just consider MPI communication for i_layer = 0 */
-        int i_layer = 0;
-        
-        init_parallel_grid(&Solver_Dict, &Topo_Dict, i_layer);
-#endif
-    }       
- 
-#endif 
+    Message0("\n\n...rCFD_init_all\n");
 }
 
 /*************************************************************************************/
-DEFINE_ON_DEMAND(rCFD_analyse_CFD)
+DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 /*************************************************************************************/
 {
 #if RP_NODE 
@@ -509,7 +82,6 @@ DEFINE_ON_DEMAND(rCFD_analyse_CFD)
     
     double      v_mag, w0, L;
     double      *dt_cross_min, *dt_cross_max, dt_cross_min_global;
-    
     
     dt_cross_min = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
     dt_cross_max = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
@@ -585,8 +157,8 @@ DEFINE_ON_DEMAND(rCFD_analyse_CFD)
                 dt_cross_min_global = dt_cross_min[i_phase];
             }
             
-            Message0("\n... rCFD_analyse_CFD: cell_crossing_time for phase %d (based on %d time-steps): [%e, %e] ... \n",
-                i_phase, Solver_Dict.analyse_CFD_count, dt_cross_min[i_phase], dt_cross_max[i_phase]);
+            Message0("\n...rCFD_analyse_CFD: cell_crossing_time for phase %d (based on %d time-steps): [%e, %e] ... \n",
+                i_phase, (Solver_Dict.analyse_CFD_count + 1), dt_cross_min[i_phase], dt_cross_max[i_phase]);
         }       
         
         loop_phases{
@@ -601,7 +173,10 @@ DEFINE_ON_DEMAND(rCFD_analyse_CFD)
             Solver_Dict.time_steps_per_monitoring_interval = 1;
             
             Message0("\n... rCFD_analyse_CFD: WARNING: set monitoring interval = 1 ... \n");
-        }           
+        }
+
+        Message0("\n...rCFD_analyse_CFD: Solver_Dict.time_steps_per_monitoring_interval (based on %d time-steps): %d ... \n",
+                (Solver_Dict.analyse_CFD_count + 1), Solver_Dict.time_steps_per_monitoring_interval);
         
         rCFD_user_set_recurrence_time_step(&Solver_Dict, Phase_Dict);
     }
@@ -610,29 +185,24 @@ DEFINE_ON_DEMAND(rCFD_analyse_CFD)
     free(dt_cross_min);
     
     Solver_Dict.analyse_CFD_count++;
+    
+    rCFD_user_pre_proc(&Solver_Dict, Phase_Dict, &Topo_Dict, &C);
 
 #endif
 }
 
-#if 0
 /*************************************************************************************/
 DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
 /*************************************************************************************/
 {
-    int     total_number_of_start_postions;
-    
-    double  *start_position_coords = NULL;
-
-    int     number_of_start_position_coords;
-
-    
 #if RP_NODE
     Domain  *d=Get_Domain(1);
     Thread  *t;
     cell_t  c;
   
-    int     number_of_start_positions;
-    double  x[3];
+    int     number_of_start_positions, number_of_start_position_coords, total_number_of_start_postions;
+    
+    double  *start_position_coords = NULL, x[3];
 #endif
 
     /* A: set Tracer_Dict, determine number of start_positions & allocate storage */ 
@@ -653,15 +223,13 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
         }end_c_loop_int(c,t)}}
     
         number_of_start_positions *= Solver_Dict.number_of_phases * Tracer_Dict.number_of_Tracers_per_cell;
-    
+        
         total_number_of_start_postions = PRF_GISUM1(number_of_start_positions);
         
-        if(myid == 0) PRF_CSEND_INT(node_host, &total_number_of_start_postions, 1, myid);
-
-        /* per Node allocation of start position coords */
-        
-        start_position_coords = (double*)malloc( 3 * number_of_start_positions * sizeof(double));
-#endif      
+        number_of_start_position_coords = 3. * number_of_start_positions;
+    
+        start_position_coords = (double*)malloc( number_of_start_position_coords * sizeof(double));
+#endif  
     }
     
     /* B: determine position in cell, fill local start_position_coords */
@@ -736,63 +304,32 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
 #endif      
     }
     
-    /* C: communicate to Node-0, which sends to host */
+    /* C: communicate to Node-0, which writes to file */
     {
 #if RP_NODE     
-        int target_node, source_node;
-        
-        target_node = (myid == 0) ? node_host : node_zero;
-  
-        PRF_CSEND_INT(target_node, &number_of_start_position_coords, 1, myid);
-        PRF_CSEND_REAL(target_node, start_position_coords, number_of_start_position_coords, myid);
 
-        free(start_position_coords);
+        if (myid > 0){
+            
+            PRF_CSEND_INT(node_zero, &number_of_start_position_coords, 1, myid);
+            PRF_CSEND_REAL(node_zero, start_position_coords, number_of_start_position_coords, myid);
+            
+            free(start_position_coords);
+        }   
         
         if (myid == 0){
             
-            compute_node_loop_not_zero(source_node){
+            int i_node, number_of_lines, i_line;
+            FILE    *f_out = NULL;
+            
+            f_out = fopen(File_Dict.tracer_start_position_filename,"w");
+            
+            if(f_out == NULL){ 
+            
+                Message0("\n... ERROR: rCFD_write_tracer_start_pos: fo == NULL ...\n");
                 
-                PRF_CRECV_INT(source_node, &number_of_start_position_coords, 1, source_node);
-                
-                start_position_coords=(double*)malloc(number_of_start_position_coords * sizeof(double));
-                
-                PRF_CRECV_REAL(source_node, start_position_coords, number_of_start_position_coords, source_node);
-        
-                PRF_CSEND_INT(node_host, &number_of_start_position_coords, 1, myid);
-                
-                PRF_CSEND_REAL(node_host, start_position_coords, number_of_start_position_coords, myid);
-                
-                free(start_position_coords);
+                return;
             }
-        }
-#endif      
-    }
-    
-    /* D: host received data from Node-0 and writes to file */
-    {
-#if RP_HOST
-        int i_node, number_of_lines, i_line;
-        FILE    *f_out = NULL;
-        
-        f_out = fopen(File_Dict.tracer_start_position_filename,"w");
-        
-        if(f_out == NULL){ 
-        
-            Message("... ERROR: rCFD_write_tracer_start_pos: fo == NULL ...\n");
             
-            return;
-        }
-        
-        PRF_CRECV_INT(node_zero, &total_number_of_start_postions, 1, node_zero);
-        
-        compute_node_loop(i_node){
-            
-            PRF_CRECV_INT(node_zero, &number_of_start_position_coords, 1, node_zero);
-            
-            start_position_coords = (double*)malloc(number_of_start_position_coords * sizeof(double));
-            
-            PRF_CRECV_REAL(node_zero, start_position_coords, number_of_start_position_coords, node_zero);
-    
             number_of_lines = number_of_start_position_coords/3;
             
             for(i_line = 0; i_line < number_of_lines; i_line++){
@@ -801,17 +338,36 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
                 fprintf(f_out,"%f %f %f", start_position_coords[i_line*3], start_position_coords[i_line*3+1], start_position_coords[i_line*3+2]);
                 fprintf(f_out," 0. 0. 0. 1.e-6 273. 1.e-10 ))\n");
             }
-    
+            
             free(start_position_coords);
+            
+            compute_node_loop_not_zero(i_node){
+                
+                PRF_CRECV_INT(i_node, &number_of_start_position_coords, 1, i_node);
+                
+                start_position_coords=(double*)malloc(number_of_start_position_coords * sizeof(double));
+                
+                PRF_CRECV_REAL(i_node, start_position_coords, number_of_start_position_coords, i_node);
+
+                number_of_lines = number_of_start_position_coords/3;
+                
+                for(i_line = 0; i_line < number_of_lines; i_line++){
+          
+                    fprintf(f_out,"(( ");
+                    fprintf(f_out,"%f %f %f", start_position_coords[i_line*3], start_position_coords[i_line*3+1], start_position_coords[i_line*3+2]);
+                    fprintf(f_out," 0. 0. 0. 1.e-6 273. 1.e-10 ))\n");
+                }
+                
+                free(start_position_coords);
+            }
+            
+            fclose(f_out);
+            
+            Message0("\n...rCFD_write_Tracer_Positions: wrote %d positions to %s ...\n", 
+                total_number_of_start_postions, File_Dict.tracer_start_position_filename);
         }
-
-        fclose (f_out);
-    
-        Message("\n... rCFD_write_tracer_start_pos: wrote %d positions to %s ...\n", 
-            total_number_of_start_postions, File_Dict.tracer_start_position_filename);
-#endif
+#endif      
     }
-
 }
 
 /*************************************************************************************/
@@ -910,8 +466,18 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
     
     Thread  *t_phase = NULL;
     
-    i_phase = (int)p->user[p_phase_id];
-  
+    if(Solver_Dict.number_of_phases == 1){
+        
+        i_phase = 0;
+        
+        t_phase = t;
+    }
+    else{
+        
+        i_phase = (int)p->user[p_phase_id]; 
+        
+        t_phase = THREAD_SUB_THREAD(t, i_phase);
+    }         
     
     /* A: Initialize Tracers */
     
@@ -933,6 +499,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             p->user[p_node0]    = (double)myid;
             p->user[p_w0]       = C_VOLUME(i_cell,t) * p->user[p_phase_fraction];
             p->user[p_c_old]    = (double)i_cell;
+            p->state.rho        = C_R(i_cell, t_phase);
             
             /* tracer_splitting in slow cells */
             if(excess_Tracer_cell_crossing_time){
@@ -965,41 +532,19 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
                 /* init c0_c1_tracer */
                 {
                     p->user[p_w0] = (1./time_ratio) * p->user[p_w0];
-                    
-                    if(Solver_Dict.number_of_phases == 1){
                         
-                        p->state.V[0] = time_ratio * C_U(i_cell,t);
-                        p->state.V[1] = time_ratio * C_V(i_cell,t);
-                        p->state.V[2] = time_ratio * C_W(i_cell,t);
-                    }
-                    else{
-                        
-                        t_phase = THREAD_SUB_THREAD(t, i_phase);
-                        
-                        p->state.V[0] = time_ratio * C_U(i_cell,t_phase);
-                        p->state.V[1] = time_ratio * C_V(i_cell,t_phase);
-                        p->state.V[2] = time_ratio * C_W(i_cell,t_phase);
-                    }                       
+                    p->state.V[0] = time_ratio * C_U(i_cell,t_phase);
+                    p->state.V[1] = time_ratio * C_V(i_cell,t_phase);
+                    p->state.V[2] = time_ratio * C_W(i_cell,t_phase);
                 }
             }
             else{
                 
                 /* normal tracer initialization */
                 {
-                    if(Solver_Dict.number_of_phases == 1){
-                        
-                        p->state.V[0] = C_U(i_cell,t);
-                        p->state.V[1] = C_V(i_cell,t);
-                        p->state.V[2] = C_W(i_cell,t);
-                    }
-                    else{
-                        
-                        t_phase = THREAD_SUB_THREAD(t, i_phase);
-                        
-                        p->state.V[0] = C_U(i_cell,t_phase);
-                        p->state.V[1] = C_V(i_cell,t_phase);
-                        p->state.V[2] = C_W(i_cell,t_phase);
-                    }                       
+                    p->state.V[0] = C_U(i_cell,t_phase);
+                    p->state.V[1] = C_V(i_cell,t_phase);
+                    p->state.V[2] = C_W(i_cell,t_phase);
                     
                     p->user[p_time_ratio] = 1.0;
                 }               
@@ -1113,7 +658,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 DEFINE_DPM_DRAG(rcfd_no_standard_drag,p,i)
 /*************************************************************************************/
 {
-return 0.;
+    return 0.;
 }
 
 /*************************************************************************************/
@@ -1150,7 +695,7 @@ DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
 }
 
 /*************************************************************************************/
-DEFINE_ON_DEMAND(rCFD_write_C2Cs)
+DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 /*************************************************************************************/
 {
 #if RP_NODE 
@@ -1198,13 +743,11 @@ DEFINE_ON_DEMAND(rCFD_write_C2Cs)
                     {                   
                         thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
                         
-                            /*t_fluid = t;*/
-                            
-                            begin_c_loop_int(i_cell,t){
+                            begin_c_loop(i_cell,t){
                                 
                                 C.hit_by_other_cell[i_cell] = 0;
                                 
-                            }end_c_loop_int(i_cell,t);
+                            }end_c_loop(i_cell,t);
                         }}
 
                         for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
@@ -1228,7 +771,7 @@ DEFINE_ON_DEMAND(rCFD_write_C2Cs)
                             
                             c1 = Tracer.shifts[i_phase][i_tracer].c1;
                             
-                            if(C.hit_by_other_cell[c1] == 0.0){
+                            if(C.hit_by_other_cell[c1] == 0){
                                 
                                 number_of_lock_cells++;
                             }
@@ -1433,7 +976,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
         
         /* calc Rec_Matrix */
         {
-    #if RP_NODE
+#if RP_NODE
             double  mean_norm, sum_of_all_norms = 0.0;
             
             loop_frames{
@@ -1445,12 +988,12 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
             }
         
             mean_norm = PRF_GRSUM1(sum_of_all_norms) / (double) (Solver_Dict.number_of_frames * Norms.number_of_norms);
-    #endif
+#endif
 
             loop_frames{
         
                 loop_frames2{           
-    #if RP_NODE             
+#if RP_NODE             
                     norm = 0.0;
                     
                     loop_norms{
@@ -1469,19 +1012,19 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                     }
                     
                     norm = PRF_GRSUM1(norm);    
-    #endif  
+#endif  
                     node_to_host_real_1(norm);
-    #if RP_HOST
+#if RP_HOST
                     Rec_matrix[i_frame][i_frame2] = norm;
                     Rec_matrix[i_frame2][i_frame] = norm;
-    #endif                  
+#endif                  
                 }
             }
         }
         
         /* calc jumps */
         {               
-    #if RP_HOST
+#if RP_HOST
             if(Rec_Dict.method == quarter_jumps){           
 
                 int N1_4=(int)floor((double)Solver_Dict.number_of_frames/4.);
@@ -1549,7 +1092,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                     Rec_jump[i_frame] = j_frame_min;
                 }       
             }
-    #endif      
+#endif      
         }
         
         /* write matrix, jumps */
@@ -1557,9 +1100,16 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
 #if RP_HOST
             /* Rec Matrix */
             {
-                scanf(file_name, "%s_%d_&d_&d", File_Dict.Matrix_filename, Solver.current_state, Solver.current_state, i_island);
+                sprintf(file_name, "%s_%d_%d_%d", File_Dict.Matrix_filename, Solver.current_state, Solver.current_state, i_island);
                 
                 f_out = fopen(file_name, "w");
+                
+                if(f_out == NULL){
+
+                    Message("\n... ERROR: rCFD_write_Rec: f_out == NULL , Rec_Matrix Filename: %s ...\n", file_name);
+                    
+                    return;
+                }
                 
                 loop_frames{
                     
@@ -1571,20 +1121,31 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                     fprintf(f_out, "\n");
                 }
                 
+                Message("\n...rCFD_write_Rec: wrote %s ...\n", file_name);
+                
                 fclose(f_out);
             }
             
             /* Rec Path */
             {
-                scanf(file_name, "%s_%d_&d_&d", File_Dict.Jump_filename, Solver.current_state, Solver.current_state, i_island);
+                sprintf(file_name, "%s_%d_%d_%d", File_Dict.Jump_filename, Solver.current_state, Solver.current_state, i_island);
             
                 f_out = fopen(file_name, "w");
+                
+                if(f_out == NULL){
+
+                    Message("\n... ERROR: rCFD_write_Rec: f_out == NULL , Rec_Path Filename: %s ...\n", file_name);
+                    
+                    return;
+                }
                 
                 loop_frames{
                     
                     fprintf(f_out, "%d \n", Rec_jump[i_frame]);
                 }
                 
+                Message("\n...rCFD_write_Rec: wrote %s ...\n", file_name);
+
                 fclose(f_out);
             }               
 #endif          
@@ -1610,294 +1171,18 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
 #endif      
     }
 
+    Message0("\n\n...rCFD_write_Rec");
 }
-
-#endif
-
-
-#if 0
-
-/*************************************************************************************/
-DEFINE_ON_DEMAND(rCFD_recurrence_Path)
-/*************************************************************************************/
-{
-
-    if(rCFD_Norm_Database_read == 0)  
-        Message0("\n... read rCFD_Norm_Database first...\n");
-        
-    else{
-    
-        int i_frame, j_frame;       
-        
-        double Norm_min = 0.0, diff;
-        
-#if RP_HOST
-        double rCFD_matrix[rCFD_number_of_frames][rCFD_number_of_frames];
-        
-        int rCFD_path[rCFD_number_of_frames];
-#endif      
-        
-        
-        /* calculate Norm_min */
-        {
-#if RP_NODE             
-            int i_norm;
-            int number_of_Norms = 0;
-            double sum_of_Norms = 0.0;
-            
-            for(i_frame = 0; i_frame < rCFD_number_of_frames; i_frame++){
-        
-                for(i_norm = 0; i_norm < number_of_Norms_per_partition; i_norm++){ 
-
-                    sum_of_Norms += rCFD_Norm_Database[i_frame][i_norm];
-                    number_of_Norms ++;
-                }
-            }
-        
-            number_of_Norms = PRF_GISUM1(number_of_Norms);
-            sum_of_Norms = PRF_GRSUM1(sum_of_Norms);
-        
-            if(number_of_Norms > 0) Norm_min = sum_of_Norms / (double) number_of_Norms;
-#endif
-            node_to_host_real_1(Norm_min);
-        }
-            
-        /* calculate rCFD_matrix */
-        {
-            double norm;
-
-#if RP_NODE
-            Domain  *d=Get_Domain(1);
-            Thread  *t;
-            cell_t  c;
-#endif
-            for(i_frame = 0; i_frame < rCFD_number_of_frames; i_frame++){
-        
-                for(j_frame = 0; j_frame < rCFD_number_of_frames; j_frame++){
-                    
-#if RP_NODE             
-                    norm = 0.0;
-                    
-                    thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(c,t){
-                        
-                        diff = fabs(rCFD_Norm_Database[i_frame][(int)c]-rCFD_Norm_Database[j_frame][(int)c]);
-                        
-                        if(diff > Norm_min) norm += diff;
-                        
-                    }end_c_loop_int(c,t)}}
-                    
-                    norm = PRF_GRSUM1(norm);    
-#endif  
-                    node_to_host_real_1(norm);
-#if RP_HOST
-                    rCFD_matrix[i_frame][j_frame] = norm;
-                    rCFD_matrix[j_frame][i_frame] = norm;
-#endif                  
-                }
-            }
-        }
-        
-        
-        /* calculate rCFD_path */
-        {
-#if RP_HOST
-            int N1_4=(int)floor((double)rCFD_number_of_frames/4.);
-            int N2_4=(int)floor((double)rCFD_number_of_frames/2.);
-            int N3_4=(int)floor((double)rCFD_number_of_frames*3./4.);
-            
-            int j_frame_min = 0;
-    
-            for(i_frame = 0; i_frame < rCFD_number_of_frames; i_frame++){
-    
-                diff = 1e10; /* something large */
-      
-                if(i_frame <= N1_4){
-                
-                    for(j_frame = N2_4; j_frame < N3_4; j_frame++){
-                        
-                        if (rCFD_matrix[i_frame][j_frame] < diff){
-                            
-                            diff = rCFD_matrix[i_frame][j_frame]; j_frame_min = j_frame;
-                        }
-                    }
-                }
-                
-                else if(i_frame <= N2_4){
-                
-                    for(j_frame = N3_4; j_frame < rCFD_number_of_frames; j_frame++){
-                        
-                        if (rCFD_matrix[i_frame][j_frame] < diff){
-                            
-                            diff = rCFD_matrix[i_frame][j_frame]; j_frame_min = j_frame;
-                        }
-                    }
-                }
-
-                else if(i_frame <= N3_4){
-                
-                    for(j_frame = 0; j_frame < N1_4; j_frame++){
-                        
-                        if (rCFD_matrix[i_frame][j_frame] < diff){
-                            
-                            diff = rCFD_matrix[i_frame][j_frame]; j_frame_min = j_frame;
-                        }
-                    }
-                }
-
-                else{
-                
-                    for(j_frame = N1_4; j_frame < N2_4; j_frame++){
-                        
-                        if (rCFD_matrix[i_frame][j_frame] < diff){
-                            
-                            diff = rCFD_matrix[i_frame][j_frame]; j_frame_min = j_frame;
-                        }
-                    }
-                }
-       
-                rCFD_path[i_frame]=j_frame_min;
-            }
-#endif          
-        }
-    
-        
-        /* write rCFD_matrix and rCFD_path */
-        {
-#if RP_HOST
-            
-            FILE    *fo;
-            char    filename[40];
-  
-            sprintf(filename,"%s", rCFD_Matrix_filename);
-            fo=fopen(filename,"w");
-            
-            if(fo==NULL) Message("\n... ERROR: rCFD_recurrence_path: fo==NULL ...\n");
-            else{
-                
-                for(i_frame = 0; i_frame < rCFD_number_of_frames; i_frame++){
-        
-                    for(j_frame = 0; j_frame < rCFD_number_of_frames; j_frame++){
-                        
-                        fprintf(fo,"%f ",rCFD_matrix[i_frame][j_frame]);
-                    }
-                    
-                    fprintf(fo,"\n");
-                }
-                
-                fclose(fo);
-            }
-            
-            sprintf(filename,"%s_0", rCFD_Path_filename); /* here, we have only one island */
-            fo=fopen(filename,"w");
-            
-            if(fo==NULL) Message("\n... ERROR: rCFD_recurrence_path: fo==NULL ...\n");
-            else{
-                
-                for(i_frame = 0; i_frame < rCFD_number_of_frames; i_frame++){
-        
-                    fprintf(fo,"%d \n", rCFD_path[i_frame]);
-                }
-                
-                fclose(fo);
-            }
-#endif          
-        }
-    }       
-}
-
-
-
-/*************************************************************************************/
-DEFINE_ON_DEMAND(rCFD_write_Dicts)
-/*************************************************************************************/
-{
-    
-}
-
-#endif
 
 /*************************************************************************************/
 DEFINE_ON_DEMAND(rCFD_free_all)
 /*************************************************************************************/
 {
+    free_all();
+
 #if RP_NODE 
+    free_all_parallel();
+#endif
 
-    int i_phase;
-    
-    if(Tracer_Dict.random_walk != NULL){ 
-    
-        free(Tracer_Dict.random_walk);  
-    }
-        
-    if(C.average_velocity != NULL){
-        
-        loop_phases{
-            
-            if(C.average_velocity[i_phase] != NULL){
-                
-                free(C.average_velocity[i_phase]);
-            }
-        }
-        
-        free(C.average_velocity);
-    }   
-
-    if(C.crossing_time != NULL){
-        
-        loop_phases{
-            
-            if(C.crossing_time[i_phase] != NULL){
-                
-                free(C.crossing_time[i_phase]);
-            }
-        }
-        
-        free(C.crossing_time);
-    }   
-
-    if(C.hit_by_other_cell != NULL){ 
-    
-        free(C.hit_by_other_cell);  
-    }
-
-    if(C.island_id != NULL){ 
-    
-        free(C.island_id);  
-    }
-    
-    if(Tracer.monitor_counter != NULL){ 
-    
-        free(Tracer.monitor_counter);   
-    }
-
-    if(Tracer.number_of_shifts != NULL){ 
-    
-        free(Tracer.number_of_shifts);  
-    }
-
-    if(Tracer.shifts != NULL){
-
-        loop_phases{
-            
-            if(Tracer.shifts[i_phase] != NULL){
-                
-                free(Tracer.shifts[i_phase]);
-            }
-        }
-    
-        free(Tracer.shifts);    
-    }   
-
-    if(Norms.norm != NULL){
-        
-        free(Norms.norm);
-    }
-    
-    /* free last, because previously loop_data was needed */
-    if(Phase_Dict != NULL){
-        
-        free(Phase_Dict);
-    }
-    
-#endif  
+    Message0("\n\n...rCFD_free_all");
 }

@@ -36,7 +36,7 @@
             c_drift_0p002,
             c_steel_grade_A,
             c_steel_grade_B,
-            c_temp,
+            c_steel_temp,
             number_of_phase0_data_names
         };
 
@@ -152,7 +152,7 @@
                     Data_Dict[i_phase][i_data].type = concentration_data;
                 }
 
-                if((i_phase == steel) && (i_data == c_temp)){
+                if((i_phase == steel) && (i_data == c_steel_temp)){
                     
                     Data_Dict[i_phase][i_data].type = temperature_data;
                 }
@@ -301,7 +301,7 @@
                         }
                     }
                     
-                    if((i_phase == steel) && (i_data == c_temp)){
+                    if((i_phase == steel) && (i_data == c_steel_temp)){
                     
                         C->data[i_phase][i_cell][i_data] = 300.0;
                         
@@ -390,7 +390,7 @@
                             
                                 C->data[i_phase][i_cell][i_data] = 1.0; break;
                             
-                            case c_temp:
+                            case c_steel_temp:
                             
                                 C->data[i_phase][i_cell][i_data] = 323.0; break;
                             
@@ -437,15 +437,15 @@
                 mean_value_in[i_data] /= V_in;
                     
                 /* per partition source */  
-                if(i_data < c_temp){
+                if(i_data < c_steel_temp){
                     
-                    Balance[i_phase][i_data].mass_source += V_in/V_in_global * flowrate * mean_value_in[i_phase] * 
+                    Balance[i_phase][i_data].mass_source += V_in/V_in_global * flowrate * mean_value_in[i_data] * 
                     
                         Phase_Dict[i_phase].time_step;  /* (kg) */
                 }
                 else{
                     
-                    Balance[i_phase][i_data].mass_source += V_in/V_in_global * flowrate * mean_value_in[i_phase] * 
+                    Balance[i_phase][i_data].mass_source += V_in/V_in_global * flowrate * (mean_value_in[i_data] - Phase_Dict[i_phase].reference_temperature) * 
                     
                         Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
                 }
@@ -459,15 +459,15 @@
                 mean_value_out[i_data] /= V_out;
                     
                 /* per partition source */  
-                if(i_data < c_temp){
+                if(i_data < c_steel_temp){
                     
-                    Balance[i_phase][i_data].mass_source += V_out/V_out_global * flowrate * mean_value_out[i_phase] * 
+                    Balance[i_phase][i_data].mass_source += V_out/V_out_global * flowrate * mean_value_out[i_data] * 
                     
                         Phase_Dict[i_phase].time_step;  /* (kg) */
                 }
                 else{
                     
-                    Balance[i_phase][i_data].mass_source += V_out/V_out_global * flowrate * mean_value_out[i_phase] * 
+                    Balance[i_phase][i_data].mass_source += V_out/V_out_global * flowrate * (mean_value_out[i_data] - Phase_Dict[i_phase].reference_temperature) * 
                     
                         Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
                 }

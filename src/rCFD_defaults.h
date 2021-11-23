@@ -36,6 +36,7 @@
         Solver_Dict->number_of_islands =    1;          
         Solver_Dict->number_of_runs =       1;  
         
+        Solver_Dict->full_c2c_network_on =      0;
         Solver_Dict->recurrence_process_on =    1;
         Solver_Dict->data_convection_on =       1;
         Solver_Dict->face_diffusion_on =        1;
@@ -106,6 +107,8 @@
         File_Dict->tracer_start_position_filename   =   "./data/tmp/tracer_start_pos.inj";
         
         File_Dict->C2C_filename =                       "./data/c2c/c2c";
+        
+        File_Dict->full_C2C_filename =                  "./data/c2c/full_c2c";
         
         File_Dict->Norm_filename =                      "./data/tmp/norm";
         
@@ -299,14 +302,38 @@
             Domain  *d=Get_Domain(1);
             Thread  *t;
             face_t  f;
+            cell_t  c0, c1;
 
             int     number_of_local_faces = 0;
             
-            thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){begin_f_loop(f,t){
+            thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){
+                
+                begin_f_loop(f,t){
                     
-                    number_of_local_faces++;
+                    c0 = (int)F_C0(f, t);
 
-            }end_f_loop(f,t)}}
+                    c1 = (int)F_C1(f, t);
+                    
+                    if((c0 >= 0)&&(c1 >= 0)){
+                    
+                        number_of_local_faces++;
+                    }
+
+                }end_f_loop(f,t)
+
+                begin_f_loop_ext(f,t){
+                    
+                    c0 = (int)F_C0(f, t);
+
+                    c1 = (int)F_C1(f, t);
+                    
+                    if((c0 >= 0)&&(c1 >= 0)){
+                    
+                        number_of_local_faces++;
+                    }
+
+                }end_f_loop_ext(f,t)              
+            }}
             
             Face_Dict->number_of_faces = number_of_local_faces;
         }
@@ -429,26 +456,57 @@
             
             i_face = 0;
             
-            thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){begin_f_loop(f,t){
+            thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){
+                
+                begin_f_loop(f,t){
                     
-                    c0 = F_C0(f, t);
+                    c0 = (int)F_C0(f, t);
 
-                    c1 = F_C1(f, t);
+                    c1 = (int)F_C1(f, t);
+                    
+                    if((c0 >= 0)&&(c1 >= 0)){
                         
-                    F->c0[i_face] = c0;
-                    
-                    F->c1[i_face] = c1;
-                    
-                    F_AREA(A, f, t);
-                    
-                    loop_dim{
+                        F->c0[i_face] = c0;
                         
-                        F->area[i_face][i_dim] = A[i_dim];
+                        F->c1[i_face] = c1;
+                        
+                        F_AREA(A, f, t);
+                        
+                        loop_dim{
+                            
+                            F->area[i_face][i_dim] = A[i_dim];
+                        }
+                    
+                        i_face++;
                     }
-                    
-                    i_face++;
 
-            }end_f_loop(f,t)}}
+                }end_f_loop(f,t)
+                
+                begin_f_loop_ext(f,t){
+                    
+                    c0 = (int)F_C0(f, t);
+                    
+                    c1 = (int)F_C1(f, t);
+
+                    if((c0 >= 0)&&(c1 >= 0)){
+                        
+                        F->c0[i_face] = c0;
+                        
+                        F->c1[i_face] = c1;
+                
+                        F_AREA(A, f, t);
+                        
+                        loop_dim{
+                            
+                            F->area[i_face][i_dim] = A[i_dim];
+                        }
+                
+                        i_face++;
+                    }
+
+                }end_f_loop_ext(f,t)
+
+            }}
         }
     }
     

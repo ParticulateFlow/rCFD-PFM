@@ -36,7 +36,6 @@
         Solver_Dict->number_of_islands =    1;          
         Solver_Dict->number_of_runs =       1;  
         
-        Solver_Dict->full_c2c_network_on =      0;
         Solver_Dict->recurrence_process_on =    1;
         Solver_Dict->data_convection_on =       1;
         Solver_Dict->face_diffusion_on =        1;
@@ -107,8 +106,6 @@
         File_Dict->tracer_start_position_filename   =   "./data/tmp/tracer_start_pos.inj";
         
         File_Dict->C2C_filename =                       "./data/c2c/c2c";
-        
-        File_Dict->full_C2C_filename =                  "./data/c2c/full_c2c";
         
         File_Dict->Norm_filename =                      "./data/tmp/norm";
         

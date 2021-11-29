@@ -229,6 +229,10 @@
             
                 Balance_Dict[i_phase][i_data].type = global_balancing;
                 
+                Balance_Dict[i_phase][i_data].max_correction_loops = 10;
+                
+                Balance_Dict[i_phase][i_data].accuracy_level = 0.01;
+                
                 Balance_Dict[i_phase][i_data].write_balance_to_file = 0;
                 
                 Balance_Dict[i_phase][i_data].write_balance_to_file_interval = 1;
@@ -301,7 +305,7 @@
             face_t  f;
             cell_t  c0, c1;
 
-            int     number_of_local_faces = 0;
+            int     number_of_local_int_faces = 0, number_of_local_ext_faces = 0;
             
             thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){
                 
@@ -313,7 +317,7 @@
                     
                     if((c0 >= 0)&&(c1 >= 0)){
                     
-                        number_of_local_faces++;
+                        number_of_local_int_faces++;
                     }
 
                 }end_f_loop(f,t)
@@ -326,13 +330,17 @@
                     
                     if((c0 >= 0)&&(c1 >= 0)){
                     
-                        number_of_local_faces++;
+                        number_of_local_ext_faces++;
                     }
 
                 }end_f_loop_ext(f,t)              
             }}
             
-            Face_Dict->number_of_faces = number_of_local_faces;
+            Face_Dict->number_of_int_faces = number_of_local_int_faces;
+            
+            Face_Dict->number_of_ext_faces = number_of_local_ext_faces;
+            
+            Face_Dict->number_of_faces = (number_of_local_int_faces + number_of_local_ext_faces);
         }
     }
 

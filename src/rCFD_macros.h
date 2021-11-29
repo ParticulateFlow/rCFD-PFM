@@ -41,6 +41,7 @@
 
     #define     loop_faces                      for(i_face = 0; i_face < _Face_Dict.number_of_faces; i_face++)
     #define     loop_faces_ptr                  for(i_face = 0; i_face < _pFace_Dict.number_of_faces; i_face++)
+    #define     loop_int_faces                  for(i_face = 0; i_face < _Face_Dict.number_of_int_faces; i_face++)
     
     #define     loop_frames                     for(i_frame = 0; i_frame < Solver_Dict.number_of_frames; i_frame++)
     #define     loop_frames_ptr                 for(i_frame = 0; i_frame < Solver_Dict->number_of_frames; i_frame++)

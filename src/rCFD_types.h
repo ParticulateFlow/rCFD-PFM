@@ -53,8 +53,8 @@
 
         short   max_fill_loops;
 
-        short   face_swap_max_per_loop;
-        short   face_swap_min;
+        double  face_swap_max_per_loop;
+        double  face_swap_min;
         short   face_swap_max_loops;
 
         short   number_of_drift_loops;
@@ -185,8 +185,11 @@
 
     typedef struct Balance_Dict_struct
     {
-
         short       type;
+        
+        short       max_correction_loops;
+        
+        double      accuracy_level;
 
         short       write_balance_to_file;
 
@@ -208,9 +211,13 @@
 
     typedef struct Face_Dict_struct
     {
+        int     number_of_int_faces;
+
+        int     number_of_ext_faces;
+
         int     number_of_faces;
 
-    } Face_Dict_type;
+        } Face_Dict_type;
 
     typedef struct Topo_Dict_struct
     {

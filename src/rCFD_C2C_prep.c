@@ -80,6 +80,8 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
   
     int         i_phase, i_cell;
     
+    int         time_steps_per_monitoring_interval;        
+
     double      v_mag, w0, L;
     double      *dt_cross_min, *dt_cross_max, dt_cross_min_global;
     
@@ -143,7 +145,7 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 
     }end_c_loop_int(c,t)}
     
-    /* set recurrence time-step */
+    /* propose recurrence time-step */
     {       
         dt_cross_min_global = 1.e10;
         
@@ -160,25 +162,18 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
             Message0("\n...rCFD_analyse_CFD: cell_crossing_time for phase %d (based on %d time-steps): [%e, %e] ... \n",
                 i_phase, (Solver_Dict.analyse_CFD_count + 1), dt_cross_min[i_phase], dt_cross_max[i_phase]);
         }       
+                
+        time_steps_per_monitoring_interval = (int)(dt_cross_min_global * (double)Solver_Dict.max_number_of_cells_per_time_step / CURRENT_TIMESTEP);
         
-        loop_phases{
+        if(time_steps_per_monitoring_interval < 1){
             
-            Phase_Dict[i_phase].time_step = dt_cross_min_global * (double)Solver_Dict.max_number_of_cells_per_time_step;
-        }
-        
-        Solver_Dict.time_steps_per_monitoring_interval = (int)(dt_cross_min_global * (double)Solver_Dict.max_number_of_cells_per_time_step / CURRENT_TIMESTEP);
-        
-        if(Solver_Dict.time_steps_per_monitoring_interval < 1){
-            
-            Solver_Dict.time_steps_per_monitoring_interval = 1;
+            time_steps_per_monitoring_interval = 1;
             
             Message0("\n... rCFD_analyse_CFD: WARNING: set monitoring interval = 1 ... \n");
         }
 
-        Message0("\n...rCFD_analyse_CFD: Solver_Dict.time_steps_per_monitoring_interval (based on %d time-steps): %d ... \n",
-                (Solver_Dict.analyse_CFD_count + 1), Solver_Dict.time_steps_per_monitoring_interval);
-        
-        rCFD_user_set_recurrence_time_step(&Solver_Dict, Phase_Dict);
+        Message0("\n...rCFD_analyse_CFD: time_steps_per_monitoring_interval (based on %d time-steps): %d ... \n",
+                (Solver_Dict.analyse_CFD_count + 1), time_steps_per_monitoring_interval);
     }
     
     free(dt_cross_max);
@@ -187,7 +182,6 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
     Solver_Dict.analyse_CFD_count++;
     
     rCFD_user_pre_proc(&Solver_Dict, Phase_Dict, &Topo_Dict, &C);
-
 #endif
 }
 
@@ -701,6 +695,8 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 #if RP_NODE 
 
     /* TODO (9/21) - adapt weights of MPI C2Cs such that they obey to actual mass fluxes */
+    
+    Message("\nmyid %d Phase_Dict[0].time_step %e Tracer.ready2write %d", myid, Phase_Dict[0].time_step, Tracer.ready2write);
 
     if((Tracer.ready2write == 1) && (Tracer_Database_not_full)){
 

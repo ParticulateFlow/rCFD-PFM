@@ -1,11 +1,10 @@
-# Tundish Tutorial
+# Cube Tutorial
 
 ## Contents
 
 - Compile specific (non rCFD) udf's for full CFD
 - Prepares rCFD database on a 1.2M grid.
-- Runs rCFD considering (i) incoming drifting particles, (ii) change in incoming steel grade 
-and (iii) change in incoming temperature
+- Runs rCFD considering (i) pollutant propagation, (ii) sedimenting particles
 
 ## Prepare full CFD
 

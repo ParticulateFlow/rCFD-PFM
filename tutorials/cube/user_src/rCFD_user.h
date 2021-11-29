@@ -49,19 +49,14 @@
         Solver_Dict->max_number_of_cells_per_time_step =    30;
 
         Solver_Dict->global_time_step =                     0.005;   
-		
-		Solver_Dict->time_steps_per_monitoring_interval =	25;
-		
+        
+        Solver_Dict->time_steps_per_monitoring_interval =   25;
+        
         Solver_Dict->number_of_frames =                     10;         
 
         Solver_Dict->number_of_runs =                       1; 
         
         Solver_Dict->data_drifting_on =                     1; 
-
-		Solver_Dict->face_swap_max_per_loop =   (1./8.);        
-        Solver_Dict->face_swap_min =            (1./64.);
-        Solver_Dict->face_swap_max_loops =      8;  
-		
     }   
 
     void rCFD_user_set_File_Dict(Solver_Dict_type *Solver_Dict, File_Dict_type *File_Dict)
@@ -155,7 +150,7 @@
 
             loop_data{
             
-				/*Balance_Dict[i_phase][i_data].max_correction_loops = 5;*/
+                /*Balance_Dict[i_phase][i_data].max_correction_loops = 5;*/
 
                 Balance_Dict[i_phase][i_data].write_balance_to_file = 1;
 
@@ -248,28 +243,28 @@
         
         double  radius_in, tracer_gas_flowrate, V_in, V_in_global; 
 
-		V_in = 0.0;
-		
-		tracer_gas_flowrate = 1.0e-3;   /* (kg/s) */			
+        V_in = 0.0;
+        
+        tracer_gas_flowrate = 1.0e-3;   /* (kg/s) */            
         
         /* inflow bc volume */
-		loop_int_cells_ptr{
+        loop_int_cells_ptr{
             
             loop_dim{
                 
                 x[i_dim] = C->x[i_cell][i_dim];
             }
             
-			radius_in = sqrt(x[0]*x[0] + x[1]*x[1]);
-			
-			if((radius_in <= 0.01) && (x[2] < 0.075)){
+            radius_in = sqrt(x[0]*x[0] + x[1]*x[1]);
+            
+            if((radius_in <= 0.01) && (x[2] < 0.075)){
 
-				V_in += C->volume[i_cell];
-			}
-		}
-				
-		V_in_global = PRF_GRSUM1(V_in);
-		
+                V_in += C->volume[i_cell];
+            }
+        }
+                
+        V_in_global = PRF_GRSUM1(V_in);
+        
         loop_int_cells_ptr{
             
             /* coord's */
@@ -279,31 +274,31 @@
             }
             
             /* inflow bc */
-            {				   
-			    radius_in = sqrt(x[0]*x[0] + x[1]*x[1]);
-				
+            {                  
+                radius_in = sqrt(x[0]*x[0] + x[1]*x[1]);
+                
                 if((radius_in <= 0.01) && (x[2] < 0.075)){
 
-					loop_data{
-						
-						C->data[i_phase][i_cell][i_data] += C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                    loop_data{
+                        
+                        C->data[i_phase][i_cell][i_data] += C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
 
-						Balance[i_phase][i_data].mass_source +=  C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
-					}
-				}	
+                        Balance[i_phase][i_data].mass_source +=  C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                    }
+                }   
             }
             
             /* outflow bc */
             {
                 if(x[0] > 0.6){
 
-					loop_data{
-						
-						Balance[i_phase][i_data].mass_source -=  C->data[i_phase][i_cell][i_data];  /* (kg) */
+                    loop_data{
+                        
+                        Balance[i_phase][i_data].mass_source -=  C->data[i_phase][i_cell][i_data];  /* (kg) */
 
-						C->data[i_phase][i_cell][i_data] = 0.0;  /* (kg) */
-					}
-				}	
+                        C->data[i_phase][i_cell][i_data] = 0.0;  /* (kg) */
+                    }
+                }   
             }
         }           
 #endif

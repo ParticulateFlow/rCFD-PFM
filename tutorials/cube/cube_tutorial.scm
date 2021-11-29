@@ -5,7 +5,7 @@
 ;;  www.particulate-flow.at 
 
 
-(define rCFD_src_dir  "../2021_rCFD_CORE")
+(define rCFD_src_dir  "../../src")
 (define rCFD_user_src_dir  "./user_src")
 (define ANSYS_Fluent_case_dir "./ansys_fluent")
 (define ANSYS_Fluent_case_file  "Cube_1.2M_fullCFD_t=2.5s")
@@ -86,13 +86,13 @@
     (ti-menu-load-string "/define/user-defined/user-defined-memory 30 q" )
     
     (ti-menu-load-string "/define/user-defined/compiled-functions load \"libudf_cube\"")
-	
-	(ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () vmag yes yes udf inlet_x_v::libudf_cube q")		
-	(ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () turbulent-kinetic-energy yes yes udf inlet_x_k::libudf_cube q")
-	(ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () turbulent-dissipation-rate yes yes udf inlet_x_dissp::libudf_cube q")
+    
+    (ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () vmag yes yes udf inlet_x_v::libudf_cube q")       
+    (ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () turbulent-kinetic-energy yes yes udf inlet_x_k::libudf_cube q")
+    (ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () turbulent-dissipation-rate yes yes udf inlet_x_dissp::libudf_cube q")
 
     (ti-menu-load-string "/define/user-defined/compiled-functions load \"libudf_rcfd_prep\"")
-	
+    
     (ti-menu-load-string "/define/user-defined/execute-on-demand \"rCFD_init_all::libudf_rcfd_prep\"")
 )
 
@@ -185,11 +185,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (rCFD_P8)       ;; prep.8:  run fluent simulations for monitoring C2C paths and norms,
                         ;;          write intermediate fluent file
-						;;			in case of restart, uncomment first lines
+                        ;;          in case of restart, uncomment first lines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;;(ti-menu-load-string (format #f "/file/read-case-data ./~a_Before_Monitoring.cas.h5 OK" ANSYS_Fluent_case_file))
-	
+    
     ;;(ti-menu-load-string "/define/user-defined/execute-on-demand \"rCFD_init_all::libudf_rcfd_prep\"")
 
     (ti-menu-load-string (format #f "/solve/set/time-step ~d" ANSYS_Fluent_simulation_timestep)) 

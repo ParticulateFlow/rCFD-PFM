@@ -51,13 +51,17 @@
     {
         Solver_Dict->max_number_of_cells_per_time_step =    30;
 
-        Solver_Dict->global_time_step =                     0.02;   
+        Solver_Dict->global_time_step =                     0.02;
+        
+        Solver_Dict->time_steps_per_monitoring_interval =   20; 
         
         Solver_Dict->number_of_frames =                     10;         
 
         Solver_Dict->number_of_runs =                       50; 
         
-        Solver_Dict->data_drifting_on =                     1;      
+        Solver_Dict->data_drifting_on =                     1;   
+
+        Solver_Dict->balance_correction_on =                1;
     }   
 
     void rCFD_user_set_File_Dict(Solver_Dict_type *Solver_Dict, File_Dict_type *File_Dict)
@@ -195,7 +199,8 @@
     /* user init */
     /*************************************************************************************/
     
-#if 1   
+#if 1 
+
     void rCFD_user_pre_proc(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Topo_Dict_type *Topo_Dict, Cell_type *C)
     {
         Domain  *d=Get_Domain(1);
@@ -217,11 +222,6 @@
             }
             
         }end_c_loop_int(i_cell, t)}}        
-    }
-
-    void rCFD_user_set_recurrence_time_step(Solver_Dict_type *Solver_Dict, Phase_Dict_type* Phase_Dict)
-    {
-        
     }
         
     void rCFD_user_init_Data(Solver_Dict_type *Solver_Dict, Balance_type** Balance, Phase_Dict_type* Phase_Dict, Data_Dict_type** Data_Dict, 
@@ -249,34 +249,16 @@
                     if((i_phase == steel) && (i_data == c_drift_0p0)){
                     
                         C->data[i_phase][i_cell][i_data] = 0.0;
-                        
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
-                            
-                            C->data[i_phase][i_cell][i_data] = 0.5;
-                        }
                     }
 
                     if((i_phase == steel) && (i_data == c_drift_0p002)){
                     
                         C->data[i_phase][i_cell][i_data] = 0.0;
-                        
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
-                            
-                            C->data[i_phase][i_cell][i_data] = 0.5;
-                        }
                     }
                     
                     if((i_phase == steel) && (i_data == c_drift_0p001)){
                     
                         C->data[i_phase][i_cell][i_data] = 0.0;
-                        
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
-                            
-                            C->data[i_phase][i_cell][i_data] = 0.5;
-                        }
                     }
                     
                     if((i_phase == steel) && (i_data == c_steel_grade_A)){
@@ -317,7 +299,7 @@
         
         Message0("\n\n...rCFD_user_init_Data\n");               
     }
-
+  
 #endif  
     
     /* user accesses Data */
@@ -332,16 +314,17 @@
 #if RP_NODE
         int     i_cell, i_data, i_dim;
 
-        double  x[3], radius_in, radius_out, flowrate;
+        double  x[3], radius_in, radius_out, flowrate, incoming_massflow_of_particles; /*, tmp, tmp2;*/
         
-        double  mean_value_in[Phase_Dict->number_of_data], V_in, V_in_global;
+        double  mean_value_in[Phase_Dict->number_of_data], V_in, V_in_low, V_in_global, V_in_low_global;
         
         double  mean_value_out[Phase_Dict->number_of_data], V_out, V_out_global; 
 
-        V_in = 0.0; 
-        V_out = 0.0;
+        V_in = 0.0; V_in_low = 0.0; V_out = 0.0; 
         
         flowrate = 0.415;   /* (kg/s) */
+        
+        incoming_massflow_of_particles = 1.0e-3;    /* (kg/s) */
 
         /* init mean values */
         loop_data{
@@ -349,39 +332,68 @@
             mean_value_in[i_data] = 0.0;
             
             mean_value_out[i_data] = 0.0;
+            
+            Balance[i_phase][i_data].mass_source = 0.0;
         }
         
-        loop_cells_ptr{
-            
-            /* coord's */
-            loop_dim{
+        /* volumes, fixed and mean values at bc */ 
+        {
+            loop_int_cells_ptr{
                 
-                x[i_dim] = C->x[i_cell][i_dim];
-            }
-            
-            /* inflow bc */
-            {
-                radius_in = sqrt((x[0] - 0.935)*(x[0] - 0.935) + x[1]*x[1]);
-                
-                if((radius_in <= 0.0115) && (x[2] > 0.2)){
+                loop_dim{
                     
+                    x[i_dim] = C->x[i_cell][i_dim];
+                }
+
+                radius_in = sqrt((x[0] - 0.935)*(x[0] - 0.935) + x[1]*x[1]);
+
+                if((radius_in <= 0.0115) && (x[2] > 0.2)){
+
+                    V_in += C->volume[i_cell];
+                    
+                    if(x[2] < 0.35){
+                        
+                        V_in_low += C->volume[i_cell];
+                    }
+                    
+                    /* fixed and mean values */
                     loop_data{
-                
-                        /* set inflow bc value for i_data */
+                        
                         switch (i_data){
                             
                             case c_drift_0p0:
                             
-                                C->data[i_phase][i_cell][i_data] = 0.5; break;
-                            
+                                if(x[2] >= 0.35){
+                                    
+                                    Balance[i_phase][i_data].mass_source -= C->data[i_phase][i_cell][i_data];
+                                    
+                                    C->data[i_phase][i_cell][i_data] = 0.0;
+                                }
+                                    
+                                break;
+
                             case c_drift_0p001:
                             
-                                C->data[i_phase][i_cell][i_data] = 0.5; break;
-                            
+                                if(x[2] >= 0.35){
+                                    
+                                    Balance[i_phase][i_data].mass_source -= C->data[i_phase][i_cell][i_data];
+                                    
+                                    C->data[i_phase][i_cell][i_data] = 0.0;
+                                }
+                                    
+                                break;
+
                             case c_drift_0p002:
                             
-                                C->data[i_phase][i_cell][i_data] = 0.5; break;
-                            
+                                if(x[2] >= 0.35){
+                                    
+                                    Balance[i_phase][i_data].mass_source -= C->data[i_phase][i_cell][i_data];
+                                    
+                                    C->data[i_phase][i_cell][i_data] = 0.0;
+                                }
+                                    
+                                break;
+                                
                             case c_steel_grade_A:
                             
                                 C->data[i_phase][i_cell][i_data] = 0.0; break;
@@ -396,83 +408,141 @@
                             
                             default: break;
                         }
-                        
-                        /* calc mean bc values (accum. values and volume */
-                        mean_value_in[i_data] += C->data[i_phase][i_cell][i_data] * C->volume[i_cell];
+
+                        mean_value_in[i_data] += C->data[i_phase][i_cell][i_data] * C->volume[i_cell];                  
                     }
-                    
-                    V_in += C->volume[i_cell];
-                }   
-            }
-            
-            /* outflow bc */
-            {
+                }
+
                 radius_out = sqrt((x[0] - 0.085)*(x[0] - 0.085) + x[1]*x[1]);
                 
                 if((radius_out <= 0.015) && (x[2] < 0.025)){
-                        
+
+                    V_out += C->volume[i_cell];
+
+                    /* mean values */
                     loop_data{
-                
-                        /* calc mean bc values (accum. values and volume */
-                        mean_value_out[i_data] += C->data[i_phase][i_cell][i_data] * C->volume[i_cell];
+                        
+                        mean_value_out[i_data] += C->data[i_phase][i_cell][i_data] * C->volume[i_cell];                 
                     }
                     
-                    V_out += C->volume[i_cell];
-                }
+                }           
             }
             
-            /* heat losses, TODO */
-            {
+            V_in_global = PRF_GRSUM1(V_in);
+            
+            V_in_low_global = PRF_GRSUM1(V_in_low);
+            
+            V_out_global = PRF_GRSUM1(V_out);
+            
+            if(V_in > 0.0){
+                
+                loop_data{
+                    
+                    mean_value_in[i_data] /= V_in;
+                }
+            }
+
+            if(V_out > 0.0){
+                
+                loop_data{
+                    
+                    mean_value_out[i_data] /= V_out;
+                }
             }
         }
 
-        V_in_global = PRF_GRSUM1(V_in); 
-        
-        V_out_global = PRF_GRSUM1(V_out);
-        
-        if(V_in > 0){
-            
-            loop_data{
-                        
-                mean_value_in[i_data] /= V_in;
+        /* set values for flux-based bc's, set balance.sources */
+        {
+            loop_int_cells_ptr{
+                
+                loop_dim{
                     
-                /* per partition source */  
-                if(i_data < c_steel_temp){
-                    
-                    Balance[i_phase][i_data].mass_source += V_in/V_in_global * flowrate * mean_value_in[i_data] * 
-                    
-                        Phase_Dict[i_phase].time_step;  /* (kg) */
+                    x[i_dim] = C->x[i_cell][i_dim];
                 }
-                else{
-                    
-                    Balance[i_phase][i_data].mass_source += V_in/V_in_global * flowrate * (mean_value_in[i_data] - Phase_Dict[i_phase].reference_temperature) * 
-                    
-                        Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
-                }
-            }
-        }           
+                
+                radius_in = sqrt((x[0] - 0.935)*(x[0] - 0.935) + x[1]*x[1]);
 
-        if(V_out > 0){
-            
-            loop_data{
+                if((radius_in <= 0.0115) && (x[2] > 0.2) && (x[2] < 0.35)){
                         
-                mean_value_out[i_data] /= V_out;
-                    
-                /* per partition source */  
-                if(i_data < c_steel_temp){
-                    
-                    Balance[i_phase][i_data].mass_source += V_out/V_out_global * flowrate * mean_value_out[i_data] * 
-                    
-                        Phase_Dict[i_phase].time_step;  /* (kg) */
+                    loop_data{
+                        
+                        if((i_data == c_drift_0p0) || (i_data == c_drift_0p001) || (i_data == c_drift_0p002)){
+
+                            C->data[i_phase][i_cell][i_data] += C->volume[i_cell]/V_in_low_global * incoming_massflow_of_particles * Phase_Dict[i_phase].time_step;
+
+                            Balance[i_phase][i_data].mass_source += C->volume[i_cell]/V_in_low_global * incoming_massflow_of_particles * Phase_Dict[i_phase].time_step;
+                        }
+                    }
                 }
-                else{
-                    
-                    Balance[i_phase][i_data].mass_source += V_out/V_out_global * flowrate * (mean_value_out[i_data] - Phase_Dict[i_phase].reference_temperature) * 
-                    
-                        Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
-                }
+
+                radius_out = sqrt((x[0] - 0.085)*(x[0] - 0.085) + x[1]*x[1]);
+                
+                if((radius_out <= 0.015) && (x[2] < 0.025)){
+                            
+                    loop_data{
+
+                        if((i_data == c_drift_0p0) || (i_data == c_drift_0p001) || (i_data == c_drift_0p002)){
+
+                            Balance[i_phase][i_data].mass_source -= C->data[i_phase][i_cell][i_data];
+                        
+                            C->data[i_phase][i_cell][i_data] = 0.0;
+                        }
+                    }
+                }           
             }
-        }           
+#if 0           
+            tmp = 0.0;
+            
+            loop_int_cells_ptr{
+                
+                tmp += C->data[i_phase][i_cell][0];
+            }
+            
+            tmp = PRF_GRSUM1(tmp);
+            tmp2 = PRF_GRSUM1(Balance[i_phase][0].mass_source);
+            
+            Message0("\n\n rCFD_user_access_data_before_shift: Sum of data_0 %e, Balance.source %e", tmp, tmp2);
+#endif          
+            
+                
+            if(V_in > 0){
+                
+                loop_data{
+        
+                    if((i_data == c_steel_grade_A) || (i_data == c_steel_grade_B)){
+                        
+                        Balance[i_phase][i_data].mass_source += V_in/V_in_global * flowrate * mean_value_in[i_data] * Phase_Dict[i_phase].time_step;  /* (kg) */
+                    }
+                    
+                    if(i_data == c_steel_temp){
+                        
+                        Balance[i_phase][i_data].mass_source += V_in/V_in_global * flowrate * (mean_value_in[i_data] - Phase_Dict[i_phase].reference_temperature) * 
+                        
+                            Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
+                    }
+                }
+            }           
+
+            if(V_out > 0){
+                
+                loop_data{
+                            
+                    if((i_data == c_steel_grade_A) || (i_data == c_steel_grade_B)){
+                        
+                        Balance[i_phase][i_data].mass_source += V_out/V_out_global * flowrate * mean_value_out[i_data] * 
+                        
+                            Phase_Dict[i_phase].time_step;  /* (kg) */
+                    }
+                    
+                    if(i_data == c_steel_temp){
+                        
+                        Balance[i_phase][i_data].mass_source += V_out/V_out_global * flowrate * (mean_value_out[i_data] - Phase_Dict[i_phase].reference_temperature) * 
+                        
+                            Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
+                    }
+                }
+            }                       
+        }
 #endif
     }
 

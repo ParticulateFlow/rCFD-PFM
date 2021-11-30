@@ -1104,7 +1104,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                         
                         /* B3: mass_integral_target += node2node fluxes */
                         {
-    #if RP_NODE         
+#if RP_NODE         
                             loop_data{
                                 
                                 if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
@@ -1155,7 +1155,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                     /* ToDo: check that sum of local balances fulfill global balance */
                                 }
                             }
-    #endif                      
+#endif                      
                         }
 
                         /* B4: mass_integral, mass_integral_target */
@@ -1403,7 +1403,13 @@ DEFINE_ON_DEMAND(rCFD_run)
                     
                     /* Adjust conc. data, such that sum(conc) = 1 */
                     if(Solver_Dict.control_conc_sum_on){
-    #if RP_NODE                                 
+						
+						/* known limitations:
+						
+							L1: concentration values might exceed [0..1]
+						
+						*/
+#if RP_NODE                                 
                         loop_cells{
             
                             sum_of_conc = 0.0;
@@ -1427,7 +1433,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                 }
                             }
                         }
-    #endif                      
+#endif                      
                     }
                     
                 }

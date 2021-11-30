@@ -402,17 +402,31 @@ void init_all(void)
             
                 loop_data{
                     
-                    if(Data_Dict[i_phase][i_data].type == temperature_data){
+                    switch (Data_Dict[i_phase][i_data].type){
                         
-                        Balance[i_phase][i_data].mass_integral += (C.data[i_phase][i_cell][i_data] - Phase_Dict[i_phase].reference_temperature) * 
-                    
-                            Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
-                    }
-                    else{
+                        case generic_data:
+                            
+                            Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data];
+                            
+                            break;
+                            
+                        case concentration_data:
                         
-                        Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data] * 
+                            Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data] * 
                     
-                            Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                                Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                            
+                            break;
+                            
+                        case temperature_data:
+                        
+                            Balance[i_phase][i_data].mass_integral += (C.data[i_phase][i_cell][i_data] - Phase_Dict[i_phase].reference_temperature) * 
+                    
+                                Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                                
+                            break;
+                    
+                        default: break;
                     }
                 }
             }       

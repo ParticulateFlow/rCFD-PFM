@@ -172,7 +172,7 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
             Message0("\n... rCFD_analyse_CFD: WARNING: set monitoring interval = 1 ... \n");
         }
 
-        Message0("\n...rCFD_analyse_CFD: time_steps_per_monitoring_interval (based on %d time-steps): %d ... \n",
+        Message0("\n...rCFD_analyse_CFD: Recommend %d time_steps_per_monitoring_interval (based on %d time-steps) ... \n",
                 (Solver_Dict.analyse_CFD_count + 1), time_steps_per_monitoring_interval);
     }
     
@@ -696,7 +696,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 
     /* TODO (9/21) - adapt weights of MPI C2Cs such that they obey to actual mass fluxes */
     
-    Message("\nmyid %d Phase_Dict[0].time_step %e Tracer.ready2write %d", myid, Phase_Dict[0].time_step, Tracer.ready2write);
+    /*Message("\nmyid %d Phase_Dict[0].time_step %e Tracer.ready2write %d", myid, Phase_Dict[0].time_step, Tracer.ready2write);*/
 
     if((Tracer.ready2write == 1) && (Tracer_Database_not_full)){
 

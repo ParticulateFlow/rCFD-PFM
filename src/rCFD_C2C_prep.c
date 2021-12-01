@@ -173,7 +173,8 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
         }
 
         Message0("\n...rCFD_analyse_CFD: Recommend %d time_steps_per_monitoring_interval (based on %d time-steps) ... \n",
-                (Solver_Dict.analyse_CFD_count + 1), time_steps_per_monitoring_interval);
+            
+            time_steps_per_monitoring_interval, (Solver_Dict.analyse_CFD_count + 1));
     }
     
     free(dt_cross_max);

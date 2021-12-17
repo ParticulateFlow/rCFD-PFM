@@ -68,6 +68,10 @@
     #define     loop_states2                    for(i_state2 = 0; i_state2 < Solver_Dict.number_of_states; i_state2++)
     #define     loop_states2_ptr                for(i_state2 = 0; i_state2 < Solver_Dict->number_of_states; i_state2++)
 
+    /* default indices */
+    #define     _i_balance                      i_phase][i_data
+    #define     _i_data                         i_phase][i_cell][i_data
+    #define     _i_vof                          i_frame][i_cell][i_phase
     
     /* rCFD_write_Tracer_Positions */
     
@@ -87,11 +91,11 @@
     #define     Tracer_Database_full                (Tracer.frame_counter >= Solver_Dict.number_of_frames)
     #define     Tracer_Database_not_full            !(Tracer_Database_full)
     #define     kill_Tracer_by_coarse_graining      (rand_real > (1./(double)Tracer_Dict.coarse_graining))
-    #define     excess_Tracer_cell_crossing_time    (C.crossing_time[i_phase][i_cell] > (2. * Phase_Dict[i_phase].time_step))
+    #define     excess_Tracer_cell_crossing_time    (C.crossing_time[i_phase][i_cell] > (2. * Solver_Dict.global_time_step))
     #define     Tracer_has_crossed_cell_border      ((int)p->user[p_c_old] != i_cell)
     #define     Tracer_from_slow_cell               (p->user[p_time_ratio] > 1.0)
     #define     Tracer_not_stored_yet               (p->user[p_just_killed] < 1.0)
-    #define     Tracer_lifetime_expired             ((CURRENT_TIME - p->user[p_start_time]) >= Phase_Dict[i_phase].time_step)
+    #define     Tracer_lifetime_expired             ((CURRENT_TIME - p->user[p_start_time]) >= Solver_Dict.global_time_step)
 
     /* rCFD_write_Norms */
     

@@ -57,6 +57,8 @@
         Solver_Dict->number_of_runs =                       1; 
         
         Solver_Dict->data_drifting_on =                     1; 
+
+        Solver_Dict->control_conc_sum_on =                  0;      
     }   
 
     void rCFD_user_set_File_Dict(Solver_Dict_type *Solver_Dict, File_Dict_type *File_Dict)
@@ -106,12 +108,12 @@
                 
                 if((i_phase == air) && (i_data == c_drift_0p0)){
                     
-                    Data_Dict[i_phase][i_data].type = generic_data;
+                    Data_Dict[i_phase][i_data].type = concentration_data;
                 }
 
                 if((i_phase == air) && (i_data == c_drift_0p001)){
                     
-                    Data_Dict[i_phase][i_data].type = generic_data;
+                    Data_Dict[i_phase][i_data].type = concentration_data;
 
                     Data_Dict[i_phase][i_data].drifting_data = 1;
                     
@@ -126,7 +128,7 @@
 
                 if((i_phase == air) && (i_data == c_drift_0p002)){
                     
-                    Data_Dict[i_phase][i_data].type = generic_data;
+                    Data_Dict[i_phase][i_data].type = concentration_data;
 
                     Data_Dict[i_phase][i_data].drifting_data = 1;
                     
@@ -202,10 +204,6 @@
         }end_c_loop_int(i_cell, t)}}        
     }
 
-    void rCFD_user_set_recurrence_time_step(Solver_Dict_type *Solver_Dict, Phase_Dict_type* Phase_Dict)
-    {
-    }
-        
     void rCFD_user_init_Data(Solver_Dict_type *Solver_Dict, Balance_type** Balance, Phase_Dict_type* Phase_Dict, Data_Dict_type** Data_Dict, 
         Topo_Dict_type *Topo_Dict, Cell_type *C, const short i_layer)
     {
@@ -217,7 +215,7 @@
                              
                 loop_data{
             
-                    C->data[i_phase][i_cell][i_data] = 0.0; 
+                    C->data[_i_data] = 0.0; 
                 }
             }
         }
@@ -245,7 +243,7 @@
 
         V_in = 0.0;
         
-        tracer_gas_flowrate = 1.0e-3;   /* (kg/s) */            
+        tracer_gas_flowrate = 1.0e-6;   /* (kg/s) */            
         
         /* inflow bc volume */
         loop_int_cells_ptr{
@@ -281,7 +279,11 @@
 
                     loop_data{
                         
-                        C->data[i_phase][i_cell][i_data] += C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                        C->data[_i_data] = (C->data[_i_data] * C->volume[i_cell] * Phase_Dict[i_phase].density +
+                        
+                            C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step) /
+                            
+                            (C->volume[i_cell] * Phase_Dict[i_phase].density);  /* (.) */
 
                         Balance[i_phase][i_data].mass_source +=  C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
                     }
@@ -294,9 +296,9 @@
 
                     loop_data{
                         
-                        Balance[i_phase][i_data].mass_source -=  C->data[i_phase][i_cell][i_data];  /* (kg) */
+                        Balance[_i_balance].mass_source -=  C->data[_i_data] * C->volume[i_cell] * Phase_Dict[i_phase].density;  /* (kg) */
 
-                        C->data[i_phase][i_cell][i_data] = 0.0;  /* (kg) */
+                        C->data[_i_data] = 0.0;  /* (kg) */
                     }
                 }   
             }
@@ -311,7 +313,8 @@
 
     }
 
-    void rCFD_user_post(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Topo_Dict_type *Topo_Dict, Cell_type *C)
+    void rCFD_user_post(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Topo_Dict_type *Topo_Dict, 
+        Cell_type *C, Rec_type *Rec)
     {
         Domain  *d=Get_Domain(1);
         Thread  *t;
@@ -326,7 +329,7 @@
                 
                 loop_data{
                 
-                    C_UDMI(i_cell, t, i_UDMI) = C->data[i_phase][i_cell][i_data];
+                    C_UDMI(i_cell, t, i_UDMI) = C->data[_i_data];
                     
                     i_UDMI++;
                 }

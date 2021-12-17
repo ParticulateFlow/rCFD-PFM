@@ -36,26 +36,14 @@
     
     rCFD_guide_Tracers
     
-    rCFD_write_Tracers
-    
-    rCFD_reset_Tracers
-    
+    rCFD_write_C2Cs
+        
     
     rCFD_write_Norms
+        
+    rCFD_write_Rec
     
-    rCFD_reset_Norm_counters
-    
-    rCFD_free_Norms
-    
-    rCFD_read_Norm_Database
-    
-    rCFD_recurrence_Path
-    
-    rCFD_free_Norm_Database
-    
-    rCFD_write_Topo
-    
-    
+    rCFD_write_Topo (still missing)
     
     rCFD_free_all
 */
@@ -160,6 +148,7 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
             }
             
             Message0("\n...rCFD_analyse_CFD: cell_crossing_time for phase %d (based on %d time-steps): [%e, %e] ... \n",
+                
                 i_phase, (Solver_Dict.analyse_CFD_count + 1), dt_cross_min[i_phase], dt_cross_max[i_phase]);
         }       
                 
@@ -224,6 +213,9 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
         number_of_start_position_coords = 3. * number_of_start_positions;
     
         start_position_coords = (double*)malloc( number_of_start_position_coords * sizeof(double));
+        
+            Message("\nmyid %d number_of_start_positions %d", myid, number_of_start_positions);
+        
 #endif  
     }
     
@@ -381,15 +373,15 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
     {
         int number_of_initialized_particles = 0;
         
+        int i_tmp_0 = 0, i_tmp_1 = 0;
+        
         loop(p,I->p_init){
             
             p->user[p_just_started] =   1.;
             p->user[p_start_time] =     CURRENT_TIME - CURRENT_TIMESTEP;
             p->user[p_just_killed] =    0.;
-                        
-            number_of_initialized_particles++;
             
-            p->user[p_phase_id] = (double) (number_of_initialized_particles % Solver_Dict.number_of_phases);
+            i_phase = (number_of_initialized_particles % Solver_Dict.number_of_phases);
                         
             if(Solver_Dict.number_of_phases == 1){
                 
@@ -401,14 +393,20 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
             
                 t = P_CELL_THREAD(p);
 
-                loop_phases{
+                t_phase = THREAD_SUB_THREAD(t, i_phase);
                     
-                    t_phase = THREAD_SUB_THREAD(t, i_phase);
-                    
-                    p->user[p_phase_fraction] = C_VOF(c, t_phase);
-                }
+                p->user[p_phase_fraction] = C_VOF(c, t_phase);
             }
+
+            p->user[p_phase_id] = (double)i_phase;
+            
+            if(p->user[p_phase_id]<0.5) i_tmp_0++;
+            else i_tmp_1++;
+            
+            number_of_initialized_particles++;      
         }
+        
+        /*Message("\nmyid %d i_tmp_0 %d i_tmp_1 %d", myid, i_tmp_0, i_tmp_1);*/
     }
     
     
@@ -439,7 +437,9 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
             }
 
             Tracer.allocated = 1;
-            
+
+            /*Message("\nmyid %d Tracer.number_of_shifts[0] %d Tracer.number_of_shifts[1] %d", myid, Tracer.number_of_shifts[0], Tracer.number_of_shifts[1]);*/
+                   
             Message0("\n... rCFD_init_tracers, allocated C2C shifts ...\n");
         }
         else{
@@ -461,21 +461,24 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
     
     Thread  *t_phase = NULL;
     
-    if(Solver_Dict.number_of_phases == 1){
-        
-        i_phase = 0;
-        
-        t_phase = t;
-    }
-    else{
-        
-        i_phase = (int)p->user[p_phase_id]; 
-        
-        t_phase = THREAD_SUB_THREAD(t, i_phase);
-    }         
+    /* U.0 Multiphase settings */
+    {
+        if(Solver_Dict.number_of_phases == 1){
+            
+            i_phase = 0;
+            
+            t_phase = t;
+        }
+        else{
+            
+            i_phase = (int)p->user[p_phase_id]; 
+            
+            t_phase = THREAD_SUB_THREAD(t, i_phase);
+        }
+    }   
     
-    /* A: Initialize Tracers */
-    
+    /* U.1: Initialize Tracers */
+
     if(Tracer_just_started){
         
         rand_real = (double)rand()/(double)RAND_MAX;
@@ -576,7 +579,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
     }       
        
 
-    /* B: Consider (i) RWM changes across cells  (ii) fast Tracer from slow cells */
+    /* U.2: Consider (i) RWM changes across cells  (ii) fast Tracer from slow cells */
     
     if(Tracer_has_crossed_cell_border){
         
@@ -619,7 +622,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
     }
     
 
-    /* C: store and kill tracers after lifetime */
+    /* U.3: store and kill tracers after lifetime */
+    
     if((Tracer_lifetime_expired) && (Tracer_Database_not_full) && (Tracer_not_stored_yet)){
         
         p->user[p_just_killed] = 2.;
@@ -675,7 +679,7 @@ DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
         
         Thread  *t_phase = NULL;
         
-        int i_phase = p->user[p_phase_id];
+        int i_phase = (int)p->user[p_phase_id];
         
         t_phase = THREAD_SUB_THREAD(t, i_phase);
             
@@ -696,13 +700,11 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 #if RP_NODE 
 
     /* TODO (9/21) - adapt weights of MPI C2Cs such that they obey to actual mass fluxes */
-    
-    /*Message("\nmyid %d Phase_Dict[0].time_step %e Tracer.ready2write %d", myid, Phase_Dict[0].time_step, Tracer.ready2write);*/
-
+        
     if((Tracer.ready2write == 1) && (Tracer_Database_not_full)){
 
         int     i_phase;
-            
+
         loop_phases{
             
             if(Tracer.monitor_counter[i_phase] > 0){
@@ -799,7 +801,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
           
                     fclose(f_out);
               
-                    Message0("... wrote C2C frame # %d for phase %d ...\n", Tracer.frame_counter, i_phase);         
+                    Message0("\n... wrote C2C frame # %d for phase %d ...", Tracer.frame_counter, i_phase);         
                 }
             }
         }
@@ -810,7 +812,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
     }
     else{
     
-       Message0("... no Tracer frame written; last frame # %d ...\n", Tracer.frame_counter);
+       Message0("\n... no Tracer frame written; already wrote %d frames ...", Tracer.frame_counter);
     }
 #endif
 }
@@ -822,65 +824,74 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
 #if RP_NODE
 
     Domain  *d=Get_Domain(1);
-    Thread  *t, *t_phase;
-    cell_t  i_cell;
+    Thread  *t, *t_mix, *t_phase;
     
-    int     i_state, i_norm;
+    int     i_state, i_norm, i_phase, i_cell, i_layer;
  
     if ((Tracer.monitoring_started) && (Norms_write_interval) && (Norm_Database_not_full)){
         
-        i_norm = 0;
-        
-        if(Norm_Dict.format == standard){
+        /* N.1 calc norms */
+        {
+            i_norm = 0;
             
-            thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell,t){
+            t_mix = NULL;
+            
+            if(Norm_Dict.format == standard){
                 
-                if((i_cell % Norm_Dict.coarse_graining) == 0){
+                thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell,t){
                     
-                    if(Solver_Dict.number_of_phases == 1){
-                            
-                        Norms.norm[i_norm] = sqrt(C_U(i_cell,t)*C_U(i_cell,t) + C_V(i_cell,t)*C_V(i_cell,t) + C_W(i_cell,t)*C_W(i_cell,t));
-                    }
-                    else{
-
-                        t_phase = THREAD_SUB_THREAD(t, 0);
+                    if((i_cell % Norm_Dict.coarse_graining) == 0){
                         
-                        Norms.norm[i_norm] = C_VOF(i_cell, t_phase);
+                        if(Solver_Dict.number_of_phases == 1){
+                                
+                            Norms.norm[i_norm] = sqrt(C_U(i_cell,t)*C_U(i_cell,t) + C_V(i_cell,t)*C_V(i_cell,t) + C_W(i_cell,t)*C_W(i_cell,t));
+                        }
+                        else{
+                            
+                            t_mix = t;
+
+                            t_phase = THREAD_SUB_THREAD(t, 0);
+                            
+                            Norms.norm[i_norm] = C_VOF(i_cell, t_phase);                        
+                        }
+                        
+                        i_norm++;
                     }
                     
-                    i_norm++;
-                }
+                }end_c_loop_int(i_cell,t)}}
                 
-            }end_c_loop_int(i_cell,t)}}
+            }
+            else{
+                
+                rCFD_user_set_Norm(&Solver_Dict, &Norms);
+            }
+        }
+        
+        /* N.2 write norms */
+        {
+            FILE    *f_out;
+            char    file_name[80];
             
-        }
-        else{
+            i_state = Solver.current_state;
             
-            rCFD_user_set_Norm(&Solver_Dict, &Norms);
-        }
-        
-        FILE    *f_out;
-        char    file_name[80];
-        
-        i_state = Solver.current_state;
-        
-        sprintf(file_name,"%s_%d_%d", File_Dict.Norm_filename, i_state, myid);
-        
-        if(Norms.frame_counter == 0){
-        
-            f_out = fopen(file_name, "w");
-        }
-        else{
-        
-            f_out = fopen(file_name, "a");
-        }
-        
-        if(f_out == NULL){
+            sprintf(file_name,"%s_%d_%d", File_Dict.Norm_filename, i_state, myid);
+            
+            if(Norms.frame_counter == 0){
+            
+                f_out = fopen(file_name, "w");
+            }
+            else{
+            
+                f_out = fopen(file_name, "a");
+            }
+            
+            if(f_out == NULL){
 
-            Message("\n... ERROR: rCFD_write_Norms: f_out == NULL ...\n");
-        }
-        else{
-    
+                Message("\n... ERROR: rCFD_write_Norms: f_out == NULL ...\n");
+                
+                return;
+            }
+
             fprintf(f_out,"%d \n", Norms.number_of_norms);
 
             loop_norms{
@@ -889,15 +900,70 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
             }
      
             fclose(f_out);
-        }
-    
-        Message0("... norm frames # %d written ...\n", Norms.frame_counter);
         
-        Norms.frame_counter++;
-    
-    }
-    else Message0("\n... no Norm frame written; last frame # %d ... \n", Norms.frame_counter);
+            Message0("\n... Norm frame # %d written ...\n", Norms.frame_counter);
+        }
+        
+        /* N.3 in case of multiphase, write vof Files */
+        if(Solver_Dict.number_of_phases > 1){
+            
+            FILE    *f_out;
+            char    file_name[80];
+            
+            i_state = Solver.current_state;
+            
+            i_layer = 0;
+            
+            loop_phases{
+                
+                sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
+                
+                if(Norms.frame_counter == 0){
+                
+                    f_out = fopen(file_name, "w");
+                }
+                else{
+                
+                    f_out = fopen(file_name, "a");
+                }
+                
+                if(f_out == NULL){
 
+                    Message("\n... ERROR: rCFD_write_Norms: vof: f_out == NULL ...\n");
+                    
+                    return;
+                }
+
+                fprintf(f_out,"%d \n", _Cell_Dict.number_of_int_cells);
+
+                t_phase = THREAD_SUB_THREAD(t_mix, i_phase);
+                
+                if(t_phase == NULL){
+
+                    Message("\n... ERROR: rCFD_write_Norms: t_phase == NULL for i_phase = %d\n", i_phase);
+                    
+                    fclose(f_out);
+                    
+                    return;
+                }
+                    
+                loop_int_cells{
+         
+                    fprintf(f_out,"%e \n", C_VOF(i_cell, t_phase));
+                }
+         
+                fclose(f_out);
+
+                Message0("\n... vof frame # %d written for phase %d ...", Norms.frame_counter, i_phase);             
+            }           
+        }
+
+        Norms.frame_counter++;    
+    }
+    else{ 
+    
+        Message0("\n... no Norm frame written; already wrote %d frames...", Norms.frame_counter);
+    }
 #endif  
 }
  
@@ -984,7 +1050,11 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                 }
             }
         
-            mean_norm = PRF_GRSUM1(sum_of_all_norms) / (double) (Solver_Dict.number_of_frames * Norms.number_of_norms);
+            mean_norm = PRF_GRSUM1(sum_of_all_norms) / 
+                
+                (double) PRF_GISUM1(Norms.number_of_norms) /
+            
+                (double) Solver_Dict.number_of_frames;
 #endif
 
             loop_frames{
@@ -1001,14 +1071,21 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                         
                             diff = fabs(Norm_Database[i_frame][i_norm] - Norm_Database[i_frame2][i_norm]);
                             
-                            if(diff > mean_norm){ 
+                            if(Norm_Dict.larger_than_mean_norm_only){
+                                
+                                if(diff > mean_norm){ 
                             
-                                norm += diff;
+                                    norm += diff;
+                                }
                             }
+                            else{
+                                
+                                norm += diff;
+                            }                           
                         }                       
                     }
                     
-                    norm = PRF_GRSUM1(norm);    
+                    norm = PRF_GRSUM1(norm);  
 #endif  
                     node_to_host_real_1(norm);
 #if RP_HOST

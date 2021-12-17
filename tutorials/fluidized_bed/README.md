@@ -1,28 +1,18 @@
-# Cube Tutorial
+# Fluidized Bed Tutorial
 
 ## Contents
 
-- Compile specific (non rCFD) udf's for full CFD
-- Prepares rCFD database on a 1.2M grid.
-- Runs rCFD considering (i) pollutant propagation, (ii) sedimenting aerosol species
-
-## Prepare full CFD
-
-- start Ansys/fluent by e.g. *fluent 3ddp -t12 &* from this folder
-- read tundish_tutorial.scm
-- type into fluent console (cube_prep)
-
-- full CFD udf's will be built into /libudf_cube
-
-- close Ansys/fluent
+- Prepares rCFD database on a 65k grid (C2C patterns for gas and solid phase).
+- Runs rCFD considering (i) secondary gas species, (ii) drifting solid fractions
 
 ## Prepare rCFD
 
-- start Ansys/fluent by e.g. *fluent 3ddp -t12 &* from this folder
-- read cube_tutorial.scm
+- start Ansys/fluent by e.g. *fluent 3ddp -t4 &* from this folder
+- read FB_tutorial.scm
 - type into fluent console (rcfd_p1), followed by (rcfd_p1), ..., (rcfd_p11); or simply (rcfd_prep)
 
 - c2c patterns will be stored into ./data/c2c
+- vof fields will be stored into ./data/vof
 - jump vector will be stored into ./rec
 
 - close Ansys/fluent
@@ -30,7 +20,7 @@
 ## Run rCFD
 
 - start Ansys/fluent with the same number of threads from this folder.
-- read tundish_tutorial.scm
+- read FB_tutorial.scm
 - type into fluent console (rcfd_r1), followed by (rcfd_r1), ..., (rcfd_r7); or simply (rcfd_run)
 
 - balances will be stored into ./post
@@ -42,7 +32,6 @@
 ## Known Limitations
 
 - (rcfd_run) works only after (rcfd_prep)
-- Ansys/fluent has to be closed between *prepare full CFD*, *prepare rCFD* and *run rCFD*
 - missing cross-partition diffusion
 
 ## License

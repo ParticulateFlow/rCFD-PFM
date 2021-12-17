@@ -72,6 +72,8 @@
 
         char    *Norm_filename;
 
+        char    *vof_filename;
+
         char    *Jump_filename;
 
         char    *Matrix_filename;
@@ -133,6 +135,8 @@
         short   format;
 
         int     coarse_graining;        /* if ((i_cell % coarse_graining) == 0) */
+        
+        short   larger_than_mean_norm_only;
 
     } Norm_Dict_type;
 
@@ -325,7 +329,7 @@
 
         double      **node2node_flux, **node2node_data_flux;
 
-        double      mass_error, mass_error_prev;
+        double      mass_error, mass_error_global, mass_error_prev;
 
         double      face_swap;
 

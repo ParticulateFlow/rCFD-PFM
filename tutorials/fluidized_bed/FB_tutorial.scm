@@ -8,18 +8,19 @@
 (define rCFD_src_dir  "../../src")
 (define rCFD_user_src_dir  "./user_src")
 (define ANSYS_Fluent_case_dir "./ansys_fluent")
-(define ANSYS_Fluent_case_file  "Cube_1.2M_fullCFD_t=2.5s")
+(define ANSYS_Fluent_case_file  "LabScale_FB")
 
-(define number_of_Timesteps_for_rCFD_analyse_CFD 1)
+(define number_of_Timesteps_for_rCFD_analyse_CFD 5)
 
-(define ANSYS_Fluent_simulation_timestep 0.0002)
-(define ANSYS_Fluent_number_of_simulation_timesteps 370)
+(define ANSYS_Fluent_simulation_timestep 0.0005)
+(define ANSYS_Fluent_number_of_simulation_timesteps 3050)
 
 (define number_of_rCFD_episodes 100)
 
 (define i 0)
 
-(define img-1 "aerosols_y=0_")
+(define img-1 "gas_phase_")
+(define img-2 "solid_phase_")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (Cube_prep)     ;; prep.2   compile everything needed for monitoring
@@ -47,14 +48,10 @@
     
     (ti-menu-load-string (format  #f "!cp ~a/*.c ." rCFD_src_dir))
     (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_src_dir))
-    (ti-menu-load-string (format  #f "!cp ~a/*.c ." rCFD_user_src_dir))
     (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_user_src_dir))
 
     (ti-menu-load-string "!rm -r libudf_rcfd_prep")
     
-    (ti-menu-load-string "!rm -r data")
-    (ti-menu-load-string "!rm -r rec")
-    (ti-menu-load-string "!rm -r post") 
 )   
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,12 +82,6 @@
     
     (ti-menu-load-string "/define/user-defined/user-defined-memory 30 q" )
     
-    (ti-menu-load-string "/define/user-defined/compiled-functions load \"libudf_cube\"")
-    
-    (ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () vmag yes yes udf inlet_x_v::libudf_cube q")       
-    (ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () turbulent-kinetic-energy yes yes udf inlet_x_k::libudf_cube q")
-    (ti-menu-load-string "/define/boundary-conditions/set/velocity-inlet inlet () turbulent-dissipation-rate yes yes udf inlet_x_dissp::libudf_cube q")
-
     (ti-menu-load-string "/define/user-defined/compiled-functions load \"libudf_rcfd_prep\"")
     
     (ti-menu-load-string "/define/user-defined/execute-on-demand \"rCFD_init_all::libudf_rcfd_prep\"")
@@ -240,6 +231,22 @@
     (rCFD_P11)      
 )
 
+(define (rcfd_test)
+
+    (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
+    (ti-menu-load-string (format  #f "!cp ~a/~a.dat.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
+    
+    (ti-menu-load-string (format  #f "!cp ~a/*.c ." rCFD_src_dir))
+    (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_src_dir))
+    (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_user_src_dir))
+
+    (ti-menu-load-string "!rm -r libudf_rcfd_prep")
+
+    (rCFD_P2)
+    (rCFD_P3)
+    (rCFD_P9)
+    (rCFD_P10)
+)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (rCFD_R1)       ;; run.1    clean-up folder and load source files
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,7 +308,6 @@
     ;; set graphics setting 
     (ti-menu-load-string "/display/open-window 1")
     (ti-menu-load-string "/display/set-window 1")
-    
     (ti-menu-load-string "/display/set/picture/driver tiff")
     (ti-menu-load-string "/display/set/picture/color-mode color")
     (ti-menu-load-string "/display/set/picture/invert-background? no")
@@ -309,49 +315,80 @@
     (ti-menu-load-string "/display/set/picture/use-window-resolution? no")
     (ti-menu-load-string "/display/set/picture/x-resolution 1189")
     (ti-menu-load-string "/display/set/picture/y-resolution 642")
-
     (ti-menu-load-string "/display/set/overlays no")        
-    
+        
     (do  ((i  0 (+ i  1)))
         ((= i  number_of_rCFD_episodes))              
 
         (ti-menu-load-string "/define/user-defined/execute-on-demand \"rCFD_run::libudf_rcfd_run\"")
-
-        ;; 3x contour at y= 0 surface
-        (ti-menu-load-string "/display/objects/display contour-1")  
-        (ti-menu-load-string "/display/set/overlays yes")
-        (ti-menu-load-string "/display/views/restore-view view-3x-y=0")
-        (ti-menu-load-string "/display/set/lights/lights-on no")        
-        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-1-16 no no")
-        (ti-menu-load-string "/display/update-scene/display yes no yes yes no no no no no 0 0 0 0")  
-        (ti-menu-load-string "/display/update-scene/transform no yes 0 0 0.35 yes 0 0 180 0 0 0 no")    
-        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-1-16")    
+        
+        ;; gas phase and solid fraction
+        (ti-menu-load-string "/display/set/overlays no")            
         
         (ti-menu-load-string "/display/objects/display contour-2")  
         (ti-menu-load-string "/display/set/overlays yes")
-        (ti-menu-load-string "/display/views/restore-view view-3x-y=0")
+        (ti-menu-load-string "/display/views/restore-view view_x=0")
         (ti-menu-load-string "/display/set/lights/lights-on no")        
-        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-2-16 no no")
-        (ti-menu-load-string "/display/update-scene/display yes no yes yes no no no no no 0 0 0 0")  
-        (ti-menu-load-string "/display/update-scene/transform no yes 0 0 0 yes 0 0 180 0 0 0 no")    
-        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-2-16")    
+        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-2-5 no no") 
+        (ti-menu-load-string "/display/update-scene/display yes no yes no no no no no no 0 0 0 0")  
+        (ti-menu-load-string "/display/update-scene/transform no yes 0 0.0 0 no no")    
+        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-2-5")    
 
         (ti-menu-load-string "/display/objects/display contour-3")  
-        (ti-menu-load-string "/display/set/overlays yes")           
-        (ti-menu-load-string "/display/views/restore-view view-3x-y=0")
+        (ti-menu-load-string "/display/set/overlays yes")
+        (ti-menu-load-string "/display/views/restore-view view_x=0")
         (ti-menu-load-string "/display/set/lights/lights-on no")        
-        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-3-16 no no")
-        (ti-menu-load-string "/display/update-scene/display yes no yes yes no no no no no 0 0 0 0")  
-        (ti-menu-load-string "/display/update-scene/transform no yes 0 0 -0.35 yes 0 0 180 0 0 0 no")    
-        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-3-16")    
-
+        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-3-5 no no") 
+        (ti-menu-load-string "/display/update-scene/display yes no yes no no no no no no 0 0 0 0")  
+        (ti-menu-load-string "/display/update-scene/transform no yes 0 0.2 0 no no")    
+        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-3-5")    
+        
+        (ti-menu-load-string "/display/objects/display contour-1")  
+        (ti-menu-load-string "/display/set/overlays yes")
+        (ti-menu-load-string "/display/views/restore-view view_x=0")
+        (ti-menu-load-string "/display/set/lights/lights-on no")        
+        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-1-5 no no") 
+        (ti-menu-load-string "/display/update-scene/display yes no yes no no no no no no 0 0 0 0")  
+        (ti-menu-load-string "/display/update-scene/transform no yes 0 0.4 0 no no")    
+        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-1-5") 
         
         (ti-menu-load-string "!rm temp1.tif")
         (ti-menu-load-string "display/hardcopy temp1.tif")
-        (ti-menu-load-string (format #f "! convert temp1.tif ~a~04d.jpg &" img-1 i))    
+        (ti-menu-load-string (format #f "! convert temp1.tif ~a~04d.jpg &" img-1 i))                
 
-        (ti-menu-load-string "/display/set/overlays no")
-        (ti-menu-load-string "/display/set/lights/lights-on yes")          
+        ;; solid phase
+        (ti-menu-load-string "/display/set/overlays no")        
+        
+        (ti-menu-load-string "/display/objects/display contour-4")  
+        (ti-menu-load-string "/display/set/overlays yes")
+        (ti-menu-load-string "/display/views/restore-view view_x=0")
+        (ti-menu-load-string "/display/set/lights/lights-on no")        
+        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-4-5 no no") 
+        (ti-menu-load-string "/display/update-scene/display yes no yes no no no no no no 0 0 0 0")  
+        (ti-menu-load-string "/display/update-scene/transform no yes 0 0.0 0 no no")    
+        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-4-5")    
+
+        (ti-menu-load-string "/display/objects/display contour-5")  
+        (ti-menu-load-string "/display/set/overlays yes")
+        (ti-menu-load-string "/display/views/restore-view view_x=0")
+        (ti-menu-load-string "/display/set/lights/lights-on no")        
+        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-5-5 no no") 
+        (ti-menu-load-string "/display/update-scene/display yes no yes no no no no no no 0 0 0 0")  
+        (ti-menu-load-string "/display/update-scene/transform no yes 0 0.2 0 no no")    
+        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-5-5")    
+        
+        (ti-menu-load-string "/display/objects/display contour-6")  
+        (ti-menu-load-string "/display/set/overlays yes")
+        (ti-menu-load-string "/display/views/restore-view view_x=0")
+        (ti-menu-load-string "/display/set/lights/lights-on no")        
+        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-6-5 no no") 
+        (ti-menu-load-string "/display/update-scene/display yes no yes no no no no no no 0 0 0 0")  
+        (ti-menu-load-string "/display/update-scene/transform no yes 0 0.4 0 no no")    
+        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-6-5") 
+                
+        (ti-menu-load-string "!rm temp2.tif")
+        (ti-menu-load-string "display/hardcopy temp2.tif")
+        (ti-menu-load-string (format #f "! convert temp2.tif ~a~04d.jpg &" img-2 i))        
     )
 )
 

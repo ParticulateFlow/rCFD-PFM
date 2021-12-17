@@ -854,7 +854,7 @@
 #endif
 #endif
 
-#if 1 /* corona cell communication */
+#if 1 /* communication */
 #if RP_NODE
 
     void sum_up_parallel_corona_cells(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict, double *cell_data, const short i_layer)
@@ -1207,7 +1207,7 @@
             }
         }
         
-        /* C2.b: Node-0 sends C2Cs.shifts_in to other Nodes */
+        /* C2.b: Node-0 sends C2Cs.shifts_in to other Nodes; all nodes set C.data_shift */
         {
             if (myid == 0){
                 
@@ -1225,7 +1225,7 @@
                         
                         MPI_size = size * Phase_Dict[i_phase].number_of_data;
                         
-                        list_of_double=(double*)malloc(MPI_size * sizeof(double));
+                        list_of_double = (double*)malloc(MPI_size * sizeof(double));
                         
                         loop_C2Cs_size{
                         
@@ -1240,18 +1240,52 @@
                         PRF_CSEND_REAL(i_node, list_of_double, MPI_size, node_zero);
                         
                         index_in_total_list += size;
+                        
+                        free(list_of_double);
                     }
-                }               
+                    
+                    
+                } 
+            
+                loop_offset_in0 = C2Cs->island_offsets_in[i_island];
+                loop_offset_in1 = C2Cs->island_offsets_in[(i_island + 1)];
+
+                for(i_C2C = loop_offset_in0; i_C2C < loop_offset_in1; i_C2C++){
+                                                
+                    c0 = C2Cs->shifts_in[i_C2C].c0;
+                    c1 = C2Cs->shifts_in[i_C2C].c1;
+                    w0 = C2Cs->shifts_in[i_C2C].w0;
+                    
+                    if(w0 > 0.0){
+                    
+                        loop_data{
+             
+                            data0 = C2Cs_MPI.shifts_in[i_C2C].data[i_data];
+                                            
+                            C->data_shift[i_phase][c1][i_data] =  
+                            
+                                (w0 * data0 + C->weight_after_shift[c1] * C->data_shift[i_phase][c1][i_data])/
+                                
+                                (w0 + C->weight_after_shift[c1]);
+                                
+                                
+                            if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
+                            
+                                n0 = C2Cs->shifts_in[i_C2C].node0;
+                                
+                                Balance[i_phase][i_data].node2node_flux[n0][myid] += w0;
+                                Balance[i_phase][i_data].node2node_data_flux[n0][myid] += w0 * data0;
+                            }
+                        }
+                
+                        C->weight_after_shift[c1] += w0; 
+                    }
+                }
             }
 
             if (myid > 0){
         
                 PRF_CRECV_INT(node_zero, &size, 1, node_zero);
-                
-                if(size != C2Cs->number_of_shifts_in){
-                    
-                    Message("\n myid %d, size %d, number_of_shifts_in %d", myid, size, C2Cs->number_of_shifts_in);
-                }
           
                 if(size > 0){
               
@@ -1260,59 +1294,48 @@
                     list_of_double=(double*)malloc(MPI_size * sizeof(double));
                     
                     PRF_CRECV_REAL(node_zero, list_of_double, MPI_size, node_zero); 
-                }
-            }
-        }
+                    
+                    loop_offset_in0 = C2Cs->island_offsets_in[i_island];
+                    loop_offset_in1 = C2Cs->island_offsets_in[(i_island + 1)];
 
-        /* C2.c: redistribute on Node (data_shift, w_after_shift) */
-        {
-            
-            loop_offset_in0 = C2Cs->island_offsets_in[i_island];
-            loop_offset_in1 = C2Cs->island_offsets_in[(i_island + 1)];
-
-            for(i_C2C = loop_offset_in0; i_C2C < loop_offset_in1; i_C2C++){
-                                            
-                c0 = C2Cs->shifts_in[i_C2C].c0;
-                c1 = C2Cs->shifts_in[i_C2C].c1;
-                w0 = C2Cs->shifts_in[i_C2C].w0;
-                
-                if(w0 > 0.0){
-                
-                    loop_data{
-         
-                        if (myid == 0){
-                            
-                            data0 = C2Cs_MPI.shifts_in[i_C2C].data[i_data];
-                        }
-                        else{
-                            
-                            i_list = i_C2C * Phase_Dict[i_phase].number_of_data + i_data;
-                            
-                            data0 = list_of_double[i_list];
-                        }
-                                        
-                        C->data_shift[i_phase][c1][i_data] =  
+                    for(i_C2C = loop_offset_in0; i_C2C < loop_offset_in1; i_C2C++){
+                                                    
+                        c0 = C2Cs->shifts_in[i_C2C].c0;
+                        c1 = C2Cs->shifts_in[i_C2C].c1;
+                        w0 = C2Cs->shifts_in[i_C2C].w0;
                         
-                            (w0 * data0 + C->weight_after_shift[c1] * C->data_shift[i_phase][c1][i_data])/
-                            
-                            (w0 + C->weight_after_shift[c1]);
-                            
-                            
-                        if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
+                        if((w0 > 0.0)){
                         
-                            n0 = C2Cs->shifts_in[i_C2C].node0;
-                            
-                            Balance[i_phase][i_data].node2node_flux[n0][myid] += w0;
-                            Balance[i_phase][i_data].node2node_data_flux[n0][myid] += w0 * data0;
+                            loop_data{
+                 
+                                i_list = i_C2C * Phase_Dict[i_phase].number_of_data + i_data;
+                                
+                                data0 = list_of_double[i_list];
+                                                                    
+                                C->data_shift[i_phase][c1][i_data] =  
+                                
+                                    (w0 * data0 + C->weight_after_shift[c1] * C->data_shift[i_phase][c1][i_data])/
+                                    
+                                    (w0 + C->weight_after_shift[c1]);                                   
+                                    
+                                if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
+                                
+                                    n0 = C2Cs->shifts_in[i_C2C].node0;
+                                    
+                                    Balance[i_phase][i_data].node2node_flux[n0][myid] += w0;
+                                    
+                                    Balance[i_phase][i_data].node2node_data_flux[n0][myid] += w0 * data0;
+                                }
+                            }
+                    
+                            C->weight_after_shift[c1] += w0; 
                         }
                     }
-            
-                    C->weight_after_shift[c1] += w0; 
-                }
+
+                    free(list_of_double);
+               }
             }
-                
-            free(list_of_double);
-        }       
+        }
     }
 #endif
 #endif

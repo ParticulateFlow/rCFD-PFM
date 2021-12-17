@@ -224,7 +224,7 @@ void init_all(void)
                     C.user = NULL;
                 }
                         
-                rCFD_default_Cell(&Solver_Dict, Phase_Dict, &Topo_Dict, &C, i_layer);
+                rCFD_default_Cell(&Solver_Dict, &File_Dict, Phase_Dict, &Topo_Dict, &C, i_layer);
             }
         }
 #endif  
@@ -304,6 +304,11 @@ void init_all(void)
         
         Rec.global_frame = (int*)malloc(Solver_Dict.number_of_islands * sizeof(int));
         
+        loop_islands{
+            
+            Rec.global_frame[i_island] = 0;
+        }
+        
         Rec.jumps = (int****)malloc(Solver_Dict.number_of_states * sizeof(int***));
         
         loop_states{
@@ -375,6 +380,8 @@ void init_all(void)
                 
                 Balance[i_phase][i_data].mass_error = 0.0;
 
+                Balance[i_phase][i_data].mass_error_global = 0.0;
+
                 Balance[i_phase][i_data].mass_error_prev = 0.0;
 
                 Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_min;
@@ -390,7 +397,7 @@ void init_all(void)
 #if RP_NODE     
         int i_layer, i_frame, i_phase, i_data, i_cell;
         
-        i_layer = 0;    /* user initialization just for base layer of grid, migh be changed to loop_layers in future */
+        i_layer = 0;    /* user initialization just for base layer of grid, might be changed to loop_layers in future */
                 
         rCFD_user_init_Data(&Solver_Dict, Balance, Phase_Dict, Data_Dict, &Topo_Dict, &C, i_layer);
         
@@ -412,9 +419,7 @@ void init_all(void)
                             
                         case concentration_data:
                         
-                            Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data] * 
-                    
-                                Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                            Balance[_i_balance].mass_integral += C.data[_i_data] * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[_i_vof];
                             
                             break;
                             
@@ -444,7 +449,7 @@ void init_all(void)
             }
         }
         
-        rCFD_user_post(&Solver_Dict, Phase_Dict, &Topo_Dict, &C);   /* post-process initialization */
+        rCFD_user_post(&Solver_Dict, Phase_Dict, &Topo_Dict, &C, &Rec);   /* post-process initialization */
 #endif
     }       
 

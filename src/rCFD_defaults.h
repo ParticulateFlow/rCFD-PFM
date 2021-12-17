@@ -17,7 +17,7 @@
 */  
 
     #define     Global_Version_Year     2021
-    #define     Global_Version_Month    11
+    #define     Global_Version_Month    12
     
     #define     Global_Verbal           1
     
@@ -95,6 +95,7 @@
             
             if( (mkdir("./data",0777) != 0) ||
                 (mkdir("./data/tmp",0777) != 0) ||
+                (mkdir("./data/vof",0777) != 0) ||
                 (mkdir("./data/c2c",0777) != 0) ||
                 (mkdir("./rec",0777) != 0) ||
                 (mkdir("./post",0777) != 0) ){
@@ -108,6 +109,8 @@
         File_Dict->C2C_filename =                       "./data/c2c/c2c";
         
         File_Dict->Norm_filename =                      "./data/tmp/norm";
+        
+        File_Dict->vof_filename =                       "./data/vof/vof";
         
         File_Dict->Jump_filename =                      "./rec/jump";
 
@@ -172,6 +175,8 @@
         Norm_Dict->format = standard;
         
         Norm_Dict->coarse_graining = 1;
+        
+        Norm_Dict->larger_than_mean_norm_only = 0;
     }
     
     void rCFD_default_Rec_Dict(Solver_Dict_type *Solver_Dict, Rec_Dict_type *Rec_Dict)
@@ -179,14 +184,14 @@
         
         Rec_Dict->method = quarter_jumps;
         
-        Rec_Dict->min_seq_length = (int)Solver_Dict->number_of_frames/25;
+        Rec_Dict->min_seq_length = (int)((double)Solver_Dict->number_of_frames/25.);
         
         if(Rec_Dict->min_seq_length < 1){
             
             Rec_Dict->min_seq_length = 1;
         }
         
-        Rec_Dict->max_seq_length = (int)Solver_Dict->number_of_frames/4;
+        Rec_Dict->max_seq_length = (int)((double)Solver_Dict->number_of_frames/4.);
         
         if(Rec_Dict->max_seq_length < 1){
             
@@ -353,7 +358,7 @@
         Solver->global_run_counter =    0;          
     }   
 
-    void rCFD_default_Cell(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Topo_Dict_type *Topo_Dict, Cell_type *C, const short i_layer)
+    void rCFD_default_Cell(Solver_Dict_type *Solver_Dict, File_Dict_type * File_Dict, Phase_Dict_type *Phase_Dict, Topo_Dict_type *Topo_Dict, Cell_type *C, const short i_layer)
     {
         if(i_layer == 0){
             
@@ -396,21 +401,76 @@
             
             if(C->vof != NULL){
                     
-                loop_frames_ptr{
+                FILE    *f_in = NULL;
+                char    file_name[80];
+                
+                int     i_state = 0, i_tmp;
+                                    
+                loop_phases_ptr{
                     
-                    loop_cells_ptr{
-                        
-                        loop_phases_ptr{
-                        
-                            if(i_phase == 0){
-                                
-                                C->vof[i_frame][i_cell][i_phase] = 1.0;
-                            }
-                            else{
+                    sprintf(file_name,"%s_%d_%d_%d", File_Dict->vof_filename, i_state, i_phase, myid);
+                
+                    f_in = fopen(file_name, "r");
+                    
+                    if(f_in == NULL){
+
+                        if(Solver_Dict->number_of_phases == 0){
                             
-                                C->vof[i_frame][i_cell][i_phase] = 0.0;
+                            loop_frames_ptr{
+                                
+                                loop_int_cells_ptr{
+                                    
+                                    C->vof[i_frame][i_cell][i_phase] = 1.0;
+                                }
                             }
                         }
+                        else{                   
+                            
+                            loop_frames_ptr{
+                                
+                                loop_int_cells_ptr{
+                                    
+                                    if(i_phase == 0){
+                                        
+                                        C->vof[i_frame][i_cell][i_phase] = 1.0;
+                                    }
+                                    else{
+                                        
+                                        C->vof[i_frame][i_cell][i_phase] = 0.0;
+                                    }
+                                }
+                            }
+                            
+                            Message0("\n... WARNING: rCFD_default_Cell: C->vof: f_in == NULL for i_phase %d ...\n", i_phase);
+                        }
+                    }
+                    else{
+
+                        loop_frames_ptr{
+                        
+                            fscanf(f_in,"%d\n", &i_tmp);
+                            
+                            if(i_tmp != _pCell_Dict.number_of_int_cells){
+                                
+                                Message("\n... ERROR: rCFD_default_Cell: C->vof: i_tmp != _pCell_Dict.number_of_int_cells ...\n");
+                                
+                                return;
+                            }
+                                
+                            loop_int_cells_ptr{
+                            
+                                fscanf(f_in,"%le\n", &C->vof[i_frame][i_cell][i_phase]);
+                                
+                                if((C->vof[i_frame][i_cell][i_phase] < 0.0) || (C->vof[i_frame][i_cell][i_phase] > 1.0)){
+                                    
+                                    Message("\nmyid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, C->vof[i_frame][i_cell][i_phase]);
+                                    
+                                    return;
+                                }
+                            }
+                        }
+                        
+                        fclose(f_in);
                     }
                 }       
             }

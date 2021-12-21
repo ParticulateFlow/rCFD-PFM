@@ -325,7 +325,7 @@
 
         double      mass_integral_global, mass_integral_target_global;
 
-        double      mass_source;
+        double      mass_source, mass_source_global;
 
         double      **node2node_flux, **node2node_data_flux;
 

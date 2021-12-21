@@ -23,7 +23,8 @@
     #define     _Face_Dict                      Topo_Dict.Face_Dict[i_layer]
     #define     _pFace_Dict                     Topo_Dict->Face_Dict[i_layer]
 
-    /* loops */
+    
+#if 1   /* loops */
     
     #define     loop_C2Cs_size                  for(i_C2C = 0; i_C2C < size; i_C2C++)
 
@@ -68,11 +69,20 @@
     #define     loop_states2                    for(i_state2 = 0; i_state2 < Solver_Dict.number_of_states; i_state2++)
     #define     loop_states2_ptr                for(i_state2 = 0; i_state2 < Solver_Dict->number_of_states; i_state2++)
 
-    /* default indices */
+#endif
+        
+#if 1   /* indices */
+        
     #define     _i_balance                      i_phase][i_data
+    
     #define     _i_data                         i_phase][i_cell][i_data
+    #define     _c0_data                        i_phase][c0][i_data
+    #define     _c1_data                        i_phase][c1][i_data
+    
     #define     _i_vof                          i_frame][i_cell][i_phase
     
+#endif
+
     /* rCFD_write_Tracer_Positions */
     
     #define     no_ROI_defined                  (Tracer_Dict.region_of_interest_exists == 0)

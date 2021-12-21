@@ -408,24 +408,24 @@
                                     
                 loop_phases_ptr{
                     
-                    sprintf(file_name,"%s_%d_%d_%d", File_Dict->vof_filename, i_state, i_phase, myid);
-                
-                    f_in = fopen(file_name, "r");
-                    
-                    if(f_in == NULL){
-
-                        if(Solver_Dict->number_of_phases == 0){
+                    if(Solver_Dict->number_of_phases == 1){
                             
-                            loop_frames_ptr{
+                        loop_frames_ptr{
+                            
+                            loop_int_cells_ptr{
                                 
-                                loop_int_cells_ptr{
-                                    
-                                    C->vof[i_frame][i_cell][i_phase] = 1.0;
-                                }
+                                C->vof[i_frame][i_cell][i_phase] = 1.0;
                             }
                         }
-                        else{                   
-                            
+                    }
+                    else{
+                    
+                        sprintf(file_name,"%s_%d_%d_%d", File_Dict->vof_filename, i_state, i_phase, myid);
+                    
+                        f_in = fopen(file_name, "r");
+                        
+                        if(f_in == NULL){
+
                             loop_frames_ptr{
                                 
                                 loop_int_cells_ptr{
@@ -441,36 +441,36 @@
                                 }
                             }
                             
-                            Message0("\n... WARNING: rCFD_default_Cell: C->vof: f_in == NULL for i_phase %d ...\n", i_phase);
+                            Message0("\nWARNING: rCFD_default_Cell: C->vof: f_in == NULL for i_phase %d ...\n", i_phase);
                         }
-                    }
-                    else{
+                        else{
 
-                        loop_frames_ptr{
-                        
-                            fscanf(f_in,"%d\n", &i_tmp);
+                            loop_frames_ptr{
                             
-                            if(i_tmp != _pCell_Dict.number_of_int_cells){
+                                fscanf(f_in,"%d\n", &i_tmp);
                                 
-                                Message("\n... ERROR: rCFD_default_Cell: C->vof: i_tmp != _pCell_Dict.number_of_int_cells ...\n");
-                                
-                                return;
-                            }
-                                
-                            loop_int_cells_ptr{
-                            
-                                fscanf(f_in,"%le\n", &C->vof[i_frame][i_cell][i_phase]);
-                                
-                                if((C->vof[i_frame][i_cell][i_phase] < 0.0) || (C->vof[i_frame][i_cell][i_phase] > 1.0)){
+                                if(i_tmp != _pCell_Dict.number_of_int_cells){
                                     
-                                    Message("\nmyid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, C->vof[i_frame][i_cell][i_phase]);
+                                    Message("\nERROR: rCFD_default_Cell: C->vof: i_tmp != _pCell_Dict.number_of_int_cells ...\n");
                                     
                                     return;
                                 }
+                                    
+                                loop_int_cells_ptr{
+                                
+                                    fscanf(f_in,"%le\n", &C->vof[_i_vof]);
+                                    
+                                    if((C->vof[_i_vof] < 0.0) || (C->vof[_i_vof] > 1.0)){
+                                        
+                                        Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, C->vof[_i_vof]);
+                                        
+                                        return;
+                                    }
+                                }
                             }
+                            
+                            fclose(f_in);
                         }
-                        
-                        fclose(f_in);
                     }
                 }       
             }

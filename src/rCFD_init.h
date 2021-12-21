@@ -377,6 +377,8 @@ void init_all(void)
                 Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;
                 
                 Balance[i_phase][i_data].mass_source = 0.0;
+
+                Balance[i_phase][i_data].mass_source_global = 0.0;
                 
                 Balance[i_phase][i_data].mass_error = 0.0;
 
@@ -413,21 +415,23 @@ void init_all(void)
                         
                         case generic_data:
                             
-                            Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data];
+                            Balance[_i_balance].mass_integral += C.data[_i_data];
                             
                             break;
                             
                         case concentration_data:
                         
-                            Balance[_i_balance].mass_integral += C.data[_i_data] * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[_i_vof];
+                            Balance[_i_balance].mass_integral += C.data[_i_data] * 
+                            
+                                Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[_i_vof];
                             
                             break;
                             
                         case temperature_data:
                         
-                            Balance[i_phase][i_data].mass_integral += (C.data[i_phase][i_cell][i_data] - Phase_Dict[i_phase].reference_temperature) * 
+                            Balance[_i_balance].mass_integral += C.data[_i_data] * 
                     
-                                Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                                Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[_i_vof];
                                 
                             break;
                     
@@ -445,7 +449,7 @@ void init_all(void)
                 
                 Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
 
-                Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;
+                Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;               
             }
         }
         

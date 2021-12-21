@@ -24,11 +24,6 @@
             number_of_phase_names
         };
 
-        /* names of phase user vars - phase_0 */
-        enum{
-            number_of_phase0_user_vars_names
-        };
-
         /* names of data - phase_0 */
         enum{
             c_drift_0p0,
@@ -39,7 +34,6 @@
             c_steel_temp,
             number_of_phase0_data_names
         };
-
 #endif
     
     /* user set Dicts */
@@ -57,7 +51,7 @@
         
         Solver_Dict->number_of_frames =                     10;         
 
-        Solver_Dict->number_of_runs =                       50; 
+        Solver_Dict->number_of_runs =                       50;
         
         Solver_Dict->data_drifting_on =                     1;   
 
@@ -233,86 +227,73 @@
 
         double  x[3], radius;
 
-        loop_phases_ptr{
+        i_phase = steel;
         
-            loop_cells_ptr{
-                
-                /* coord's */
-                loop_dim{
-                    
-                    x[i_dim] = C->x[i_cell][i_dim];
-                }
-                
-                radius = sqrt((x[0] - 0.935)*(x[0] - 0.935) + x[1]*x[1]);
-                
-                /* Field Data */
-                loop_data{
+        loop_cells_ptr{
             
-                    if((i_phase == steel) && (i_data == c_drift_0p0)){
+            /* coord's */
+            loop_dim{
+                
+                x[i_dim] = C->x[i_cell][i_dim];
+            }
+            
+            radius = sqrt((x[0] - 0.935)*(x[0] - 0.935) + x[1]*x[1]);
+            
+            /* Field Data */
+            loop_data{
+        
+                /* global initialization */
+                if(i_data == c_steel_grade_A){
                     
-                        C->data[i_phase][i_cell][i_data] = 0.0;
-
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
+                    C->data[_i_data] = 1.0;
+                }
+                else{
+                    
+                    C->data[_i_data] = 0.0;
+                }                   
+                
+                /* inflow initialization */
+                if((radius <= 0.0115) && (x[2] > 0.2)){
+                    
+                    switch (i_data){
                             
-                            C->data[i_phase][i_cell][i_data] = 1.0e-3;
-                        }
-                    }
-
-                    if((i_phase == steel) && (i_data == c_drift_0p002)){
-                    
-                        C->data[i_phase][i_cell][i_data] = 0.0;
-
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
+                        case c_drift_0p0:
+                        {
+                            C->data[_i_data] = 1.0e-3;
                             
-                            C->data[i_phase][i_cell][i_data] = 1.0e-3;
+                            break;
                         }
-                    }
-                    
-                    if((i_phase == steel) && (i_data == c_drift_0p001)){
-                    
-                        C->data[i_phase][i_cell][i_data] = 0.0;
-                        
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
+                        case c_drift_0p001:
+                        {
+                            C->data[_i_data] = 1.0e-3;
                             
-                            C->data[i_phase][i_cell][i_data] = 1.0e-3;
+                            break;
                         }
-                    }
-                    
-                    if((i_phase == steel) && (i_data == c_steel_grade_A)){
-                    
-                        C->data[i_phase][i_cell][i_data] = 1.0;
-                        
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
+                        case c_drift_0p002:
+                        {
+                            C->data[_i_data] = 1.0e-3;
                             
-                            C->data[i_phase][i_cell][i_data] = 0.0;
+                            break;
                         }
-                    }
-                    
-                    if((i_phase == steel) && (i_data == c_steel_grade_B)){
-                    
-                        C->data[i_phase][i_cell][i_data] = 0.0;
-                        
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
+                        case c_steel_grade_A:
+                        {
+                            C->data[_i_data] = 0.0;
                             
-                            C->data[i_phase][i_cell][i_data] = 1.0;
+                            break;
                         }
-                    }
-                    
-                    if((i_phase == steel) && (i_data == c_steel_temp)){
-                    
-                        C->data[i_phase][i_cell][i_data] = 300.0;
-                        
-                        /* mark incoming tube */
-                        if((radius <= 0.0115) && (x[2] > 0.2)){
+                        case c_steel_grade_B:
+                        {
+                            C->data[_i_data] = 1.0;
                             
-                            C->data[i_phase][i_cell][i_data] = 323.0;
+                            break;
                         }
-                    }                   
+                        case c_steel_temp:
+                        {
+                            C->data[_i_data] = 23;
+                            
+                            break;
+                        }                       
+                    }               
                 }
             }
         }
@@ -376,27 +357,27 @@
                             
                             case c_drift_0p0:
                             
-                                C->data[i_phase][i_cell][i_data] = 1.0e-3; break;
+                                C->data[_i_data] = 1.0e-3; break;
 
                             case c_drift_0p001:
                             
-                                C->data[i_phase][i_cell][i_data] = 1.0e-3; break;
+                                C->data[_i_data] = 1.0e-3; break;
 
                             case c_drift_0p002:
                             
-                                C->data[i_phase][i_cell][i_data] = 1.0e-3; break;
+                                C->data[_i_data] = 1.0e-3; break;
                                 
                             case c_steel_grade_A:
                             
-                                C->data[i_phase][i_cell][i_data] = 0.0; break;
+                                C->data[_i_data] = 0.0; break;
                             
                             case c_steel_grade_B:
                             
-                                C->data[i_phase][i_cell][i_data] = 1.0; break;
+                                C->data[_i_data] = 1.0; break;
                             
                             case c_steel_temp:
                             
-                                C->data[i_phase][i_cell][i_data] = 323.0; break;
+                                C->data[_i_data] = 23.0; break;
                             
                             default: break;
                         }
@@ -449,12 +430,14 @@
         
                     if(i_data < c_steel_temp){
                         
-                        Balance[_i_balance].mass_source += V_in/V_in_global * mean_value_in[i_data] * flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                        Balance[_i_balance].mass_source += V_in/V_in_global * mean_value_in[i_data] * 
+                        
+                            flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
                     }
                     
                     if(i_data == c_steel_temp){
                         
-                        Balance[_i_balance].mass_source += V_in/V_in_global * (mean_value_in[i_data] - Phase_Dict[i_phase].reference_temperature) * 
+                        Balance[_i_balance].mass_source += V_in/V_in_global * mean_value_in[i_data] * 
                         
                             flowrate * Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
                     }
@@ -467,17 +450,19 @@
                             
                     if(i_data < c_steel_temp){
                         
-                        Balance[_i_balance].mass_source -= V_out/V_out_global * mean_value_out[i_data] * flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                        Balance[_i_balance].mass_source -= V_out/V_out_global * mean_value_out[i_data] * 
+                        
+                            flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
                     }
                     
                     if(i_data == c_steel_temp){
                         
-                        Balance[_i_balance].mass_source -= V_out/V_out_global * (mean_value_out[i_data] - Phase_Dict[i_phase].reference_temperature) * 
+                        Balance[_i_balance].mass_source -= V_out/V_out_global * mean_value_out[i_data] * 
                         
                             flowrate * Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
                     }
                 }
-            }                       
+            }       
         }
 #endif
     }
@@ -505,7 +490,12 @@
                 
                 loop_data{
                 
-                    C_UDMI(i_cell, t, i_UDMI) = C->data[i_phase][i_cell][i_data];
+                    C_UDMI(i_cell, t, i_UDMI) = C->data[_i_data];
+                    
+                    if(i_data == c_steel_temp){
+                        
+                        C_UDMI(i_cell, t, i_UDMI) += Phase_Dict[i_phase].reference_temperature;
+                    }
                     
                     i_UDMI++;
                 }

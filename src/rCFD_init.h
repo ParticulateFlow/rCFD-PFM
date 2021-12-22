@@ -19,18 +19,18 @@ void init_all(void)
 
     /* D1. Solver_Dict & Solver */
     {
-        rCFD_default_Solver_Dict(&Solver_Dict);
+        rCFD_default_Solver_Dict();
         
         rCFD_user_set_Solver_Dict(&Solver_Dict);
         
 #if RP_NODE     
-        rCFD_default_Solver(&Solver);
+        rCFD_default_Solver();
 #endif      
     }
 
     /* D2. File_Dict */
     {
-        rCFD_default_File_Dict(&Solver_Dict, &File_Dict);
+        rCFD_default_File_Dict();
         
         rCFD_user_set_File_Dict(&Solver_Dict, &File_Dict);
     }
@@ -40,7 +40,7 @@ void init_all(void)
 #if RP_NODE     
         Phase_Dict = (Phase_Dict_type*)malloc(Solver_Dict.number_of_phases * sizeof(Phase_Dict_type));
         
-        rCFD_default_Phase_Dict(&Solver_Dict, Phase_Dict);
+        rCFD_default_Phase_Dict();
         
         rCFD_user_set_Phase_Dict(&Solver_Dict, Phase_Dict); 
 #endif      
@@ -51,7 +51,7 @@ void init_all(void)
 #if RP_NODE
         Tracer_Dict.random_walk = (short*)malloc(Solver_Dict.number_of_phases * sizeof(short));
         
-        rCFD_default_Tracer_Dict(&Solver_Dict, &Tracer_Dict);
+        rCFD_default_Tracer_Dict();
 
         rCFD_user_set_Tracer_Dict(&Solver_Dict, &Tracer_Dict);
 #endif      
@@ -60,7 +60,7 @@ void init_all(void)
     /* D5. Norm_Dict */
     {
 #if RP_NODE
-        rCFD_default_Norm_Dict(&Solver_Dict, &Norm_Dict);
+        rCFD_default_Norm_Dict();
 
         rCFD_user_set_Norm_Dict(&Solver_Dict, &Norm_Dict);
 #endif      
@@ -68,7 +68,7 @@ void init_all(void)
 
     /* D6. Rec_Dict */
     {
-        rCFD_default_Rec_Dict(&Solver_Dict, &Rec_Dict);
+        rCFD_default_Rec_Dict();
 
         rCFD_user_set_Rec_Dict(&Solver_Dict, &Rec_Dict);    
     }   
@@ -85,7 +85,7 @@ void init_all(void)
             Data_Dict[i_phase] = (Data_Dict_type*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(Data_Dict_type));
         }   
         
-        rCFD_default_Data_Dict(&Solver_Dict, Phase_Dict, Data_Dict);
+        rCFD_default_Data_Dict();
         
         rCFD_user_set_Data_Dict(&Solver_Dict, Phase_Dict, Data_Dict);
 #endif      
@@ -103,7 +103,7 @@ void init_all(void)
             Balance_Dict[i_phase] = (Balance_Dict_type*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(Balance_Dict_type));
         }
         
-        rCFD_default_Balance_Dict(&Solver_Dict, Phase_Dict, Balance_Dict);
+        rCFD_default_Balance_Dict();
         
         rCFD_user_set_Balance_Dict(&Solver_Dict, Phase_Dict, Balance_Dict);
 #endif      
@@ -111,7 +111,7 @@ void init_all(void)
 
     /* D9. Topo_Dict */
     {
-        rCFD_default_Topo_Dict(&Solver_Dict, &Topo_Dict);
+        rCFD_default_Topo_Dict();
         
         rCFD_user_set_Topo_Dict(&Solver_Dict, &Topo_Dict);
         
@@ -124,11 +124,11 @@ void init_all(void)
 
         loop_layers{
                 
-            rCFD_default_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
+            rCFD_default_Cell_Dict(i_layer);
 
             rCFD_user_set_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
 
-            rCFD_default_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);
+            rCFD_default_Face_Dict(i_layer);
 
             rCFD_user_set_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);          
         }   
@@ -224,7 +224,7 @@ void init_all(void)
                     C.user = NULL;
                 }
                         
-                rCFD_default_Cell(&Solver_Dict, &File_Dict, Phase_Dict, &Topo_Dict, &C, i_layer);
+                rCFD_default_Cell(i_layer);
             }
         }
 #endif  
@@ -250,7 +250,7 @@ void init_all(void)
                     F.area[i_face] = (double*)malloc( 3 * sizeof(double));
                 }
 
-                rCFD_default_Face(&Solver_Dict, &Topo_Dict, &F, i_layer);
+                rCFD_default_Face(i_layer);
             }
         }
 #endif      
@@ -266,7 +266,7 @@ void init_all(void)
         
         Tracer.shifts = (C2C_shift_type**)malloc(Solver_Dict.number_of_phases * sizeof(C2C_shift_type*));
         
-        rCFD_default_Tracer(&Solver_Dict, &Tracer);
+        rCFD_default_Tracer();
 
 #endif      
     }
@@ -293,7 +293,7 @@ void init_all(void)
         
         Norms.norm = (double*)malloc(number_of_norms * sizeof(double));
         
-        rCFD_default_Norms(&Solver_Dict, &Norms);
+        rCFD_default_Norms();
         
 #endif      
     }
@@ -326,7 +326,7 @@ void init_all(void)
             }
         }
         
-        rCFD_default_Rec(&Solver_Dict, &File_Dict, &Rec_Dict, &Rec);
+        rCFD_default_Rec();
     }   
 
     /* G6. Balance (first initialization) */    

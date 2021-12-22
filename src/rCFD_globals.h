@@ -36,12 +36,6 @@
     
     static  Balance_Dict_type   **Balance_Dict = NULL;
 
-#if 0   
-    static  Cell_Dict_type      Cell_Dict;
-    
-    static  Face_Dict_type      Face_Dict;
-#endif  
-
     static  Cell_type           C;
     
     static  Face_type           F;

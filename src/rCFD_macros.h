@@ -12,7 +12,7 @@
 
 #if 1   /* global definitions */
 
-    #define     Transcript                      ((myid == 0) && (Solver_Dict->verbal == 1))
+    #define     Transcript      ((myid == 0) && (Solver_Dict.verbal == 1))
         
 #endif
     

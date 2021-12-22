@@ -10,19 +10,11 @@
     www.particulate-flow.at
 */  
 
-    /* global definitions */
-    /*************************************************************************************/
+#if 1   /* global definitions */
 
     #define     Transcript                      ((myid == 0) && (Solver_Dict->verbal == 1))
-    
-    #define     current_path                    i_state][i_state2][i_island
-    #define     current_pattern                 i_state][i_phase][i_frame
-    
-    #define     _Cell_Dict                      Topo_Dict.Cell_Dict[i_layer]
-    #define     _pCell_Dict                     Topo_Dict->Cell_Dict[i_layer]
-    #define     _Face_Dict                      Topo_Dict.Face_Dict[i_layer]
-    #define     _pFace_Dict                     Topo_Dict->Face_Dict[i_layer]
-
+        
+#endif
     
 #if 1   /* loops */
     
@@ -72,6 +64,17 @@
 #endif
         
 #if 1   /* indices */
+
+    #define     _Cell_Dict                      Topo_Dict.Cell_Dict[i_layer]
+    #define     _pCell_Dict                     Topo_Dict->Cell_Dict[i_layer]
+    #define     _Face_Dict                      Topo_Dict.Face_Dict[i_layer]
+    #define     _pFace_Dict                     Topo_Dict->Face_Dict[i_layer]
+    
+    #define     _C                              Topo.Cell[i_layer]
+    #define     _pC                             Topo->Cell[i_layer]
+
+    #define     current_path                    i_state][i_state2][i_island
+    #define     current_pattern                 i_state][i_phase][i_frame
         
     #define     _i_balance                      i_phase][i_data
     
@@ -82,6 +85,8 @@
     #define     _i_vof                          i_frame][i_cell][i_phase
     
 #endif
+
+#if 1   /* macros for rCFD_prep (mostly Fluent - specific) */
 
     /* rCFD_write_Tracer_Positions */
     
@@ -131,5 +136,6 @@
     #define     p_v_rwm                         (11 + p_vars_used_by_others)
     #define     p_w_rwm                         (12 + p_vars_used_by_others)
     #define     p_vel_rwm_old                   (13 + p_vars_used_by_others)
+#endif
     
 #endif

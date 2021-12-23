@@ -383,12 +383,6 @@ void init_all(void)
                 Balance[i_phase][i_data].mass_error = 0.0;
 
                 Balance[i_phase][i_data].mass_error_global = 0.0;
-
-                Balance[i_phase][i_data].mass_error_prev = 0.0;
-
-                Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_min;
-
-                Balance[i_phase][i_data].face_swap_loops = 1;               
             }           
         }
 #endif      

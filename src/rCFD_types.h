@@ -329,11 +329,7 @@
 
         double      **node2node_flux, **node2node_data_flux;
 
-        double      mass_error, mass_error_global, mass_error_prev;
-
-        double      face_swap;
-
-        int         face_swap_loops;
+        double      mass_error, mass_error_global;
 
     }Balance_type;
 

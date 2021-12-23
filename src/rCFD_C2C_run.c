@@ -1190,53 +1190,6 @@ DEFINE_ON_DEMAND(rCFD_run)
 #endif                      
                         }
 
-                        /* B5. Balance_face_swap */
-                        if(0==1){
-#if RP_NODE                     
-                            if((i_run % Solver_Dict.balance_correction_update) == 0){
-                            
-                                loop_data{
-
-                                    /* smaller balance correction */
-                                    if((Balance[i_phase][i_data].mass_error_prev * Balance[i_phase][i_data].mass_error) <= 0.){ 
-                                 
-                                        Balance[i_phase][i_data].face_swap /= 2.;
-                                        
-                                        if(Balance[i_phase][i_data].face_swap < Solver_Dict.face_swap_min){ 
-                                            
-                                            Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_min;
-                                        }
-                                        
-                                        if(Balance[i_phase][i_data].face_swap_loops > 1){
-                                            
-                                            Balance[i_phase][i_data].face_swap_loops /= 2.;
-                                        }
-                                    }
-                                    /* larger balance correction */
-                                    else{
-                                            
-                                        if(Balance[i_phase][i_data].face_swap >= Solver_Dict.face_swap_max_per_loop){
-                                            
-                                            Balance[i_phase][i_data].face_swap_loops *= 2.;
-                                        }
-                                        
-                                        Balance[i_phase][i_data].face_swap *= 2.;
-                                        
-                                        if(Balance[i_phase][i_data].face_swap > Solver_Dict.face_swap_max_per_loop){ 
-                                
-                                            Balance[i_phase][i_data].face_swap = Solver_Dict.face_swap_max_per_loop;
-                                        }
-
-                                        if(Balance[i_phase][i_data].face_swap_loops > Solver_Dict.face_swap_max_loops){ 
-                                
-                                            Balance[i_phase][i_data].face_swap_loops = Solver_Dict.face_swap_max_loops;
-                                        }
-                                    }   
-                                }                           
-                            }
-#endif                      
-                        }
-
                     }
                     
                     /* Balance correction by face swaps */

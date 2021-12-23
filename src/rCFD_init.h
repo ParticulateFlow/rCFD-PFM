@@ -21,7 +21,7 @@ void init_all(void)
     {
         rCFD_default_Solver_Dict();
         
-        rCFD_user_set_Solver_Dict(&Solver_Dict);
+        rCFD_user_set_Solver_Dict();
         
 #if RP_NODE     
         rCFD_default_Solver();
@@ -32,7 +32,7 @@ void init_all(void)
     {
         rCFD_default_File_Dict();
         
-        rCFD_user_set_File_Dict(&Solver_Dict, &File_Dict);
+        rCFD_user_set_File_Dict();
     }
 
     /* D3. Phase_Dict */
@@ -42,7 +42,7 @@ void init_all(void)
         
         rCFD_default_Phase_Dict();
         
-        rCFD_user_set_Phase_Dict(&Solver_Dict, Phase_Dict); 
+        rCFD_user_set_Phase_Dict(); 
 #endif      
     }       
     
@@ -53,7 +53,7 @@ void init_all(void)
         
         rCFD_default_Tracer_Dict();
 
-        rCFD_user_set_Tracer_Dict(&Solver_Dict, &Tracer_Dict);
+        rCFD_user_set_Tracer_Dict();
 #endif      
     }
     
@@ -62,7 +62,7 @@ void init_all(void)
 #if RP_NODE
         rCFD_default_Norm_Dict();
 
-        rCFD_user_set_Norm_Dict(&Solver_Dict, &Norm_Dict);
+        rCFD_user_set_Norm_Dict();
 #endif      
     }   
 
@@ -70,7 +70,7 @@ void init_all(void)
     {
         rCFD_default_Rec_Dict();
 
-        rCFD_user_set_Rec_Dict(&Solver_Dict, &Rec_Dict);    
+        rCFD_user_set_Rec_Dict();    
     }   
 
     /* D7. Data_Dict */ 
@@ -87,7 +87,7 @@ void init_all(void)
         
         rCFD_default_Data_Dict();
         
-        rCFD_user_set_Data_Dict(&Solver_Dict, Phase_Dict, Data_Dict);
+        rCFD_user_set_Data_Dict();
 #endif      
     }
     
@@ -105,7 +105,7 @@ void init_all(void)
         
         rCFD_default_Balance_Dict();
         
-        rCFD_user_set_Balance_Dict(&Solver_Dict, Phase_Dict, Balance_Dict);
+        rCFD_user_set_Balance_Dict();
 #endif      
     }
 
@@ -113,7 +113,7 @@ void init_all(void)
     {
         rCFD_default_Topo_Dict();
         
-        rCFD_user_set_Topo_Dict(&Solver_Dict, &Topo_Dict);
+        rCFD_user_set_Topo_Dict();
         
 #if RP_NODE     
         int i_layer;
@@ -126,11 +126,11 @@ void init_all(void)
                 
             rCFD_default_Cell_Dict(i_layer);
 
-            rCFD_user_set_Cell_Dict(&Solver_Dict, &Topo_Dict.Cell_Dict[i_layer], i_layer);
+            rCFD_user_set_Cell_Dict(i_layer);
 
             rCFD_default_Face_Dict(i_layer);
 
-            rCFD_user_set_Face_Dict(&Solver_Dict, &Topo_Dict.Face_Dict[i_layer], i_layer);          
+            rCFD_user_set_Face_Dict(i_layer);          
         }   
 #endif  
     
@@ -401,7 +401,7 @@ void init_all(void)
         
         i_layer = 0;    /* user initialization just for base layer of grid, might be changed to loop_layers in future */
                 
-        rCFD_user_init_Data(&Solver_Dict, Balance, Phase_Dict, Data_Dict, &Topo_Dict, &C, i_layer);
+        rCFD_user_init_Data(i_layer);
         
         i_frame = 0;
         
@@ -453,7 +453,7 @@ void init_all(void)
             }
         }
         
-        rCFD_user_post(&Solver_Dict, Phase_Dict, &Topo_Dict, &C, &Rec);   /* post-process initialization */
+        rCFD_user_post();   /* post-process initialization */
 #endif
     }       
 
@@ -463,7 +463,7 @@ void init_all(void)
         /* for the moment, just consider MPI communication for i_layer = 0 */
         int i_layer = 0;
         
-        init_parallel_grid(&Solver_Dict, &Topo_Dict, i_layer);
+        init_parallel_grid(i_layer);
 #endif
     }       
 }

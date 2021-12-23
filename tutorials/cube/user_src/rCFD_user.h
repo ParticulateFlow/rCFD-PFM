@@ -44,65 +44,68 @@
     
 #if 1
     
-    void rCFD_user_set_Solver_Dict(Solver_Dict_type *Solver_Dict)
+    void rCFD_user_set_Solver_Dict(void)
     {
-        Solver_Dict->max_number_of_cells_per_time_step =    30;
+        Solver_Dict.max_number_of_cells_per_time_step =    30;
 
-        Solver_Dict->global_time_step =                     0.005;   
+        Solver_Dict.global_time_step =                     0.005;   
         
-        Solver_Dict->time_steps_per_monitoring_interval =   25;
+        Solver_Dict.time_steps_per_monitoring_interval =   25;
         
-        Solver_Dict->number_of_frames =                     10;         
+        Solver_Dict.number_of_frames =                     10;         
 
-        Solver_Dict->number_of_runs =                       1; 
+        Solver_Dict.number_of_runs =                       1; 
         
-        Solver_Dict->data_drifting_on =                     1; 
+        Solver_Dict.data_drifting_on =                     1; 
 
-        Solver_Dict->control_conc_sum_on =                  0;      
+        Solver_Dict.control_conc_sum_on =                  0;      
     }   
 
-    void rCFD_user_set_File_Dict(Solver_Dict_type *Solver_Dict, File_Dict_type *File_Dict)
+    void rCFD_user_set_File_Dict(void)
     {
 
     }   
     
-    void rCFD_user_set_Phase_Dict(Solver_Dict_type *Solver_Dict, Phase_Dict_type* Phase_Dict)
+    void rCFD_user_set_Phase_Dict(void)
     {
+#if RP_NODE     
         int i_phase;
         
-        loop_phases_ptr{
+        loop_phases{
             
             if(i_phase == air){
                 
                 Phase_Dict[i_phase].number_of_data = 3;
 
-                Phase_Dict[i_phase].time_step = Solver_Dict->global_time_step;
+                Phase_Dict[i_phase].time_step = Solver_Dict.global_time_step;
                 
                 Phase_Dict[i_phase].density = 1.25;
             }
         }
+#endif    
     }
 
-    void rCFD_user_set_Tracer_Dict(Solver_Dict_type *Solver_Dict, Tracer_Dict_type *Tracer_Dict)
+    void rCFD_user_set_Tracer_Dict(void)
     {
 
     }
 
-    void rCFD_user_set_Norm_Dict(Solver_Dict_type *Solver_Dict, Norm_Dict_type *Norm_Dict)
+    void rCFD_user_set_Norm_Dict(void)
     {
 
     }
 
-    void rCFD_user_set_Rec_Dict(Solver_Dict_type *Solver_Dict, Rec_Dict_type *Rec_Dict)
+    void rCFD_user_set_Rec_Dict(void)
     {
 
     }
     
-    void rCFD_user_set_Data_Dict(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Data_Dict_type **Data_Dict)
+    void rCFD_user_set_Data_Dict(void)
     {
+#if RP_NODE     
         int i_phase, i_data;
         
-        loop_phases_ptr{
+        loop_phases{
             
             loop_data{
                 
@@ -142,13 +145,15 @@
                 }
             }
         }
+#endif    
     }
     
-    void rCFD_user_set_Balance_Dict(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Balance_Dict_type **Balance_Dict)
+    void rCFD_user_set_Balance_Dict(void)
     {
+#if RP_NODE     
        int i_phase, i_data;
 
-        loop_phases_ptr{
+        loop_phases{
 
             loop_data{
             
@@ -156,22 +161,23 @@
 
                 Balance_Dict[i_phase][i_data].write_balance_to_file = 1;
 
-                Balance_Dict[i_phase][i_data].write_balance_to_file_interval = Solver_Dict->number_of_runs;
+                Balance_Dict[i_phase][i_data].write_balance_to_file_interval = Solver_Dict.number_of_runs;
             }
         }
+#endif    
     }
 
-    void rCFD_user_set_Topo_Dict(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict)
+    void rCFD_user_set_Topo_Dict(void)
     {
         
     }
 
-    void rCFD_user_set_Cell_Dict(Solver_Dict_type *Solver_Dict, Cell_Dict_type *Cell_Dict, const short i_layer)
+    void rCFD_user_set_Cell_Dict(const short i_layer)
     {
 
     }
     
-    void rCFD_user_set_Face_Dict(Solver_Dict_type *Solver_Dict, Face_Dict_type *Face_Dict, const short i_layer)
+    void rCFD_user_set_Face_Dict(const short i_layer)
     {
         
     }
@@ -181,8 +187,9 @@
     /*************************************************************************************/
     
 #if 1   
-    void rCFD_user_pre_proc(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Topo_Dict_type *Topo_Dict, Cell_type *C)
+    void rCFD_user_pre_proc(void)
     {
+#if RP_NODE     
         Domain  *d=Get_Domain(1);
         Thread  *t;
 
@@ -192,35 +199,37 @@
             
             i_UDMI = 0;     /* start index */
             
-            loop_phases_ptr{
+            loop_phases{
                 
-                C_UDMI(i_cell, t, i_UDMI) = C->crossing_time[i_phase][i_cell];
+                C_UDMI(i_cell, t, i_UDMI) = C.crossing_time[i_phase][i_cell];
 
-                C_UDMI(i_cell, t, (i_UDMI+1)) = C->average_velocity[i_phase][i_cell];
+                C_UDMI(i_cell, t, (i_UDMI+1)) = C.average_velocity[i_phase][i_cell];
                 
                 i_UDMI += 2;
             }
             
         }end_c_loop_int(i_cell, t)}}        
+#endif    
     }
 
-    void rCFD_user_init_Data(Solver_Dict_type *Solver_Dict, Balance_type** Balance, Phase_Dict_type* Phase_Dict, Data_Dict_type** Data_Dict, 
-        Topo_Dict_type *Topo_Dict, Cell_type *C, const short i_layer)
+    void rCFD_user_init_Data(const short i_layer)
     {
+#if RP_NODE     
         int     i_phase, i_cell, i_data;
 
-        loop_phases_ptr{
+        loop_phases{
         
-            loop_cells_ptr{
+            loop_cells{
                              
                 loop_data{
             
-                    C->data[_i_data] = 0.0; 
+                    C.data[_i_data] = 0.0; 
                 }
             }
         }
         
         Message0("\n\n...rCFD_user_init_Data\n");               
+#endif    
     }
 
 #endif  
@@ -230,9 +239,7 @@
 
 #if 1
     
-    void rCFD_user_access_data_before_shift(Balance_type** Balance, Phase_Dict_type* Phase_Dict, 
-        Topo_Dict_type *Topo_Dict, Cell_type *C, Rec_type *Rec, 
-        const short i_phase, const short i_layer)
+    void rCFD_user_access_data_before_shift(const short i_phase, const short i_layer)
     {
 #if RP_NODE
         int     i_cell, i_data, i_dim;
@@ -246,29 +253,29 @@
         tracer_gas_flowrate = 1.0e-6;   /* (kg/s) */            
         
         /* inflow bc volume */
-        loop_int_cells_ptr{
+        loop_int_cells{
             
             loop_dim{
                 
-                x[i_dim] = C->x[i_cell][i_dim];
+                x[i_dim] = C.x[i_cell][i_dim];
             }
             
             radius_in = sqrt(x[0]*x[0] + x[1]*x[1]);
             
             if((radius_in <= 0.01) && (x[2] < 0.075)){
 
-                V_in += C->volume[i_cell];
+                V_in += C.volume[i_cell];
             }
         }
                 
         V_in_global = PRF_GRSUM1(V_in);
         
-        loop_int_cells_ptr{
+        loop_int_cells{
             
             /* coord's */
             loop_dim{
                 
-                x[i_dim] = C->x[i_cell][i_dim];
+                x[i_dim] = C.x[i_cell][i_dim];
             }
             
             /* inflow bc */
@@ -279,13 +286,13 @@
 
                     loop_data{
                         
-                        C->data[_i_data] = (C->data[_i_data] * C->volume[i_cell] * Phase_Dict[i_phase].density +
+                        C.data[_i_data] = (C.data[_i_data] * C.volume[i_cell] * Phase_Dict[i_phase].density +
                         
-                            C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step) /
+                            C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step) /
                             
-                            (C->volume[i_cell] * Phase_Dict[i_phase].density);  /* (.) */
+                            (C.volume[i_cell] * Phase_Dict[i_phase].density);  /* (.) */
 
-                        Balance[i_phase][i_data].mass_source +=  C->volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                        Balance[i_phase][i_data].mass_source +=  C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
                     }
                 }   
             }
@@ -296,9 +303,9 @@
 
                     loop_data{
                         
-                        Balance[_i_balance].mass_source -=  C->data[_i_data] * C->volume[i_cell] * Phase_Dict[i_phase].density;  /* (kg) */
+                        Balance[_i_balance].mass_source -=  C.data[_i_data] * C.volume[i_cell] * Phase_Dict[i_phase].density;  /* (kg) */
 
-                        C->data[_i_data] = 0.0;  /* (kg) */
+                        C.data[_i_data] = 0.0;  /* (kg) */
                     }
                 }   
             }
@@ -306,16 +313,14 @@
 #endif
     }
 
-    void rCFD_user_access_data_after_swap(Balance_type** Balance, Phase_Dict_type* Phase_Dict, 
-        Data_Dict_type **Data_Dict, Topo_Dict_type *Topo_Dict, Cell_type *C, 
-        const short i_phase, const short i_layer)
+    void rCFD_user_access_data_after_swap(const short i_phase, const short i_layer)
     {
 
     }
 
-    void rCFD_user_post(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Topo_Dict_type *Topo_Dict, 
-        Cell_type *C, Rec_type *Rec)
+    void rCFD_user_post(void)
     {
+#if RP_NODE     
         Domain  *d=Get_Domain(1);
         Thread  *t;
 
@@ -325,17 +330,18 @@
             
             i_UDMI = 0;     /* start index */
             
-            loop_phases_ptr{
+            loop_phases{
                 
                 loop_data{
                 
-                    C_UDMI(i_cell, t, i_UDMI) = C->data[_i_data];
+                    C_UDMI(i_cell, t, i_UDMI) = C.data[_i_data];
                     
                     i_UDMI++;
                 }
             }
             
         }end_c_loop_int(i_cell, t)}}        
+#endif    
     }
 #endif
 
@@ -344,12 +350,12 @@
 
 #if 1
     
-    double rCFD_user_set_random_walk_velocity(Solver_Dict_type *Solver_Dict, Thread *t, int i_cell)
+    double rCFD_user_set_random_walk_velocity(void)
     {
         return 0.0;
     }   
 
-    void rCFD_user_set_Norm(Solver_Dict_type *Solver_Dict, Norm_type *Norms)
+    void rCFD_user_set_Norm(void)
     {
         
     }

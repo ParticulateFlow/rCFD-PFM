@@ -21,11 +21,8 @@
     #define     loop_C2Cs_size                  for(i_C2C = 0; i_C2C < size; i_C2C++)
 
     #define     loop_cells                      for(i_cell = 0; i_cell < _Cell_Dict.number_of_cells; i_cell++)
-    #define     loop_cells_ptr                  for(i_cell = 0; i_cell < _pCell_Dict.number_of_cells; i_cell++)
     #define     loop_int_cells                  for(i_cell = 0; i_cell < _Cell_Dict.number_of_int_cells; i_cell++)
-    #define     loop_int_cells_ptr              for(i_cell = 0; i_cell < _pCell_Dict.number_of_int_cells; i_cell++)
     #define     loop_ext_cells                  for(i_cell = _Cell_Dict.number_of_int_cells; i_cell < _Cell_Dict.number_of_cells; i_cell++)
-    #define     loop_ext_cells_ptr              for(i_cell = _pCell_Dict.number_of_int_cells; i_cell < _pCell_Dict.number_of_cells; i_cell++)
 
     #define     loop_data                       for(i_data = 0; i_data < Phase_Dict[i_phase].number_of_data; i_data++)
     #define     loop_data_user                  for(i_user = 0; i_user < Data_Dict[i_phase][i_data].number_of_user_vars; i_user++)  
@@ -33,45 +30,35 @@
     #define     loop_dim                        for(i_dim = 0; i_dim < 3; i_dim++)
 
     #define     loop_faces                      for(i_face = 0; i_face < _Face_Dict.number_of_faces; i_face++)
-    #define     loop_faces_ptr                  for(i_face = 0; i_face < _pFace_Dict.number_of_faces; i_face++)
     #define     loop_int_faces                  for(i_face = 0; i_face < _Face_Dict.number_of_int_faces; i_face++)
     
     #define     loop_frames                     for(i_frame = 0; i_frame < Solver_Dict.number_of_frames; i_frame++)
-    #define     loop_frames_ptr                 for(i_frame = 0; i_frame < Solver_Dict->number_of_frames; i_frame++)
     #define     loop_frames2                    for(i_frame2 = 0; i_frame2 < Solver_Dict.number_of_frames; i_frame2++)
     
     #define     loop_islands                    for(i_island = 0; i_island < Solver_Dict.number_of_islands; i_island++)
-    #define     loop_islands_ptr                for(i_island = 0; i_island < Solver_Dict->number_of_islands; i_island++)
         
     #define     loop_layers                     for(i_layer = 0; i_layer < Topo_Dict.number_of_layers; i_layer++)
-    #define     loop_layers_ptr                 for(i_layer = 0; i_layer < Topo_Dict->number_of_layers; i_layer++)
     
     #define     loop_max_swap_loops             for(i_swap = 0; i_swap < max_swap_loops; i_swap ++) 
 
     #define     loop_norms                      for(i_norm = 0; i_norm < Norms.number_of_norms; i_norm++)
 
     #define     loop_phases                     for(i_phase = 0; i_phase < Solver_Dict.number_of_phases; i_phase++)
-    #define     loop_phases_ptr                 for(i_phase = 0; i_phase < Solver_Dict->number_of_phases; i_phase++)
     #define     loop_phase_user                 for(i_user = 0; i_user < Phase_Dict[i_phase].number_of_user_vars; i_user++)
     
     #define     loop_runs                       for(i_run = 0; i_run < Solver_Dict.number_of_runs; i_run++)
     
     #define     loop_states                     for(i_state = 0; i_state < Solver_Dict.number_of_states; i_state++)
-    #define     loop_states_ptr                 for(i_state = 0; i_state < Solver_Dict->number_of_states; i_state++)    
     #define     loop_states2                    for(i_state2 = 0; i_state2 < Solver_Dict.number_of_states; i_state2++)
-    #define     loop_states2_ptr                for(i_state2 = 0; i_state2 < Solver_Dict->number_of_states; i_state2++)
 
 #endif
         
 #if 1   /* indices */
 
     #define     _Cell_Dict                      Topo_Dict.Cell_Dict[i_layer]
-    #define     _pCell_Dict                     Topo_Dict->Cell_Dict[i_layer]
     #define     _Face_Dict                      Topo_Dict.Face_Dict[i_layer]
-    #define     _pFace_Dict                     Topo_Dict->Face_Dict[i_layer]
     
     #define     _C                              Topo.Cell[i_layer]
-    #define     _pC                             Topo->Cell[i_layer]
 
     #define     current_path                    i_state][i_state2][i_island
     #define     current_pattern                 i_state][i_phase][i_frame

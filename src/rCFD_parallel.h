@@ -3,6 +3,7 @@
 
 #include "rCFD_types.h"
 #include "rCFD_macros.h"
+#include "rCFD_globals.h"
 
 /* (C)  2021 
     Stefan Pirker
@@ -87,7 +88,7 @@
 #if 1 /* defaults */
 #if RP_NODE
 
-    void rCFD_default_MPI_Faces(Solver_Dict_type *Solver_Dict, MPI_faces_type *MPI_faces)
+    void rCFD_default_MPI_Faces(void)
     {
         Domain  *d=Get_Domain(1);
         Thread  *t;
@@ -97,17 +98,17 @@
                 
             if(PRINCIPAL_FACE_P(i_face,t)){
                 
-                MPI_faces->principal_face[i_face] = 1;
+                MPI_faces.principal_face[i_face] = 1;
             }
             else{
                 
-                MPI_faces->principal_face[i_face] = 0;
+                MPI_faces.principal_face[i_face] = 0;
             }
 
         }end_f_loop(i_face,t)}}
     }
         
-    void rCFD_default_MPI_Cells(Solver_Dict_type *Solver_Dict, MPI_cells_type *MPI_cells)
+    void rCFD_default_MPI_Cells(void)
     {
         int i_cell;
         
@@ -116,7 +117,7 @@
         
         thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_all(i_cell,t){
                 
-                MPI_cells->host_of_cell[i_cell] = C_PART(i_cell,t);
+                MPI_cells.host_of_cell[i_cell] = C_PART(i_cell,t);
 
         }end_c_loop_all(i_cell,t)}}     
     }
@@ -127,7 +128,7 @@
 #if 1 /* init */
 #if RP_NODE
 
-    void init_parallel_grid(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict, const short i_layer)
+    void init_parallel_grid(const short i_layer)
     {
         int         i_node, i_cell, i_list, i_host;
         int         size;
@@ -136,13 +137,13 @@
         
         /* P1: allocate MPI_cells */
         {
-            MPI_cells.host_of_cell = (int*)malloc(_pCell_Dict.number_of_cells * sizeof(int));
+            MPI_cells.host_of_cell = (int*)malloc(_Cell_Dict.number_of_cells * sizeof(int));
 
             MPI_cells.hosting_cell_index = NULL;
 
             if(myid > 0){
                 
-                PRF_CSEND_INT(node_zero, &_pCell_Dict.number_of_ext_cells, 1, myid);
+                PRF_CSEND_INT(node_zero, &_Cell_Dict.number_of_ext_cells, 1, myid);
                 
                 MPI_cells.number_of_ext_cells = -1;
                 
@@ -163,10 +164,10 @@
                 
                 MPI_cells.number_of_host_cells_per_node = (int*)malloc((node_last+1) * sizeof(int));    
                 
-                MPI_cells.number_of_ext_cells_per_node[0] = _pCell_Dict.number_of_ext_cells;
+                MPI_cells.number_of_ext_cells_per_node[0] = _Cell_Dict.number_of_ext_cells;
                 
                 /* get number_of_ext_cells (sum up all nodes) */
-                MPI_cells.number_of_ext_cells = _pCell_Dict.number_of_ext_cells;
+                MPI_cells.number_of_ext_cells = _Cell_Dict.number_of_ext_cells;
                 
                 for(i_node = 1; i_node < (node_last+1); i_node++){
                     
@@ -182,7 +183,7 @@
                 MPI_cells.data = (double*)malloc(MPI_cells.number_of_ext_cells * sizeof(double));
             }
             
-            rCFD_default_MPI_Cells(Solver_Dict, &MPI_cells);    
+            rCFD_default_MPI_Cells();    
         }
             
         /* P2. MPI_cells communication */
@@ -193,13 +194,13 @@
             {
                 if(myid > 0){
                     
-                    list_of_int = (int*)malloc( _pCell_Dict.number_of_ext_cells * sizeof(int));
+                    list_of_int = (int*)malloc( _Cell_Dict.number_of_ext_cells * sizeof(int));
                     
-                    list_of_double = (double*)malloc( 3 * _pCell_Dict.number_of_ext_cells * sizeof(double));
+                    list_of_double = (double*)malloc( 3 * _Cell_Dict.number_of_ext_cells * sizeof(double));
                     
                     i_list = 0;
                     
-                    loop_ext_cells_ptr{
+                    loop_ext_cells{
                         
                         list_of_int[i_list] = MPI_cells.host_of_cell[i_cell];
                         
@@ -210,9 +211,9 @@
                         i_list++;
                     }
                     
-                    PRF_CSEND_INT(node_zero, list_of_int, _pCell_Dict.number_of_ext_cells, myid);
+                    PRF_CSEND_INT(node_zero, list_of_int, _Cell_Dict.number_of_ext_cells, myid);
 
-                    PRF_CSEND_REAL(node_zero, list_of_double, (3 * _pCell_Dict.number_of_ext_cells), myid);
+                    PRF_CSEND_REAL(node_zero, list_of_double, (3 * _Cell_Dict.number_of_ext_cells), myid);
                     
                     free(list_of_int);
                     
@@ -225,7 +226,7 @@
 
                     i_list = 0;
                     
-                    loop_ext_cells_ptr{
+                    loop_ext_cells{
                         
                         MPI_cells.host_of_ext_cells[i_list] = MPI_cells.host_of_cell[i_cell];
                         
@@ -329,7 +330,7 @@
                     
                     for(i_list = 0; i_list < MPI_cells.number_of_host_cells_per_node[0]; i_list++){
                         
-                        loop_cells_ptr{
+                        loop_cells{
                             
                             if( (C.x[i_cell][0] == list_of_double[(3 * i_list + 0)]) && 
                                 (C.x[i_cell][1] == list_of_double[(3 * i_list + 1)]) &&
@@ -385,7 +386,7 @@
                     
                     for(i_list = 0; i_list < size; i_list++){
                         
-                        loop_cells_ptr{
+                        loop_cells{
                             
                             if( (C.x[i_cell][0] == list_of_double[(3 * i_list + 0)]) && 
                                 (C.x[i_cell][1] == list_of_double[(3 * i_list + 1)]) &&
@@ -403,13 +404,13 @@
 
         /* P3. allocate and set MPI_faces */
         {
-            MPI_faces.principal_face = (int*)malloc(_pFace_Dict.number_of_faces * sizeof(int));
+            MPI_faces.principal_face = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
             
-            rCFD_default_MPI_Faces(Solver_Dict, &MPI_faces);
+            rCFD_default_MPI_Faces();
         }       
     }
     
-    void init_parallel_C2Cs(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, C2C_type ***C2Cs)
+    void init_parallel_C2Cs(void)
     {
 
         int                 i_state, i_phase, i_frame, i_out, i_node, i_C2C;
@@ -424,11 +425,11 @@
             
             max_size = 0;
             
-            loop_states_ptr{
+            loop_states{
             
-                loop_phases_ptr{
+                loop_phases{
                     
-                    loop_frames_ptr{
+                    loop_frames{
                         
                         size = PRF_GISUM1(C2Cs[current_pattern].number_of_shifts_in);
                         
@@ -456,11 +457,11 @@
         /* B. determine C2Cs.shift_out, C2Cs.in2out, C2Cs.number_of_shifts_to_node_zero */
         {
             
-            loop_states_ptr{
+            loop_states{
                 
-                loop_phases_ptr{
+                loop_phases{
             
-                    loop_frames_ptr{
+                    loop_frames{
                     
                         /* B.1: send local rCFD_C2C_incoming entries to Node-0,      */
                         /*      which collects them into rCFD_C2C_MPI_buffer         */
@@ -830,7 +831,7 @@
         { 
             int     max_number_of_data = 0;
             
-            loop_phases_ptr{
+            loop_phases{
                 
                 if(max_number_of_data < Phase_Dict[i_phase].number_of_data){
 
@@ -857,7 +858,7 @@
 #if 1 /* communication */
 #if RP_NODE
 
-    void sum_up_parallel_corona_cells(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict, double *cell_data, const short i_layer)
+    void sum_up_parallel_corona_cells(double *cell_data, const short i_layer)
     {
         int     i_cell, i_list, i_node;
         
@@ -869,20 +870,20 @@
         {
             if(myid > 0){
             
-                list_of_double = (double*)malloc(_pCell_Dict.number_of_ext_cells * sizeof(double));
+                list_of_double = (double*)malloc(_Cell_Dict.number_of_ext_cells * sizeof(double));
                 
                 i_list = 0;
                 
-                loop_ext_cells_ptr{
+                loop_ext_cells{
                     
                     list_of_double[i_list] = cell_data[i_cell];
                     
                     i_list++;
                 }
                 
-                PRF_CSEND_INT(node_zero, &_pCell_Dict.number_of_ext_cells, 1, myid);
+                PRF_CSEND_INT(node_zero, &_Cell_Dict.number_of_ext_cells, 1, myid);
                 
-                PRF_CSEND_REAL(node_zero, list_of_double, _pCell_Dict.number_of_ext_cells, myid);
+                PRF_CSEND_REAL(node_zero, list_of_double, _Cell_Dict.number_of_ext_cells, myid);
                 
                 free(list_of_double);
             }
@@ -891,7 +892,7 @@
                 
                 i_list = 0;
                 
-                loop_ext_cells_ptr{
+                loop_ext_cells{
                     
                     MPI_cells.data[i_list] = cell_data[i_cell];
                     
@@ -1052,7 +1053,7 @@
                 
                 i_list = 0;
                 
-                loop_ext_cells_ptr{
+                loop_ext_cells{
                     
                     cell_data[i_cell] = MPI_cells.data[i_list];
                     
@@ -1071,7 +1072,7 @@
                 
                 i_list = 0;
                 
-                loop_ext_cells_ptr{
+                loop_ext_cells{
                     
                     cell_data[i_cell] = list_of_double[i_list];
                     
@@ -1084,8 +1085,7 @@
         
     }
 
-    void shift_parallel_C2C_data(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Balance_Dict_type **Balance_Dict, 
-        C2C_type *C2Cs, Cell_type *C, Balance_type **Balance, const int i_phase, const int i_island)
+    void shift_parallel_C2C_data(const int i_state, const int i_phase, const int i_frame, const int i_island)
     {
         int     i_list, i_data, i_C2C, i_node;
         
@@ -1099,7 +1099,7 @@
         {
             if (myid > 0){
 
-                size = C2Cs->number_of_shifts_out;
+                size = C2Cs[current_pattern].number_of_shifts_out;
                 
                 PRF_CSEND_INT(node_zero, &size, 1, myid);
           
@@ -1111,18 +1111,18 @@
                     
                     loop_C2Cs_size{
 
-                        c0 = C2Cs->shifts_out[i_C2C].c0;
+                        c0 = C2Cs[current_pattern].shifts_out[i_C2C].c0;
                         
                         loop_data{
                             
                             i_list =  Phase_Dict[i_phase].number_of_data * i_C2C + i_data;
                
-                            list_of_double[i_list] = C->data[i_phase][c0][i_data];
+                            list_of_double[i_list] = C.data[i_phase][c0][i_data];
                             
                             if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
                             
-                                w0 = C2Cs->shifts_out[i_C2C].w0;
-                                n1 = C2Cs->shifts_out[i_C2C].node1;
+                                w0 = C2Cs[current_pattern].shifts_out[i_C2C].w0;
+                                n1 = C2Cs[current_pattern].shifts_out[i_C2C].node1;
                                 
                                 if((n1<0) ||(n1>node_last)){
                                     
@@ -1134,7 +1134,7 @@
                                 }
                                     
                                 Balance[i_phase][i_data].node2node_flux[myid][n1] += w0;
-                                Balance[i_phase][i_data].node2node_data_flux[myid][n1] += w0 * C->data[i_phase][c0][i_data];
+                                Balance[i_phase][i_data].node2node_data_flux[myid][n1] += w0 * C.data[i_phase][c0][i_data];
                             }
                         }
                     }
@@ -1147,25 +1147,25 @@
         
             if (myid == 0){
         
-                size = C2Cs->number_of_shifts_out;
+                size = C2Cs[current_pattern].number_of_shifts_out;
 
                 loop_C2Cs_size{
                     
-                    c0 = C2Cs->shifts_out[i_C2C].c0;
+                    c0 = C2Cs[current_pattern].shifts_out[i_C2C].c0;
                     
-                    MPI_index = C2Cs->in2out[node_zero][i_C2C];
+                    MPI_index = C2Cs[current_pattern].in2out[node_zero][i_C2C];
                     
                     loop_data{
                
-                        C2Cs_MPI.shifts_in[MPI_index].data[i_data] = C->data[i_phase][c0][i_data];
+                        C2Cs_MPI.shifts_in[MPI_index].data[i_data] = C.data[i_phase][c0][i_data];
                         
                         if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
                         
-                            w0 = C2Cs->shifts_out[i_C2C].w0;
-                            n1 = C2Cs->shifts_out[i_C2C].node1;
+                            w0 = C2Cs[current_pattern].shifts_out[i_C2C].w0;
+                            n1 = C2Cs[current_pattern].shifts_out[i_C2C].node1;
                             
                             Balance[i_phase][i_data].node2node_flux[myid][n1] += w0;
-                            Balance[i_phase][i_data].node2node_data_flux[myid][n1] += w0 * C->data[i_phase][c0][i_data];
+                            Balance[i_phase][i_data].node2node_data_flux[myid][n1] += w0 * C.data[i_phase][c0][i_data];
 
                             if((n1<0) ||(n1>node_last)){
                                 
@@ -1191,7 +1191,7 @@
                     
                         loop_C2Cs_size{
                        
-                            MPI_index = C2Cs->in2out[i_node][i_C2C];
+                            MPI_index = C2Cs[current_pattern].in2out[i_node][i_C2C];
                             
                             for(i_data = 0; i_data < Phase_Dict[i_phase].number_of_data; i_data++){
                                 
@@ -1211,13 +1211,13 @@
         {
             if (myid == 0){
                 
-                size = C2Cs->number_of_shifts_in;
+                size = C2Cs[current_pattern].number_of_shifts_in;
                 
                 index_in_total_list = size;             
 
                 for(i_node = 1; i_node < (node_last+1); i_node++){
                 
-                    size = C2Cs->number_of_shifts_to_node_zero[i_node]; 
+                    size = C2Cs[current_pattern].number_of_shifts_to_node_zero[i_node]; 
                     
                     PRF_CSEND_INT(i_node, &size, 1, node_zero);
                     
@@ -1247,14 +1247,14 @@
                     
                 } 
             
-                loop_offset_in0 = C2Cs->island_offsets_in[i_island];
-                loop_offset_in1 = C2Cs->island_offsets_in[(i_island + 1)];
+                loop_offset_in0 = C2Cs[current_pattern].island_offsets_in[i_island];
+                loop_offset_in1 = C2Cs[current_pattern].island_offsets_in[(i_island + 1)];
 
                 for(i_C2C = loop_offset_in0; i_C2C < loop_offset_in1; i_C2C++){
                                                 
-                    c0 = C2Cs->shifts_in[i_C2C].c0;
-                    c1 = C2Cs->shifts_in[i_C2C].c1;
-                    w0 = C2Cs->shifts_in[i_C2C].w0;
+                    c0 = C2Cs[current_pattern].shifts_in[i_C2C].c0;
+                    c1 = C2Cs[current_pattern].shifts_in[i_C2C].c1;
+                    w0 = C2Cs[current_pattern].shifts_in[i_C2C].w0;
                     
                     if(w0 > 0.0){
                     
@@ -1262,23 +1262,23 @@
              
                             data0 = C2Cs_MPI.shifts_in[i_C2C].data[i_data];
                                             
-                            C->data_shift[i_phase][c1][i_data] =  
+                            C.data_shift[i_phase][c1][i_data] =  
                             
-                                (w0 * data0 + C->weight_after_shift[c1] * C->data_shift[i_phase][c1][i_data])/
+                                (w0 * data0 + C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data])/
                                 
-                                (w0 + C->weight_after_shift[c1]);
+                                (w0 + C.weight_after_shift[c1]);
                                 
                                 
                             if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
                             
-                                n0 = C2Cs->shifts_in[i_C2C].node0;
+                                n0 = C2Cs[current_pattern].shifts_in[i_C2C].node0;
                                 
                                 Balance[i_phase][i_data].node2node_flux[n0][myid] += w0;
                                 Balance[i_phase][i_data].node2node_data_flux[n0][myid] += w0 * data0;
                             }
                         }
                 
-                        C->weight_after_shift[c1] += w0; 
+                        C.weight_after_shift[c1] += w0; 
                     }
                 }
             }
@@ -1295,14 +1295,14 @@
                     
                     PRF_CRECV_REAL(node_zero, list_of_double, MPI_size, node_zero); 
                     
-                    loop_offset_in0 = C2Cs->island_offsets_in[i_island];
-                    loop_offset_in1 = C2Cs->island_offsets_in[(i_island + 1)];
+                    loop_offset_in0 = C2Cs[current_pattern].island_offsets_in[i_island];
+                    loop_offset_in1 = C2Cs[current_pattern].island_offsets_in[(i_island + 1)];
 
                     for(i_C2C = loop_offset_in0; i_C2C < loop_offset_in1; i_C2C++){
                                                     
-                        c0 = C2Cs->shifts_in[i_C2C].c0;
-                        c1 = C2Cs->shifts_in[i_C2C].c1;
-                        w0 = C2Cs->shifts_in[i_C2C].w0;
+                        c0 = C2Cs[current_pattern].shifts_in[i_C2C].c0;
+                        c1 = C2Cs[current_pattern].shifts_in[i_C2C].c1;
+                        w0 = C2Cs[current_pattern].shifts_in[i_C2C].w0;
                         
                         if((w0 > 0.0)){
                         
@@ -1312,15 +1312,15 @@
                                 
                                 data0 = list_of_double[i_list];
                                                                     
-                                C->data_shift[i_phase][c1][i_data] =  
+                                C.data_shift[i_phase][c1][i_data] =  
                                 
-                                    (w0 * data0 + C->weight_after_shift[c1] * C->data_shift[i_phase][c1][i_data])/
+                                    (w0 * data0 + C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data])/
                                     
-                                    (w0 + C->weight_after_shift[c1]);                                   
+                                    (w0 + C.weight_after_shift[c1]);                                   
                                     
                                 if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
                                 
-                                    n0 = C2Cs->shifts_in[i_C2C].node0;
+                                    n0 = C2Cs[current_pattern].shifts_in[i_C2C].node0;
                                     
                                     Balance[i_phase][i_data].node2node_flux[n0][myid] += w0;
                                     
@@ -1328,7 +1328,7 @@
                                 }
                             }
                     
-                            C->weight_after_shift[c1] += w0; 
+                            C.weight_after_shift[c1] += w0; 
                         }
                     }
 

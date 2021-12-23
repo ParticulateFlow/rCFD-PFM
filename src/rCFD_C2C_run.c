@@ -357,7 +357,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
     /* D. set up parallel C2C communication */
     {
 #if RP_NODE     
-        init_parallel_C2Cs(&Solver_Dict, Phase_Dict, C2Cs);
+        init_parallel_C2Cs();
 #endif
     }
     
@@ -576,7 +576,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                 /* AD1: Access data before shift */     
                 {
 #if RP_NODE
-                    rCFD_user_access_data_before_shift(Balance, Phase_Dict, &Topo_Dict, &C, &Rec, i_phase, i_layer);
+                    rCFD_user_access_data_before_shift(i_phase, i_layer);
 #endif                  
                 }
                 
@@ -631,7 +631,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                             
                                 /* C2: cross-partition shifts */
                                 {
-                                    shift_parallel_C2C_data(&Solver_Dict, Phase_Dict, Balance_Dict, &C2Cs[current_pattern], &C, Balance, i_phase, i_island);
+                                    shift_parallel_C2C_data(i_state, i_phase, i_frame, i_island);
                                 }
                             
                             } /* loop_islands */
@@ -808,7 +808,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             
                                             /* parallel exchange of local_drift_exchange */
                                             {
-                                                sum_up_parallel_corona_cells(&Solver_Dict, &Topo_Dict, C.drift_exchange, i_layer); 
+                                                sum_up_parallel_corona_cells(C.drift_exchange, i_layer); 
                                             }
                                             
                                             /* adjust data by C.drift_exchange */
@@ -878,7 +878,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             
                                             /* parallel exchange of local_drift_exchange */
                                             {
-                                                sum_up_parallel_corona_cells(&Solver_Dict, &Topo_Dict, C.drift_exchange, i_layer); 
+                                                sum_up_parallel_corona_cells(C.drift_exchange, i_layer); 
                                             }
 
                                             loop_cells{
@@ -1044,7 +1044,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                 /* AD2: Access data after swap */
                 {
 #if RP_NODE                 
-                    rCFD_user_access_data_after_swap(Balance, Phase_Dict, Data_Dict, &Topo_Dict, &C, i_phase, i_layer); 
+                    rCFD_user_access_data_after_swap(i_phase, i_layer); 
 #endif              
                 }
                 
@@ -1748,7 +1748,7 @@ DEFINE_ON_DEMAND(rCFD_run)
         /* Post processing */
         {
 #if RP_NODE                                             
-            rCFD_user_post(&Solver_Dict, Phase_Dict, &Topo_Dict, &C, &Rec);
+            rCFD_user_post();
 #endif  
         }
         

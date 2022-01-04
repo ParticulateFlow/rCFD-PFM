@@ -18,8 +18,6 @@
     
 #if 1   /* loops */
     
-    #define     loop_C2Cs_size                  for(i_C2C = 0; i_C2C < size; i_C2C++)
-
     #define     loop_cells                      for(i_cell = 0; i_cell < _Cell_Dict.number_of_cells; i_cell++)
     #define     loop_int_cells                  for(i_cell = 0; i_cell < _Cell_Dict.number_of_int_cells; i_cell++)
     #define     loop_ext_cells                  for(i_cell = _Cell_Dict.number_of_int_cells; i_cell < _Cell_Dict.number_of_cells; i_cell++)
@@ -48,6 +46,8 @@
     
     #define     loop_runs                       for(i_run = 0; i_run < Solver_Dict.number_of_runs; i_run++)
     
+    #define     loop_shifts                     for(i_shift = 0; i_shift < number_of_shifts; i_shift++)
+
     #define     loop_states                     for(i_state = 0; i_state < Solver_Dict.number_of_states; i_state++)
     #define     loop_states2                    for(i_state2 = 0; i_state2 < Solver_Dict.number_of_states; i_state2++)
 
@@ -60,14 +60,15 @@
     
     #define     _C                              Topo.Cell[i_layer]
 
-    #define     current_path                    i_state][i_state2][i_island
-    #define     current_pattern                 i_state][i_phase][i_frame
-        
     #define     _i_balance                      i_phase][i_data
+    
+    #define     _i_C2C                          i_state][i_phase][i_frame
     
     #define     _i_data                         i_phase][i_cell][i_data
     #define     _c0_data                        i_phase][c0][i_data
     #define     _c1_data                        i_phase][c1][i_data
+    
+    #define     _i_shift                        i_shift         /* prep for i_layer][i_shift */
     
     #define     _i_vof                          i_frame][i_cell][i_phase
     

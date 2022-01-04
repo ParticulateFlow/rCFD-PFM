@@ -51,9 +51,9 @@
         }
         
 #if RP_NODE
-        int     i_phase, i_frame, i_data, i_C2C, i_node, i_cell, i_face, i_layer;
+        int     i_phase, i_frame, i_data, i_shift, i_node, i_cell, i_face, i_layer;
         
-        int     size;
+        int     number_of_shifts;
         
         if(Tracer_Dict.random_walk != NULL){ 
         
@@ -303,54 +303,54 @@
                             
                             loop_frames{
                                     
-                                if(C2Cs[current_pattern].shifts != NULL){
+                                if(C2Cs[_i_C2C].shifts != NULL){
                                     
-                                    free(C2Cs[current_pattern].shifts);
+                                    free(C2Cs[_i_C2C].shifts);
                                 }
                                 
-                                if(C2Cs[current_pattern].shifts_in != NULL){
+                                if(C2Cs[_i_C2C].shifts_in != NULL){
                                     
-                                    free(C2Cs[current_pattern].shifts_in);
+                                    free(C2Cs[_i_C2C].shifts_in);
                                 }
                                 
-                                if(C2Cs[current_pattern].shifts_out != NULL){
+                                if(C2Cs[_i_C2C].shifts_out != NULL){
                                     
-                                    free(C2Cs[current_pattern].shifts_out);
+                                    free(C2Cs[_i_C2C].shifts_out);
                                 }
                                 
-                                if(C2Cs[current_pattern].island_offsets != NULL){
+                                if(C2Cs[_i_C2C].island_offsets != NULL){
                                     
-                                    free(C2Cs[current_pattern].island_offsets);
+                                    free(C2Cs[_i_C2C].island_offsets);
                                 }
 
-                                if(C2Cs[current_pattern].island_offsets_in != NULL){
+                                if(C2Cs[_i_C2C].island_offsets_in != NULL){
                                     
-                                    free(C2Cs[current_pattern].island_offsets_in);
+                                    free(C2Cs[_i_C2C].island_offsets_in);
                                 }
                                 
                                 if(myid == 0){
                                     
-                                    if(C2Cs[current_pattern].number_of_shifts_to_node_zero != NULL){
+                                    if(C2Cs[_i_C2C].number_of_shifts_to_node_zero != NULL){
                                         
-                                        free(C2Cs[current_pattern].number_of_shifts_to_node_zero);
+                                        free(C2Cs[_i_C2C].number_of_shifts_to_node_zero);
                                     }
 
-                                    if(C2Cs[current_pattern].number_of_shifts_from_node_zero != NULL){
+                                    if(C2Cs[_i_C2C].number_of_shifts_from_node_zero != NULL){
                                         
-                                        free(C2Cs[current_pattern].number_of_shifts_from_node_zero);
+                                        free(C2Cs[_i_C2C].number_of_shifts_from_node_zero);
                                     }
                                     
-                                    if(C2Cs[current_pattern].in2out != NULL){
+                                    if(C2Cs[_i_C2C].in2out != NULL){
                                         
                                         for(i_node = 0; i_node < (node_last + 1); i_node++){
                                             
-                                            if(C2Cs[current_pattern].in2out[i_node] != NULL){
+                                            if(C2Cs[_i_C2C].in2out[i_node] != NULL){
                                                 
-                                                free(C2Cs[current_pattern].in2out[i_node]);
+                                                free(C2Cs[_i_C2C].in2out[i_node]);
                                             }
                                         }   
                                         
-                                        free(C2Cs[current_pattern].in2out);
+                                        free(C2Cs[_i_C2C].in2out);
                                     }
                                 }
                             }
@@ -368,11 +368,11 @@
 
         if(C2Cs_MPI.shifts_in != NULL){
             
-            size = C2Cs_MPI.max_number_of_MPI_shifts;
+            number_of_shifts = C2Cs_MPI.max_number_of_MPI_shifts;
             
-            loop_C2Cs_size{
+            loop_shifts{
                 
-                free(C2Cs_MPI.shifts_in[i_C2C].data);
+                free(C2Cs_MPI.shifts_in[_i_shift].data);
             }
             
             free(C2Cs_MPI.shifts_in);

@@ -42,7 +42,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 /*************************************************************************************/
 {
 #if RP_NODE 
-    int     i_state, i_phase, i_frame, i_C2C, i_read, i_read_int, i_read_incoming, i_island;
+    int     i_state, i_phase, i_frame, i_shift, i_read, i_read_int, i_read_incoming, i_island;
     
     int     C2C_index;
     
@@ -75,32 +75,32 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                     loop_frames{
                                                 
                         /* init C2Cs structs */
-                        C2Cs[current_pattern].format = c0_n0_c1_n1_w0;
+                        C2Cs[_i_C2C].format = c0_n0_c1_n1_w0;
                         
-                        C2Cs[current_pattern].number_of_shifts =        0;
-                        C2Cs[current_pattern].number_of_shifts_in =     0;
-                        C2Cs[current_pattern].number_of_shifts_out =    0;
+                        C2Cs[_i_C2C].number_of_shifts =        0;
+                        C2Cs[_i_C2C].number_of_shifts_in =     0;
+                        C2Cs[_i_C2C].number_of_shifts_out =    0;
                         
-                        C2Cs[current_pattern].shifts = NULL;
-                        C2Cs[current_pattern].shifts_in = NULL;
-                        C2Cs[current_pattern].shifts_out = NULL;
+                        C2Cs[_i_C2C].shifts = NULL;
+                        C2Cs[_i_C2C].shifts_in = NULL;
+                        C2Cs[_i_C2C].shifts_out = NULL;
                         
-                        C2Cs[current_pattern].island_offsets =      (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
-                        C2Cs[current_pattern].island_offsets_in =   (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
+                        C2Cs[_i_C2C].island_offsets =      (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
+                        C2Cs[_i_C2C].island_offsets_in =   (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
 
                         loop_islands{
                             
-                            C2Cs[current_pattern].island_offsets[i_island] =        0;
-                            C2Cs[current_pattern].island_offsets_in[i_island] =     0;
+                            C2Cs[_i_C2C].island_offsets[i_island] =        0;
+                            C2Cs[_i_C2C].island_offsets_in[i_island] =     0;
                         }
                         
-                        C2Cs[current_pattern].island_offsets[(i_island + 1)] =      0;
-                        C2Cs[current_pattern].island_offsets_in[(i_island + 1)] =   0;
+                        C2Cs[_i_C2C].island_offsets[(i_island + 1)] =      0;
+                        C2Cs[_i_C2C].island_offsets_in[(i_island + 1)] =   0;
                         
-                        C2Cs[current_pattern].number_of_MPI_shifts = 0;
-                        C2Cs[current_pattern].number_of_shifts_to_node_zero = NULL;
-                        C2Cs[current_pattern].number_of_shifts_from_node_zero = NULL;
-                        C2Cs[current_pattern].in2out = NULL;                        
+                        C2Cs[_i_C2C].number_of_MPI_shifts = 0;
+                        C2Cs[_i_C2C].number_of_shifts_to_node_zero = NULL;
+                        C2Cs[_i_C2C].number_of_shifts_from_node_zero = NULL;
+                        C2Cs[_i_C2C].in2out = NULL;                        
                     }
                 }
             }
@@ -161,13 +161,13 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                             {
                                 tmp_C2Cs.shifts = (C2C_shift_type*)malloc(tmp_C2Cs.number_of_shifts * sizeof(C2C_shift_type));
                                 
-                                for(i_C2C = 0; i_C2C < tmp_C2Cs.number_of_shifts; i_C2C++){
+                                for(i_shift = 0; i_shift < tmp_C2Cs.number_of_shifts; i_shift++){
                                     
-                                    tmp_C2Cs.shifts[i_C2C].c0 =     -1;
-                                    tmp_C2Cs.shifts[i_C2C].node0 =  -1;
-                                    tmp_C2Cs.shifts[i_C2C].c1 =     -1;
-                                    tmp_C2Cs.shifts[i_C2C].node1 =  -1;
-                                    tmp_C2Cs.shifts[i_C2C].w0 =     0.0;
+                                    tmp_C2Cs.shifts[i_shift].c0 =     -1;
+                                    tmp_C2Cs.shifts[i_shift].node0 =  -1;
+                                    tmp_C2Cs.shifts[i_shift].c1 =     -1;
+                                    tmp_C2Cs.shifts[i_shift].node1 =  -1;
+                                    tmp_C2Cs.shifts[i_shift].w0 =     0.0;
                                 }
                             
                                 tmp_C2Cs.island_offsets =       (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
@@ -182,9 +182,9 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                             }
                             
                             /* fill tmp_C2Cs and monitor indices */
-                            for(i_C2C = 0; i_C2C < tmp_C2Cs.number_of_shifts; i_C2C++){
+                            for(i_shift = 0; i_shift < tmp_C2Cs.number_of_shifts; i_shift++){
               
-                                if((i_C2C % Solver_Dict.C2C_loading_reduction) == 0){
+                                if((i_shift % Solver_Dict.C2C_loading_reduction) == 0){
                       
                                     if(tmp_C2Cs.format == c0_n0_c1_n1_w0){
 
@@ -250,56 +250,56 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                             
                             /* B.4.2. C2C.numbers, allocate and init C2Cs.shifts/shifts_in */
                             {
-                                C2Cs[current_pattern].number_of_shifts = i_read_int;
+                                C2Cs[_i_C2C].number_of_shifts = i_read_int;
                                 
-                                C2Cs[current_pattern].shifts = (C2C_shift_type*)malloc(i_read_int * sizeof(C2C_shift_type));
+                                C2Cs[_i_C2C].shifts = (C2C_shift_type*)malloc(i_read_int * sizeof(C2C_shift_type));
                                 
-                                for(i_C2C=0; i_C2C < C2Cs[current_pattern].number_of_shifts; i_C2C++){
+                                for(i_shift = 0; i_shift < C2Cs[_i_C2C].number_of_shifts; i_shift++){
                                     
-                                    C2Cs[current_pattern].shifts[i_C2C].c0 =        -1;
-                                    C2Cs[current_pattern].shifts[i_C2C].node0 =     -1;
-                                    C2Cs[current_pattern].shifts[i_C2C].c1 =        -1;
-                                    C2Cs[current_pattern].shifts[i_C2C].node1 =     -1;
-                                    C2Cs[current_pattern].shifts[i_C2C].w0 =        0.0;
+                                    C2Cs[_i_C2C].shifts[_i_shift].c0 =        -1;
+                                    C2Cs[_i_C2C].shifts[_i_shift].node0 =     -1;
+                                    C2Cs[_i_C2C].shifts[_i_shift].c1 =        -1;
+                                    C2Cs[_i_C2C].shifts[_i_shift].node1 =     -1;
+                                    C2Cs[_i_C2C].shifts[_i_shift].w0 =        0.0;
                                 }
 
-                                C2Cs[current_pattern].number_of_shifts_in = i_read_incoming;
+                                C2Cs[_i_C2C].number_of_shifts_in = i_read_incoming;
 
-                                C2Cs[current_pattern].shifts_in = (C2C_shift_type*)malloc(i_read_incoming * sizeof(C2C_shift_type));
+                                C2Cs[_i_C2C].shifts_in = (C2C_shift_type*)malloc(i_read_incoming * sizeof(C2C_shift_type));
 
-                                for(i_C2C=0; i_C2C < C2Cs[current_pattern].number_of_shifts_in; i_C2C++){
+                                for(i_shift=0; i_shift < C2Cs[_i_C2C].number_of_shifts_in; i_shift++){
                                     
-                                    C2Cs[current_pattern].shifts_in[i_C2C].c0 =     -1;
-                                    C2Cs[current_pattern].shifts_in[i_C2C].node0 =  -1;
-                                    C2Cs[current_pattern].shifts_in[i_C2C].c1 =     -1;
-                                    C2Cs[current_pattern].shifts_in[i_C2C].node1 =  -1;
-                                    C2Cs[current_pattern].shifts_in[i_C2C].w0 =     0.0;
+                                    C2Cs[_i_C2C].shifts_in[_i_shift].c0 =     -1;
+                                    C2Cs[_i_C2C].shifts_in[_i_shift].node0 =  -1;
+                                    C2Cs[_i_C2C].shifts_in[_i_shift].c1 =     -1;
+                                    C2Cs[_i_C2C].shifts_in[_i_shift].node1 =  -1;
+                                    C2Cs[_i_C2C].shifts_in[_i_shift].w0 =     0.0;
                                 }
                                 
                                 total_number_of_C2Cs_read += 
                                 
-                                    C2Cs[current_pattern].number_of_shifts + C2Cs[current_pattern].number_of_shifts_in;
+                                    C2Cs[_i_C2C].number_of_shifts + C2Cs[_i_C2C].number_of_shifts_in;
                             }
 
                             /* B.4.3. fill C2Cs.shifts/shifts_in by tmp_C2Cs*/
                             {
-                                for(i_C2C = 0; i_C2C < tmp_C2Cs.number_of_shifts; i_C2C++){ 
+                                for(i_shift = 0; i_shift < tmp_C2Cs.number_of_shifts; i_shift++){ 
  
-                                    my_island_id = C.island_id[tmp_C2Cs.shifts[i_C2C].c1];
+                                    my_island_id = C.island_id[tmp_C2Cs.shifts[i_shift].c1];
                                     
-                                    node0 = tmp_C2Cs.shifts[i_C2C].node0;
-                                    node1 = tmp_C2Cs.shifts[i_C2C].node1;
+                                    node0 = tmp_C2Cs.shifts[i_shift].node0;
+                                    node1 = tmp_C2Cs.shifts[i_shift].node1;
                                     
                             
                                     if(node0 == node1){ 
                                     
                                         C2C_index = tmp_C2Cs.island_offsets[my_island_id] + i_island_int[my_island_id];
                                         
-                                        C2Cs[current_pattern].shifts[C2C_index].c0 =    tmp_C2Cs.shifts[i_C2C].c0;
-                                        C2Cs[current_pattern].shifts[C2C_index].node0 = tmp_C2Cs.shifts[i_C2C].node0;
-                                        C2Cs[current_pattern].shifts[C2C_index].c1 =    tmp_C2Cs.shifts[i_C2C].c1;
-                                        C2Cs[current_pattern].shifts[C2C_index].node1 = tmp_C2Cs.shifts[i_C2C].node1;
-                                        C2Cs[current_pattern].shifts[C2C_index].w0 =    tmp_C2Cs.shifts[i_C2C].w0;
+                                        C2Cs[_i_C2C].shifts[C2C_index].c0 =    tmp_C2Cs.shifts[i_shift].c0;
+                                        C2Cs[_i_C2C].shifts[C2C_index].node0 = tmp_C2Cs.shifts[i_shift].node0;
+                                        C2Cs[_i_C2C].shifts[C2C_index].c1 =    tmp_C2Cs.shifts[i_shift].c1;
+                                        C2Cs[_i_C2C].shifts[C2C_index].node1 = tmp_C2Cs.shifts[i_shift].node1;
+                                        C2Cs[_i_C2C].shifts[C2C_index].w0 =    tmp_C2Cs.shifts[i_shift].w0;
                                     
                                         i_island_int[my_island_id]++;                       
                                     }
@@ -307,23 +307,23 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                                 
                                         C2C_index = tmp_C2Cs.island_offsets_in[my_island_id] + i_island_incoming[my_island_id];
                                     
-                                        C2Cs[current_pattern].shifts_in[C2C_index].c0 =     tmp_C2Cs.shifts[i_C2C].c0;
-                                        C2Cs[current_pattern].shifts_in[C2C_index].node0 =  tmp_C2Cs.shifts[i_C2C].node0;
-                                        C2Cs[current_pattern].shifts_in[C2C_index].c1 =     tmp_C2Cs.shifts[i_C2C].c1;
-                                        C2Cs[current_pattern].shifts_in[C2C_index].node1 =  tmp_C2Cs.shifts[i_C2C].node1;
-                                        C2Cs[current_pattern].shifts_in[C2C_index].w0 =     tmp_C2Cs.shifts[i_C2C].w0;
+                                        C2Cs[_i_C2C].shifts_in[C2C_index].c0 =     tmp_C2Cs.shifts[i_shift].c0;
+                                        C2Cs[_i_C2C].shifts_in[C2C_index].node0 =  tmp_C2Cs.shifts[i_shift].node0;
+                                        C2Cs[_i_C2C].shifts_in[C2C_index].c1 =     tmp_C2Cs.shifts[i_shift].c1;
+                                        C2Cs[_i_C2C].shifts_in[C2C_index].node1 =  tmp_C2Cs.shifts[i_shift].node1;
+                                        C2Cs[_i_C2C].shifts_in[C2C_index].w0 =     tmp_C2Cs.shifts[i_shift].w0;
                                         
                                         i_island_incoming[my_island_id]++;
                                     }                               
                                 }
                                 
-                                C2Cs[current_pattern].island_offsets[0] = 0;
-                                C2Cs[current_pattern].island_offsets_in[0] = 0;
+                                C2Cs[_i_C2C].island_offsets[0] = 0;
+                                C2Cs[_i_C2C].island_offsets_in[0] = 0;
                                 
                                 loop_islands{
                                 
-                                    C2Cs[current_pattern].island_offsets[(i_island + 1)] = tmp_C2Cs.island_offsets[(i_island + 1)];
-                                    C2Cs[current_pattern].island_offsets_in[(i_island + 1)] = tmp_C2Cs.island_offsets_in[(i_island + 1)];
+                                    C2Cs[_i_C2C].island_offsets[(i_island + 1)] = tmp_C2Cs.island_offsets[(i_island + 1)];
+                                    C2Cs[_i_C2C].island_offsets_in[(i_island + 1)] = tmp_C2Cs.island_offsets_in[(i_island + 1)];
                                 }
                             }
                         }
@@ -439,7 +439,7 @@ DEFINE_ON_DEMAND(rCFD_run)
     double      rand_per_phase_loop;
     
 #if RP_NODE 
-    int         i_frame, i_data, i_C2C, i_node, i_node2, i_cell, i_face, i_drift, i_dim, i_while;
+    int         i_frame, i_data, i_shift, i_node, i_node2, i_cell, i_face, i_drift, i_dim, i_while;
 
     int         loop_offset0, loop_offset1;
     int         number_of_fill_loops, number_of_unhit_cells;
@@ -594,18 +594,18 @@ DEFINE_ON_DEMAND(rCFD_run)
                                 
                                 /* C1: local shifts */
                                 {
-                                    loop_offset0    = C2Cs[current_pattern].island_offsets[i_island];
-                                    loop_offset1    = C2Cs[current_pattern].island_offsets[(i_island + 1)];
+                                    loop_offset0    = C2Cs[_i_C2C].island_offsets[i_island];
+                                    loop_offset1    = C2Cs[_i_C2C].island_offsets[(i_island + 1)];
                                     
                                     /*Message0("\n\n loop_offset0 %d, loop_offset1 %d\\", loop_offset0, loop_offset1);*/
 
                                     i_tmp = 0;
                                     
-                                    for(i_C2C = loop_offset0; i_C2C < loop_offset1; i_C2C++){
+                                    for(i_shift = loop_offset0; i_shift < loop_offset1; i_shift++){
                                         
-                                        c0 = C2Cs[current_pattern].shifts[i_C2C].c0;
-                                        c1 = C2Cs[current_pattern].shifts[i_C2C].c1;
-                                        w0 = C2Cs[current_pattern].shifts[i_C2C].w0;
+                                        c0 = C2Cs[_i_C2C].shifts[_i_shift].c0;
+                                        c1 = C2Cs[_i_C2C].shifts[_i_shift].c1;
+                                        w0 = C2Cs[_i_C2C].shifts[_i_shift].w0;
                                     
                                         if(w0 > 0.0){
                                  

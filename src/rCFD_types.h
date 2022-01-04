@@ -26,6 +26,7 @@
         short   number_of_states;
         short   number_of_phases;
         short   number_of_islands;
+        short   number_of_layers;
         short   number_of_runs;
 
         /* sub-model flags */
@@ -225,8 +226,6 @@
 
     typedef struct Topo_Dict_struct
     {
-        int     number_of_layers;
-
         Cell_Dict_type  *Cell_Dict;
 
         Face_Dict_type  *Face_Dict;
@@ -240,6 +239,10 @@
         int         current_state;
 
         int         global_run_counter;
+        
+        double      global_time;
+        
+        double      *timestep_width_per_layer;
 
         clock_t     clock;
 

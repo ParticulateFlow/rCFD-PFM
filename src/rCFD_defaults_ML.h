@@ -24,49 +24,48 @@
     
     /* A. default Dicts */
     
-    void rCFD_default_Solver_Dict(void)
+    void rCFD_default_Solver_Dict(Solver_Dict_type *Solver_Dict)
     {   
-        Solver_Dict.version_year =     Global_Version_Year;
-        Solver_Dict.version_month =    Global_Version_Month;
+        Solver_Dict->version_year =     Global_Version_Year;
+        Solver_Dict->version_month =    Global_Version_Month;
         
-        Solver_Dict.verbal =           Global_Verbal;
+        Solver_Dict->verbal =           Global_Verbal;
 
-        Solver_Dict.number_of_frames =     1;          
-        Solver_Dict.number_of_states =     1;          
-        Solver_Dict.number_of_phases =     1;          
-        Solver_Dict.number_of_islands =    1;
-        Solver_Dict.number_of_layers =     1;        
-        Solver_Dict.number_of_runs =       1;  
+        Solver_Dict->number_of_frames =     1;          
+        Solver_Dict->number_of_states =     1;          
+        Solver_Dict->number_of_phases =     1;          
+        Solver_Dict->number_of_islands =    1;          
+        Solver_Dict->number_of_runs =       1;  
         
-        Solver_Dict.recurrence_process_on =    1;
-        Solver_Dict.data_convection_on =       1;
-        Solver_Dict.face_diffusion_on =        1;
-        Solver_Dict.data_binarization_on =     0;
-        Solver_Dict.data_drifting_on =         0;
-        Solver_Dict.balance_correction_on =    1;
-        Solver_Dict.on_the_fly_post_on =       1;
+        Solver_Dict->recurrence_process_on =    1;
+        Solver_Dict->data_convection_on =       1;
+        Solver_Dict->face_diffusion_on =        1;
+        Solver_Dict->data_binarization_on =     0;
+        Solver_Dict->data_drifting_on =         0;
+        Solver_Dict->balance_correction_on =    1;
+        Solver_Dict->on_the_fly_post_on =       1;
     
-        Solver_Dict.analyse_CFD_count = 0;
+        Solver_Dict->analyse_CFD_count = 0;
         
-        Solver_Dict.max_number_of_cells_per_time_step = 10;
+        Solver_Dict->max_number_of_cells_per_time_step = 10;
         
-        Solver_Dict.time_steps_per_monitoring_interval =   10;
-        Solver_Dict.start_time_for_monitoring =            0.0;
+        Solver_Dict->time_steps_per_monitoring_interval =   10;
+        Solver_Dict->start_time_for_monitoring =            0.0;
         
-        Solver_Dict.C2C_loading_reduction =    1;
+        Solver_Dict->C2C_loading_reduction =    1;
         
-        Solver_Dict.global_time_step = 1.0;
+        Solver_Dict->global_time_step = 1.0;
             
-        Solver_Dict.max_fill_loops =   10;
+        Solver_Dict->max_fill_loops =   10;
 
-        Solver_Dict.face_swap_max_per_loop =   (1./8.);        
-        Solver_Dict.face_swap_min =            (1./64.);
-        Solver_Dict.face_swap_max_loops =      4;  
+        Solver_Dict->face_swap_max_per_loop =   (1./8.);        
+        Solver_Dict->face_swap_min =            (1./64.);
+        Solver_Dict->face_swap_max_loops =      4;  
         
-        Solver_Dict.number_of_drift_loops =    1;
+        Solver_Dict->number_of_drift_loops =    1;
         
-        Solver_Dict.balance_correction_update = 1;
-        Solver_Dict.control_conc_sum_on = 1;
+        Solver_Dict->balance_correction_update = 1;
+        Solver_Dict->control_conc_sum_on = 1;
         
         if(Transcript){
                             
@@ -76,7 +75,7 @@
                 
                 fprintf(f_out,"rCFD_default_Solver_Dict");
             
-                fprintf(f_out,"\n\n   Version: %4d.%02d", Solver_Dict.version_year, Solver_Dict.version_month);
+                fprintf(f_out,"\n\n   Version: %4d.%02d", Solver_Dict->version_year, Solver_Dict->version_month);
                 
                 time_t      current_time = time(NULL);
                 
@@ -89,7 +88,7 @@
         }
     }   
 
-    void rCFD_default_File_Dict(void)
+    void rCFD_default_File_Dict(Solver_Dict_type *Solver_Dict, File_Dict_type *File_Dict)
     {   
 
         /* Node-0 generates folder structure */
@@ -106,27 +105,26 @@
             }
         }
         
-        File_Dict.tracer_start_position_filename   =   "./data/tmp/tracer_start_pos.inj";
+        File_Dict->tracer_start_position_filename   =   "./data/tmp/tracer_start_pos.inj";
         
-        File_Dict.C2C_filename =                       "./data/c2c/c2c";
+        File_Dict->C2C_filename =                       "./data/c2c/c2c";
         
-        File_Dict.Norm_filename =                      "./data/tmp/norm";
+        File_Dict->Norm_filename =                      "./data/tmp/norm";
         
-        File_Dict.vof_filename =                       "./data/vof/vof";
+        File_Dict->vof_filename =                       "./data/vof/vof";
         
-        File_Dict.Jump_filename =                      "./rec/jump";
+        File_Dict->Jump_filename =                      "./rec/jump";
 
-        File_Dict.Matrix_filename =                    "./rec/matrix";
+        File_Dict->Matrix_filename =                    "./rec/matrix";
 
-        File_Dict.Balance_filename =                   "./post/balance_monitor.out";       
+        File_Dict->Balance_filename =                   "./post/balance_monitor.out";       
     }
     
-    void rCFD_default_Phase_Dict(void)
+    void rCFD_default_Phase_Dict(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict)
     {
-#if RP_NODE
         int i_phase;
         
-        for(i_phase = 0; i_phase < Solver_Dict.number_of_phases; i_phase++){
+        for(i_phase = 0; i_phase < Solver_Dict->number_of_phases; i_phase++){
                                             
             Phase_Dict[i_phase].number_of_data = 1;
 
@@ -144,73 +142,69 @@
             
             Phase_Dict[i_phase].user = NULL;
         }           
-#endif    
     }
     
-    void rCFD_default_Tracer_Dict(void)
+    void rCFD_default_Tracer_Dict(Solver_Dict_type *Solver_Dict, Tracer_Dict_type *Tracer_Dict)
     {
-#if RP_NODE        
-        Tracer_Dict.number_of_Tracers_per_cell = 1;
         
-        Tracer_Dict.region_of_interest_exists = 0;
+        Tracer_Dict->number_of_Tracers_per_cell = 1;
         
-        Tracer_Dict.ROI_x_min = 0.0;
-        Tracer_Dict.ROI_x_max = 0.0;
-        Tracer_Dict.ROI_y_min = 0.0;
-        Tracer_Dict.ROI_y_max = 0.0;
-        Tracer_Dict.ROI_z_min = 0.0;
-        Tracer_Dict.ROI_z_max = 0.0;
+        Tracer_Dict->region_of_interest_exists = 0;
         
-        Tracer_Dict.coarse_graining = 1;
+        Tracer_Dict->ROI_x_min = 0.0;
+        Tracer_Dict->ROI_x_max = 0.0;
+        Tracer_Dict->ROI_y_min = 0.0;
+        Tracer_Dict->ROI_y_max = 0.0;
+        Tracer_Dict->ROI_z_min = 0.0;
+        Tracer_Dict->ROI_z_max = 0.0;
+        
+        Tracer_Dict->coarse_graining = 1;
         
         int i_phase;
         
-        loop_phases{
+        loop_phases_ptr{
             
-            Tracer_Dict.random_walk[i_phase] = 0;
+            Tracer_Dict->random_walk[i_phase] = 0;
         }
         
-        Tracer_Dict.C2C_format = c0_n0_c1_n1_w0;
-#endif      
+        Tracer_Dict->C2C_format = c0_n0_c1_n1_w0;
     }
     
-    void rCFD_default_Norm_Dict(void)
+    void rCFD_default_Norm_Dict(Solver_Dict_type *Solver_Dict, Norm_Dict_type *Norm_Dict)
     {
-#if RP_NODE        
-        Norm_Dict.format = standard;
         
-        Norm_Dict.coarse_graining = 1;
+        Norm_Dict->format = standard;
         
-        Norm_Dict.larger_than_mean_norm_only = 0;
-#endif      
+        Norm_Dict->coarse_graining = 1;
+        
+        Norm_Dict->larger_than_mean_norm_only = 0;
     }
     
-    void rCFD_default_Rec_Dict(void)
+    void rCFD_default_Rec_Dict(Solver_Dict_type *Solver_Dict, Rec_Dict_type *Rec_Dict)
     {
         
-        Rec_Dict.method = quarter_jumps;
+        Rec_Dict->method = quarter_jumps;
         
-        Rec_Dict.min_seq_length = (int)((double)Solver_Dict.number_of_frames/25.);
+        Rec_Dict->min_seq_length = (int)((double)Solver_Dict->number_of_frames/25.);
         
-        if(Rec_Dict.min_seq_length < 1){
+        if(Rec_Dict->min_seq_length < 1){
             
-            Rec_Dict.min_seq_length = 1;
+            Rec_Dict->min_seq_length = 1;
         }
         
-        Rec_Dict.max_seq_length = (int)((double)Solver_Dict.number_of_frames/4.);
+        Rec_Dict->max_seq_length = (int)((double)Solver_Dict->number_of_frames/4.);
         
-        if(Rec_Dict.max_seq_length < 1){
+        if(Rec_Dict->max_seq_length < 1){
             
-            Rec_Dict.max_seq_length = 1;
+            Rec_Dict->max_seq_length = 1;
         }       
     }
     
-    void rCFD_default_Data_Dict(void)
+    void rCFD_default_Data_Dict(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Data_Dict_type **Data_Dict)
     {
-#if RP_NODE
         int i_phase, i_data;
 
-        loop_phases{
+        loop_phases_ptr{
 
             loop_data{
             
@@ -229,15 +223,13 @@
                 Data_Dict[i_phase][i_data].user = NULL;
             }
         }
-#endif    
     }
     
-    void rCFD_default_Balance_Dict(void)
+    void rCFD_default_Balance_Dict(Solver_Dict_type *Solver_Dict, Phase_Dict_type *Phase_Dict, Balance_Dict_type **Balance_Dict)
     {
-#if RP_NODE
         int i_phase, i_data;
 
-        loop_phases{
+        loop_phases_ptr{
 
             loop_data{
             
@@ -252,17 +244,18 @@
                 Balance_Dict[i_phase][i_data].write_balance_to_file_interval = 1;
             }
         }
-#endif
     }   
     
-    void rCFD_default_Topo_Dict(void)
+    void rCFD_default_Topo_Dict(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict)
     {
-        Topo_Dict.Cell_Dict = NULL;
+        Topo_Dict->number_of_layers = 1;
         
-        Topo_Dict.Face_Dict = NULL;
+        Topo_Dict->Cell_Dict = NULL;
+        
+        Topo_Dict->Face_Dict = NULL;
     }
     
-    void rCFD_default_Cell_Dict(const short i_layer)
+    void rCFD_default_Cell_Dict(Solver_Dict_type *Solver_Dict, Cell_Dict_type *Cell_Dict, const short i_layer)
     {
         if(i_layer == 0){
             
@@ -299,17 +292,17 @@
                 Message0("\n... WARNING: found more than one fluid cell thread ...\n");
             }
                 
-            _Cell_Dict.number_of_cells = number_of_local_cells; 
+            Cell_Dict->number_of_cells = number_of_local_cells; 
 
-            _Cell_Dict.number_of_int_cells = number_of_local_internal_cells;
+            Cell_Dict->number_of_int_cells = number_of_local_internal_cells;
 
-            _Cell_Dict.number_of_ext_cells = number_of_local_cells - number_of_local_internal_cells;
+            Cell_Dict->number_of_ext_cells = number_of_local_cells - number_of_local_internal_cells;
             
-            _Cell_Dict.number_of_user_vars = 0;
+            Cell_Dict->number_of_user_vars = 0;
         }
     }
         
-    void rCFD_default_Face_Dict(const short i_layer)
+    void rCFD_default_Face_Dict(Solver_Dict_type *Solver_Dict, Face_Dict_type *Face_Dict, const short i_layer)
     {
         if(i_layer == 0){
             
@@ -349,39 +342,87 @@
                 }end_f_loop_ext(f,t)              
             }}
             
-            _Face_Dict.number_of_int_faces = number_of_local_int_faces;
+            Face_Dict->number_of_int_faces = number_of_local_int_faces;
             
-            _Face_Dict.number_of_ext_faces = number_of_local_ext_faces;
+            Face_Dict->number_of_ext_faces = number_of_local_ext_faces;
             
-            _Face_Dict.number_of_faces = (number_of_local_int_faces + number_of_local_ext_faces);
+            Face_Dict->number_of_faces = (number_of_local_int_faces + number_of_local_ext_faces);
         }
     }
 
     /* B. default vars settings */
     
-    void rCFD_default_Solver(void)
+    void rCFD_default_Solver(Solver_type *Solver)
     {   
-        Solver.current_state = 0;
+        Solver->current_state = 0;
         
-        Solver.global_run_counter = 0;
-        
-        Solver.timestep_width_per_layer = (double*)malloc(Solver_Dict.number_of_layers * sizeof(double));
-        
-        int i_layer;
-        
-        loop_layers{
-            
-            Solver.timestep_width_per_layer[i_layer] = Solver_Dict.global_time_step * pow(2.0, (double) i_layer);
-        }
-        
-        Solver.global_time = 0.0;
+        Solver->global_run_counter =    0;          
     }   
 
+    void rCFD_default_Topo(void)
+    {
+        Topo.Cell = (Cell_type*)malloc(Topo_Dict.number_of_layers * sizeof(Cell_type));
+        
+        Topo.Face = (Face_type*)malloc(Topo_Dict.number_of_layers * sizeof(Face_type));
+    }
+	
     void rCFD_default_Cell(const short i_layer)
     {
-#if RP_NODE     
         if(i_layer == 0){
+
+            int i_phase, i_cell, i_frame, i_user, i_data, i_dim;		
+			
+			/* allocate layer 0 */
+			{
+                _C.x = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                
+                loop_cells_ptr{
+                    
+                    _C.x[i_cell] = (double*)malloc( 3 * sizeof(double));
+                }
+				
+                _C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));	
+			}
+			
+			/* set default values */
+			{
+				Domain  *d=Get_Domain(1);
+				Thread  *t;
+				double  x[3];
+				
+				thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_all(i_cell,t){
+						
+						C_CENTROID(x, i_cell, t);
+						
+						loop_dim{
+							
+							_C.x[i_cell][i_dim] = x[i_dim];
+						}
+						
+						_C.volume[i_cell] = C_VOLUME(i_cell, t);
+						
+				}end_c_loop_all(i_cell,t)}}			
+			}
+		}
+		else{
+			
+			/* evaluate size of new coarse layer */
+			{
+				
+			}
+			
+			/* allocate new layer */
+			{
+				
+			}
+			
+			/* set values for new layer */
+			{
+				
+			}
+		}
             
+#if 0
             int i_phase, i_cell, i_frame, i_user, i_data, i_dim;
             
             Domain  *d=Get_Domain(1);
@@ -394,95 +435,95 @@
                     
                     loop_dim{
                         
-                        C.x[i_cell][i_dim] = x[i_dim];
+                        C->x[i_cell][i_dim] = x[i_dim];
                     }
                     
-                    C.volume[i_cell] = C_VOLUME(i_cell, t);
+                    C->volume[i_cell] = C_VOLUME(i_cell, t);
                     
             }end_c_loop_all(i_cell,t)}}
         
-            loop_phases{
+            loop_phases_ptr{
                 
-                loop_cells{
+                loop_cells_ptr{
                     
-                    C.average_velocity[i_phase][i_cell] =  0.0;                
-                    C.crossing_time[i_phase][i_cell] =     0.0;
+                    C->average_velocity[i_phase][i_cell] =  0.0;                
+                    C->crossing_time[i_phase][i_cell] =     0.0;
                 }
             }
             
-            loop_cells{
+            loop_cells_ptr{
                 
-                C.hit_by_other_cell[i_cell] = 0;
-                C.island_id[i_cell] = 0;
+                C->hit_by_other_cell[i_cell] = 0;
+                C->island_id[i_cell] = 0;
                 
-                C.weight_after_shift[i_cell] = 0.0;
-                C.weight_after_swap[i_cell] =  0.0;
+                C->weight_after_shift[i_cell] = 0.0;
+                C->weight_after_swap[i_cell] =  0.0;
             }
             
-            if(C.vof != NULL){
+            if(C->vof != NULL){
                     
                 FILE    *f_in = NULL;
                 char    file_name[80];
                 
                 int     i_state = 0, i_tmp;
                                     
-                loop_phases{
+                loop_phases_ptr{
                     
-                    if(Solver_Dict.number_of_phases == 1){
+                    if(Solver_Dict->number_of_phases == 1){
                             
-                        loop_frames{
+                        loop_frames_ptr{
                             
-                            loop_int_cells{
+                            loop_int_cells_ptr{
                                 
-                                C.vof[i_frame][i_cell][i_phase] = 1.0;
+                                C->vof[i_frame][i_cell][i_phase] = 1.0;
                             }
                         }
                     }
                     else{
                     
-                        sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
+                        sprintf(file_name,"%s_%d_%d_%d", File_Dict->vof_filename, i_state, i_phase, myid);
                     
                         f_in = fopen(file_name, "r");
                         
                         if(f_in == NULL){
 
-                            loop_frames{
+                            loop_frames_ptr{
                                 
-                                loop_int_cells{
+                                loop_int_cells_ptr{
                                     
                                     if(i_phase == 0){
                                         
-                                        C.vof[i_frame][i_cell][i_phase] = 1.0;
+                                        C->vof[i_frame][i_cell][i_phase] = 1.0;
                                     }
                                     else{
                                         
-                                        C.vof[i_frame][i_cell][i_phase] = 0.0;
+                                        C->vof[i_frame][i_cell][i_phase] = 0.0;
                                     }
                                 }
                             }
                             
-                            Message0("\nWARNING: rCFD_default_Cell: C.vof: f_in == NULL for i_phase %d ...\n", i_phase);
+                            Message0("\nWARNING: rCFD_default_Cell: C->vof: f_in == NULL for i_phase %d ...\n", i_phase);
                         }
                         else{
 
-                            loop_frames{
+                            loop_frames_ptr{
                             
                                 fscanf(f_in,"%d\n", &i_tmp);
                                 
-                                if(i_tmp != _Cell_Dict.number_of_int_cells){
+                                if(i_tmp != _pCell_Dict.number_of_int_cells){
                                     
-                                    Message("\nERROR: rCFD_default_Cell: C.vof: i_tmp != _Cell_Dict.number_of_int_cells ...\n");
+                                    Message("\nERROR: rCFD_default_Cell: C->vof: i_tmp != _pCell_Dict.number_of_int_cells ...\n");
                                     
                                     return;
                                 }
                                     
-                                loop_int_cells{
+                                loop_int_cells_ptr{
                                 
-                                    fscanf(f_in,"%le\n", &C.vof[_i_vof]);
+                                    fscanf(f_in,"%le\n", &C->vof[_i_vof]);
                                     
-                                    if((C.vof[_i_vof] < 0.0) || (C.vof[_i_vof] > 1.0)){
+                                    if((C->vof[_i_vof] < 0.0) || (C->vof[_i_vof] > 1.0)){
                                         
-                                        Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, C.vof[_i_vof]);
+                                        Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, C->vof[_i_vof]);
                                         
                                         return;
                                     }
@@ -495,44 +536,42 @@
                 }       
             }
             
-            loop_phases{
+            loop_phases_ptr{
                 
-                loop_cells{
+                loop_cells_ptr{
                     
                     loop_data{
                     
-                        C.data[i_phase][i_cell][i_data] =      0.0;
-                        C.data_shift[i_phase][i_cell][i_data] = 0.0;
-                        C.data_swap[i_phase][i_cell][i_data] =     0.0;
+                        C->data[i_phase][i_cell][i_data] =      0.0;
+                        C->data_shift[i_phase][i_cell][i_data] = 0.0;
+                        C->data_swap[i_phase][i_cell][i_data] =     0.0;
                     }
                 }
             }       
 
-            if(C.drift_exchange != NULL){
+            if(C->drift_exchange != NULL){
                 
-                loop_cells{
+                loop_cells_ptr{
                     
-                    C.drift_exchange[i_cell] = 0.0;
+                    C->drift_exchange[i_cell] = 0.0;
                 }
             }
             
-            if(C.user != NULL){
+            if(C->user != NULL){
                 
-                loop_cells{
+                loop_cells_ptr{
                     
-                    for(i_user = 0; i_user < Topo_Dict.Cell_Dict[i_layer].number_of_user_vars; i_user++){
+                    for(i_user = 0; i_user < Topo_Dict->Cell_Dict[i_layer].number_of_user_vars; i_user++){
                         
-                        C.user[i_cell][i_user] = 0.0;
+                        C->user[i_cell][i_user] = 0.0;
                     }
                 }
             }
-        }
-#endif    
+#endif        
     }
     
-    void rCFD_default_Face(const short i_layer)
+    void rCFD_default_Face(Solver_Dict_type *Solver_Dict, Topo_Dict_type *Topo_Dict, Face_type *F, const short i_layer)
     {
-#if RP_NODE
         if(i_layer == 0){
             
             Domain  *d=Get_Domain(1);
@@ -553,15 +592,15 @@
                     
                     if((c0 >= 0)&&(c1 >= 0)){
                         
-                        F.c0[i_face] = c0;
+                        F->c0[i_face] = c0;
                         
-                        F.c1[i_face] = c1;
+                        F->c1[i_face] = c1;
                         
                         F_AREA(A, f, t);
                         
                         loop_dim{
                             
-                            F.area[i_face][i_dim] = A[i_dim];
+                            F->area[i_face][i_dim] = A[i_dim];
                         }
                     
                         i_face++;
@@ -577,15 +616,15 @@
 
                     if((c0 >= 0)&&(c1 >= 0)){
                         
-                        F.c0[i_face] = c0;
+                        F->c0[i_face] = c0;
                         
-                        F.c1[i_face] = c1;
+                        F->c1[i_face] = c1;
                 
                         F_AREA(A, f, t);
                         
                         loop_dim{
                             
-                            F.area[i_face][i_dim] = A[i_dim];
+                            F->area[i_face][i_dim] = A[i_dim];
                         }
                 
                         i_face++;
@@ -595,69 +634,64 @@
 
             }}
         }
-#endif    
     }
     
-    void rCFD_default_Tracer(void)
+    void rCFD_default_Tracer(Solver_Dict_type *Solver_Dict, Tracer_type *Tracer)
     {
-#if RP_NODE
-        Tracer.allocated =     0;
-        Tracer.initialized =   0;
-        Tracer.ready2write =   0;
-        Tracer.monitoring_started  = 0;        
+        Tracer->allocated =     0;
+        Tracer->initialized =   0;
+        Tracer->ready2write =   0;
+        Tracer->monitoring_started  = 0;        
         
-        Tracer.frame_counter =     0;
+        Tracer->frame_counter =     0;
         
         int     i_phase;
         
-        loop_phases{
+        loop_phases_ptr{
             
-            Tracer.monitor_counter[i_phase] =  0;
-            Tracer.number_of_shifts[i_phase] = 0;
+            Tracer->monitor_counter[i_phase] =  0;
+            Tracer->number_of_shifts[i_phase] = 0;
             
-            Tracer.shifts[i_phase] = NULL;
+            Tracer->shifts[i_phase] = NULL;
         }       
-#endif    
     }
     
-    void rCFD_default_Norms(void)
+    void rCFD_default_Norms(Solver_Dict_type *Solver_Dict, Norm_type *Norms)
     {
-#if RP_NODE
-        Norms.frame_counter = 0;
-#endif    
+        Norms->frame_counter = 0;
     }   
     
-    void rCFD_default_Rec(void)
+    void rCFD_default_Rec(Solver_Dict_type * Solver_Dict, File_Dict_type *File_Dict, Rec_Dict_type *Rec_Dict, Rec_type *Rec)
     {
         int i_state, i_state2, i_island, i_frame;
         
         int number_of_jump_files = 0;
         
-        loop_islands{
+        loop_islands_ptr{
             
-            Rec.global_frame[i_island] = 0;
+            Rec->global_frame[i_island] = 0;
         }
         
-        Rec.frame_in_sequence = 0;
+        Rec->frame_in_sequence = 0;
         
-        Rec.sequence_length = Rec_Dict.min_seq_length;
+        Rec->sequence_length = Rec_Dict->min_seq_length;
         
-        loop_states{
+        loop_states_ptr{
             
-            loop_states2{
+            loop_states2_ptr{
                 
-                loop_islands{
+                loop_islands_ptr{
                     
-                    loop_frames{
+                    loop_frames_ptr{
                         
-                        Rec.jumps[i_state][i_state2][i_island][i_frame] = -1;
+                        Rec->jumps[i_state][i_state2][i_island][i_frame] = -1;
                     }
 
 #if RP_HOST 
                     char    filename[40];
                     FILE    *fi;
 
-                    sprintf(filename,"%s_%d_%d_%d", File_Dict.Jump_filename, i_state, i_state2, i_island);
+                    sprintf(filename,"%s_%d_%d_%d", File_Dict->Jump_filename, i_state, i_state2, i_island);
                     
                     fi=fopen(filename,"r");
                     
@@ -665,9 +699,9 @@
                         
                         fopen(filename,"r");
                         
-                        loop_frames{ 
+                        loop_frames_ptr{ 
                         
-                            fscanf(fi,"%d \n", &Rec.jumps[i_state][i_state2][i_island][i_frame]);
+                            fscanf(fi,"%d \n", &Rec->jumps[i_state][i_state2][i_island][i_frame]);
                         }
                         
                         fclose(fi);
@@ -675,9 +709,9 @@
                         number_of_jump_files++;
                     }
 #endif              
-                    loop_frames{ 
+                    loop_frames_ptr{ 
                     
-                        host_to_node_int_1(Rec.jumps[i_state][i_state2][i_island][i_frame]);
+                        host_to_node_int_1(Rec->jumps[i_state][i_state2][i_island][i_frame]);
                     }
                 }
             }
@@ -693,7 +727,7 @@
                 
                 fprintf(f_out,"\n\nrCFD_default_Rec");
             
-                fprintf(f_out,"\n\n   Read %d jump files from %s\n", number_of_jump_files, File_Dict.Jump_filename);
+                fprintf(f_out,"\n\n   Read %d jump files from %s\n", number_of_jump_files, File_Dict->Jump_filename);
 
                 fclose(f_out);
             }
@@ -703,7 +737,7 @@
 #if RP_HOST     
         if(number_of_jump_files > 0){
             
-            Message("\n\n...rCFD_default_Rec . Read %d jump files from %s", number_of_jump_files, File_Dict.Jump_filename);
+            Message("\n\n...rCFD_default_Rec -> Read %d jump files from %s", number_of_jump_files, File_Dict->Jump_filename);
         }
 #endif      
 

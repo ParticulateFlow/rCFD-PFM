@@ -35,7 +35,7 @@
     
     #define     loop_islands                    for(i_island = 0; i_island < Solver_Dict.number_of_islands; i_island++)
         
-    #define     loop_layers                     for(i_layer = 0; i_layer < Topo_Dict.number_of_layers; i_layer++)
+    #define     loop_layers                     for(i_layer = 0; i_layer < Solver_Dict.number_of_layers; i_layer++)
     
     #define     loop_max_swap_loops             for(i_swap = 0; i_swap < max_swap_loops; i_swap ++) 
 

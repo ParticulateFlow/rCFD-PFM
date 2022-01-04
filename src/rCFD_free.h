@@ -49,6 +49,11 @@
             
             free(Rec.jumps);
         }
+    
+        if(Solver.timestep_width_per_layer != NULL){
+            
+            free(Solver.timestep_width_per_layer);
+        }
         
 #if RP_NODE
         int     i_phase, i_frame, i_data, i_shift, i_node, i_cell, i_face, i_layer;

@@ -23,9 +23,7 @@ void init_all(void)
         
         rCFD_user_set_Solver_Dict();
         
-#if RP_NODE     
-        rCFD_default_Solver();
-#endif      
+        rCFD_default_Solver();      
     }
 
     /* D2. File_Dict */
@@ -118,9 +116,9 @@ void init_all(void)
 #if RP_NODE     
         int i_layer;
         
-        Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Topo_Dict.number_of_layers * sizeof(Cell_Dict_type));
+        Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_Dict_type));
         
-        Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Topo_Dict.number_of_layers * sizeof(Face_Dict_type));
+        Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_Dict_type));
 
         loop_layers{
                 

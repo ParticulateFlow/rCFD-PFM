@@ -114,27 +114,136 @@ void init_all(void)
         rCFD_user_set_Topo_Dict();
         
 #if RP_NODE     
-        int i_layer;
-        
         Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_Dict_type));
         
         Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_Dict_type));
 
-        loop_layers{
-                
-            rCFD_default_Cell_Dict(i_layer);
+        rCFD_default_Cell_Dict_L0();
 
-            rCFD_user_set_Cell_Dict(i_layer);
-
-            rCFD_default_Face_Dict(i_layer);
-
-            rCFD_user_set_Face_Dict(i_layer);          
-        }   
-#endif  
+        rCFD_default_Face_Dict_L0();
+#endif   
+    }    
     
-    } 
-    
+    /* G1. Topo */
+    {
+        rCFD_default_Topo();
         
+#if RP_NODE     
+        int i_layer, i_phase, i_frame, i_cell, i_face;
+        
+        Topo.Cell = (Cell_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_type));
+        
+        Topo.Face = (Face_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_type));
+
+        i_layer = 0;
+                
+        /* T.1. allocate cells per layer */
+        {
+            _C.x = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+            
+            loop_cells{
+                
+                _C.x[i_cell] = (double*)malloc( 3 * sizeof(double));
+            }
+            
+            _C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+            
+            _C.average_velocity =    (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
+            _C.crossing_time =       (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
+            
+            loop_phases{
+                
+                _C.average_velocity[i_phase] =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));            
+                _C.crossing_time[i_phase] =      (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+            }
+
+            _C.hit_by_other_cell =   (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
+
+            _C.island_id =           (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
+            
+            _C.weight_after_shift =  (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+            _C.weight_after_swap =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+
+            _C.vof = (double***)malloc(Solver_Dict.number_of_frames * sizeof(double**));
+            
+            loop_frames{
+                
+                _C.vof[i_frame] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                
+                loop_cells{
+                    
+                    _C.vof[i_frame][i_cell] = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+                }
+            }
+
+            _C.data =        (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+            _C.data_shift =  (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+            _C.data_swap =   (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+            
+            loop_phases{
+                
+                _C.data[i_phase] =       (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                _C.data_shift[i_phase] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                _C.data_swap[i_phase] =  (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                
+                loop_cells{
+                    
+                    _C.data[i_phase][i_cell] =       (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                    _C.data_shift[i_phase][i_cell] = (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                    _C.data_swap[i_phase][i_cell] =  (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                }
+            }       
+            
+            if(Solver_Dict.data_drifting_on){
+                
+                _C.drift_exchange = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+            }
+            else{
+                
+                _C.drift_exchange = NULL;
+            }       
+            
+            if(_Cell_Dict.number_of_user_vars > 0){
+                
+                _C.user = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+                
+                loop_cells{
+                    
+                    _C.user[i_cell] = (double*)malloc(_Cell_Dict.number_of_user_vars * sizeof(double));
+                }
+            }
+            else{
+                
+                _C.user = NULL;
+            }                        
+        }
+        
+        /* T.2. set cell default values per layer */
+        {
+            rCFD_default_Cell_L0();                         
+        }
+        
+        /* T.3. allocate faces per layer */
+        {
+            _F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
+    
+            _F.c1 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
+            
+            _F.area = (double**)malloc(_Face_Dict.number_of_faces * sizeof(double*));
+            
+            loop_faces{
+                
+                _F.area[i_face] = (double*)malloc( 3 * sizeof(double));
+            }
+        }
+        
+        /* T.4. set face default values per layer */
+        {
+            rCFD_default_Face_L0();                         
+        }       
+#endif      
+    }
+    
     /* G1. Cells (first initialization) */
     {
 #if RP_NODE     
@@ -407,23 +516,23 @@ void init_all(void)
                         
                         case generic_data:
                             
-                            Balance[_i_balance].mass_integral += C.data[_i_data];
+                            Balance[_i_balance].mass_integral += _C.data[_i_data];
                             
                             break;
                             
                         case concentration_data:
                         
-                            Balance[_i_balance].mass_integral += C.data[_i_data] * 
+                            Balance[_i_balance].mass_integral += _C.data[_i_data] * 
                             
-                                Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[_i_vof];
+                                Phase_Dict[i_phase].density * _C.volume[i_cell] * _C.vof[_i_vof];
                             
                             break;
                             
                         case temperature_data:
                         
-                            Balance[_i_balance].mass_integral += C.data[_i_data] * 
+                            Balance[_i_balance].mass_integral += _C.data[_i_data] * 
                     
-                                Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * C.volume[i_cell] * C.vof[_i_vof];
+                                Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * _C.volume[i_cell] * _C.vof[_i_vof];
                                 
                             break;
                     
@@ -445,7 +554,7 @@ void init_all(void)
             }
         }
         
-        rCFD_user_post();   /* post-process initialization */
+        rCFD_user_post(i_layer);   /* post-process initialization */
 #endif
     }       
 

@@ -10,15 +10,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* (C)  2021 
+/* (C)  2021-22
     Stefan Pirker
     Particulate Flow Modelling
     Johannes Kepler University, Linz, Austria
     www.particulate-flow.at
 */  
 
-    #define     Global_Version_Year     2021
-    #define     Global_Version_Month    12
+    #define     Global_Version_Year     2022
+    #define     Global_Version_Month    01
     
     #define     Global_Verbal           1
     
@@ -261,100 +261,98 @@
         
         Topo_Dict.Face_Dict = NULL;
     }
-    
-    void rCFD_default_Cell_Dict(const short i_layer)
+
+    void rCFD_default_Cell_Dict_L0(void)
     {
-        if(i_layer == 0){
+        int i_layer = 0;
             
-            Domain  *d=Get_Domain(1);
-            Thread  *t;
-            cell_t  c;
+        Domain  *d=Get_Domain(1);
+        Thread  *t;
+        cell_t  c;
 
-            int     number_of_local_cells = 0, number_of_local_internal_cells = 0;
-            
-            int     only_one_fluid_cell_thread = 0;
-            
-            thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
+        int     number_of_local_cells = 0, number_of_local_internal_cells = 0;
+        
+        int     only_one_fluid_cell_thread = 0;
+        
+        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
 
-                only_one_fluid_cell_thread++;
+            only_one_fluid_cell_thread++;
+            
+            begin_c_loop_all(c,t){
                 
-                begin_c_loop_all(c,t){
-                    
-                    number_of_local_cells++;
+                number_of_local_cells++;
 
-                }end_c_loop_all(c,t)
+            }end_c_loop_all(c,t)
 
-                begin_c_loop_int(c,t){
-                    
-                    number_of_local_internal_cells++;
-
-                }end_c_loop_int(c,t)
+            begin_c_loop_int(c,t){
                 
-            }}
+                number_of_local_internal_cells++;
+
+            }end_c_loop_int(c,t)
             
-            only_one_fluid_cell_thread = PRF_GIHIGH1(only_one_fluid_cell_thread);
+        }}
+        
+        only_one_fluid_cell_thread = PRF_GIHIGH1(only_one_fluid_cell_thread);
 
-            if(only_one_fluid_cell_thread > 1){
-                
-                Message0("\n... WARNING: found more than one fluid cell thread ...\n");
-            }
-                
-            _Cell_Dict.number_of_cells = number_of_local_cells; 
-
-            _Cell_Dict.number_of_int_cells = number_of_local_internal_cells;
-
-            _Cell_Dict.number_of_ext_cells = number_of_local_cells - number_of_local_internal_cells;
+        if(only_one_fluid_cell_thread > 1){
             
-            _Cell_Dict.number_of_user_vars = 0;
+            Message0("\n... WARNING: found more than one fluid cell thread ...\n");
         }
+            
+        _Cell_Dict.number_of_cells = number_of_local_cells; 
+
+        _Cell_Dict.number_of_int_cells = number_of_local_internal_cells;
+
+        _Cell_Dict.number_of_ext_cells = number_of_local_cells - number_of_local_internal_cells;
+        
+        _Cell_Dict.number_of_user_vars = 0;
     }
         
-    void rCFD_default_Face_Dict(const short i_layer)
+    void rCFD_default_Face_Dict_L0(void)
     {
-        if(i_layer == 0){
+        int i_layer = 0;
             
-            Domain  *d=Get_Domain(1);
-            Thread  *t;
-            face_t  f;
-            cell_t  c0, c1;
+        Domain  *d=Get_Domain(1);
+        Thread  *t;
+        face_t  f;
+        cell_t  c0, c1;
 
-            int     number_of_local_int_faces = 0, number_of_local_ext_faces = 0;
+        int     number_of_local_int_faces = 0, number_of_local_ext_faces = 0;
+        
+        thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){
             
-            thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){
+            begin_f_loop(f,t){
                 
-                begin_f_loop(f,t){
-                    
-                    c0 = (int)F_C0(f, t);
+                c0 = (int)F_C0(f, t);
 
-                    c1 = (int)F_C1(f, t);
-                    
-                    if((c0 >= 0)&&(c1 >= 0)){
-                    
-                        number_of_local_int_faces++;
-                    }
+                c1 = (int)F_C1(f, t);
+                
+                if((c0 >= 0)&&(c1 >= 0)){
+                
+                    number_of_local_int_faces++;
+                }
 
-                }end_f_loop(f,t)
+            }end_f_loop(f,t)
 
-                begin_f_loop_ext(f,t){
-                    
-                    c0 = (int)F_C0(f, t);
+            begin_f_loop_ext(f,t){
+                
+                c0 = (int)F_C0(f, t);
 
-                    c1 = (int)F_C1(f, t);
-                    
-                    if((c0 >= 0)&&(c1 >= 0)){
-                    
-                        number_of_local_ext_faces++;
-                    }
+                c1 = (int)F_C1(f, t);
+                
+                if((c0 >= 0)&&(c1 >= 0)){
+                
+                    number_of_local_ext_faces++;
+                }
 
-                }end_f_loop_ext(f,t)              
-            }}
-            
-            _Face_Dict.number_of_int_faces = number_of_local_int_faces;
-            
-            _Face_Dict.number_of_ext_faces = number_of_local_ext_faces;
-            
-            _Face_Dict.number_of_faces = (number_of_local_int_faces + number_of_local_ext_faces);
-        }
+            }end_f_loop_ext(f,t)              
+        }}
+        
+        _Face_Dict.number_of_int_faces = number_of_local_int_faces;
+        
+        _Face_Dict.number_of_ext_faces = number_of_local_ext_faces;
+        
+        _Face_Dict.number_of_faces = (number_of_local_int_faces + number_of_local_ext_faces);
     }
 
     /* B. default vars settings */
@@ -377,6 +375,168 @@
         Solver.global_time = 0.0;
     }   
 
+    void rCFD_default_Topo(void)
+    {
+#if RP_NODE     
+        Topo.Cell = NULL;
+        
+        Topo.Face = NULL;
+#endif      
+    }
+        
+    void rCFD_default_Cell_L0(void)
+    {
+#if RP_NODE     
+        int i_layer = 0;
+            
+        int i_phase, i_cell, i_frame, i_user, i_data, i_dim;
+        
+        Domain  *d=Get_Domain(1);
+        Thread  *t;
+        double  x[3];
+        
+        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_all(i_cell,t){
+                
+                C_CENTROID(x, i_cell, t);
+                
+                loop_dim{
+                    
+                    _C.x[i_cell][i_dim] = x[i_dim];
+                }
+                
+                _C.volume[i_cell] = C_VOLUME(i_cell, t);
+                
+        }end_c_loop_all(i_cell,t)}}
+    
+        loop_phases{
+            
+            loop_cells{
+                
+                _C.average_velocity[i_phase][i_cell] =  0.0;                
+                _C.crossing_time[i_phase][i_cell] =     0.0;
+            }
+        }
+        
+        loop_cells{
+            
+            _C.hit_by_other_cell[i_cell] = 0;
+            _C.island_id[i_cell] = 0;
+            
+            _C.weight_after_shift[i_cell] = 0.0;
+            _C.weight_after_swap[i_cell] =  0.0;
+        }
+        
+        if(_C.vof != NULL){
+                
+            FILE    *f_in = NULL;
+            char    file_name[80];
+            
+            int     i_state = 0, i_tmp;
+                                
+            loop_phases{
+                
+                if(Solver_Dict.number_of_phases == 1){
+                        
+                    loop_frames{
+                        
+                        loop_int_cells{
+                            
+                            _C.vof[i_frame][i_cell][i_phase] = 1.0;
+                        }
+                    }
+                }
+                else{
+                
+                    sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
+                
+                    f_in = fopen(file_name, "r");
+                    
+                    if(f_in == NULL){
+
+                        loop_frames{
+                            
+                            loop_int_cells{
+                                
+                                if(i_phase == 0){
+                                    
+                                    _C.vof[i_frame][i_cell][i_phase] = 1.0;
+                                }
+                                else{
+                                    
+                                    _C.vof[i_frame][i_cell][i_phase] = 0.0;
+                                }
+                            }
+                        }
+                        
+                        Message0("\nWARNING: rCFD_default_Cell: _C.vof: f_in == NULL for i_phase %d ...\n", i_phase);
+                    }
+                    else{
+
+                        loop_frames{
+                        
+                            fscanf(f_in,"%d\n", &i_tmp);
+                            
+                            if(i_tmp != _Cell_Dict.number_of_int_cells){
+                                
+                                Message("\nERROR: rCFD_default_Cell: _C.vof: i_tmp != _Cell_Dict.number_of_int_cells ...\n");
+                                
+                                return;
+                            }
+                                
+                            loop_int_cells{
+                            
+                                fscanf(f_in,"%le\n", &_C.vof[_i_vof]);
+                                
+                                if((_C.vof[_i_vof] < 0.0) || (_C.vof[_i_vof] > 1.0)){
+                                    
+                                    Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, _C.vof[_i_vof]);
+                                    
+                                    return;
+                                }
+                            }
+                        }
+                        
+                        fclose(f_in);
+                    }
+                }
+            }       
+        }
+        
+        loop_phases{
+            
+            loop_cells{
+                
+                loop_data{
+                
+                    _C.data[i_phase][i_cell][i_data] =      0.0;
+                    _C.data_shift[i_phase][i_cell][i_data] = 0.0;
+                    _C.data_swap[i_phase][i_cell][i_data] =     0.0;
+                }
+            }
+        }       
+
+        if(_C.drift_exchange != NULL){
+            
+            loop_cells{
+                
+                _C.drift_exchange[i_cell] = 0.0;
+            }
+        }
+        
+        if(_C.user != NULL){
+            
+            loop_cells{
+                
+                for(i_user = 0; i_user < Topo_Dict.Cell_Dict[i_layer].number_of_user_vars; i_user++){
+                    
+                    _C.user[i_cell][i_user] = 0.0;
+                }
+            }
+        }
+
+#endif    
+    }
+    
     void rCFD_default_Cell(const short i_layer)
     {
 #if RP_NODE     
@@ -527,6 +687,73 @@
                 }
             }
         }
+#endif    
+    }
+    
+    void rCFD_default_Face_L0(void)
+    {
+#if RP_NODE
+        int i_layer = 0;
+            
+        Domain  *d=Get_Domain(1);
+        Thread  *t;
+        int     f, i_face, c0, c1, i_dim;
+        
+        double  A[3];
+        
+        i_face = 0;
+        
+        thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){
+            
+            begin_f_loop(f,t){
+                
+                c0 = (int)F_C0(f, t);
+
+                c1 = (int)F_C1(f, t);
+                
+                if((c0 >= 0)&&(c1 >= 0)){
+                    
+                    _F.c0[i_face] = c0;
+                    
+                    _F.c1[i_face] = c1;
+                    
+                    F_AREA(A, f, t);
+                    
+                    loop_dim{
+                        
+                        _F.area[i_face][i_dim] = A[i_dim];
+                    }
+                
+                    i_face++;
+                }
+
+            }end_f_loop(f,t)
+            
+            begin_f_loop_ext(f,t){
+                
+                c0 = (int)F_C0(f, t);
+                
+                c1 = (int)F_C1(f, t);
+
+                if((c0 >= 0)&&(c1 >= 0)){
+                    
+                    _F.c0[i_face] = c0;
+                    
+                    _F.c1[i_face] = c1;
+            
+                    F_AREA(A, f, t);
+                    
+                    loop_dim{
+                        
+                        _F.area[i_face][i_dim] = A[i_dim];
+                    }
+            
+                    i_face++;
+                }
+
+            }end_f_loop_ext(f,t)
+
+        }}  
 #endif    
     }
     

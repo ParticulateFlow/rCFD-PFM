@@ -59,7 +59,8 @@
     #define     _Face_Dict                      Topo_Dict.Face_Dict[i_layer]
     
     #define     _C                              Topo.Cell[i_layer]
-
+    #define     _F                              Topo.Face[i_layer]
+    
     #define     _i_balance                      i_phase][i_data
     
     #define     _i_C2C                          i_state][i_phase][i_frame

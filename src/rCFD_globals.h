@@ -36,6 +36,8 @@
     
     static  Balance_Dict_type   **Balance_Dict = NULL;
 
+    static  Topo_type           Topo;
+    
     static  Cell_type           C;
     
     static  Face_type           F;

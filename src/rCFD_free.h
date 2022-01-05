@@ -255,8 +255,213 @@
             
             free(F.area);
         }
+        
+        if(Topo.Cell != NULL){
+            
+            loop_layers{
+                
+                if(_C.x != NULL){
+                    
+                    loop_cells{
+                        
+                        if(_C.x[i_cell] != NULL){
+                            
+                            free(_C.x[i_cell]);
+                        }
+                    }
+                        
+                    free(_C.x);
+                }
+                
+                if(_C.volume != NULL){
+                    
+                    free(_C.volume);
+                }
+                
+                if(_C.average_velocity != NULL){
+                    
+                    loop_phases{
+                        
+                        if(_C.average_velocity[i_phase] != NULL){
+                            
+                            free(_C.average_velocity[i_phase]);
+                        }
+                    }
+                    
+                    free(_C.average_velocity);
+                }   
 
-        /* free Topo_Dict after C and F */
+                if(_C.crossing_time != NULL){
+                    
+                    loop_phases{
+                        
+                        if(_C.crossing_time[i_phase] != NULL){
+                            
+                            free(_C.crossing_time[i_phase]);
+                        }
+                    }
+                    
+                    free(_C.crossing_time);
+                }   
+
+                if(_C.hit_by_other_cell != NULL){ 
+                
+                    free(_C.hit_by_other_cell);  
+                }
+
+                if(_C.island_id != NULL){ 
+                
+                    free(_C.island_id);  
+                }
+                
+                if(_C.weight_after_shift != NULL){
+                    
+                    free(_C.weight_after_shift);
+                }
+                
+                if(_C.weight_after_swap != NULL){
+                    
+                    free(_C.weight_after_swap);
+                }
+                
+                if(_C.vof != NULL){
+                    
+                    loop_frames{
+                        
+                        if(_C.vof[i_frame] != NULL){
+                            
+                            loop_cells{
+                                
+                                if(_C.vof[i_frame][i_cell] != NULL){
+                                    
+                                    free(_C.vof[i_frame][i_cell]);
+                                }
+                            }
+                            
+                            free(_C.vof[i_frame]);
+                        }
+                    }
+                    
+                    free(_C.vof);
+                }
+                
+                if(_C.data != NULL){
+                    
+                    loop_phases{
+                        
+                        if(_C.data[i_phase] != NULL){
+                        
+                            loop_cells{
+                                
+                                if(_C.data[i_phase][i_cell] != NULL){
+                                    
+                                    free(_C.data[i_phase][i_cell]);
+                                }
+                            }
+                            
+                            free(_C.data[i_phase]);
+                        }
+                    }
+                    
+                    free(_C.data);
+                }
+
+                if(_C.data_shift != NULL){
+                    
+                    loop_phases{
+                        
+                        if(_C.data_shift[i_phase] != NULL){
+                        
+                            loop_cells{
+                                
+                                if(_C.data_shift[i_phase][i_cell] != NULL){
+                                    
+                                    free(_C.data_shift[i_phase][i_cell]);
+                                }
+                            }
+                            
+                            free(_C.data_shift[i_phase]);
+                        }
+                    }
+                    
+                    free(_C.data_shift);
+                }
+                
+                if(_C.data_swap != NULL){
+                    
+                    loop_phases{
+                        
+                        if(_C.data_swap[i_phase] != NULL){
+                        
+                            loop_cells{
+                                
+                                if(_C.data_swap[i_phase][i_cell] != NULL){
+                                    
+                                    free(_C.data_swap[i_phase][i_cell]);
+                                }
+                            }
+                            
+                            free(_C.data_swap[i_phase]);
+                        }
+                    }
+                    
+                    free(_C.data_swap);
+                }
+
+                if(_C.drift_exchange != NULL){
+                    
+                    free(_C.drift_exchange);
+                }
+                
+                if(_C.user != NULL){
+                    
+                    loop_cells{
+                        
+                        if(_C.user[i_cell] !=  NULL){
+                            
+                            free(_C.user[i_cell]);
+                        }
+                    }
+                    
+                    free(_C.user);
+                }               
+            }
+            
+            free(Topo.Cell);
+        }
+        
+        if(Topo.Face != NULL){
+            
+            loop_layers{                
+
+                if(_F.c0 != NULL){
+                    
+                    free(_F.c0);
+                }
+        
+                if(_F.c1 != NULL){
+                    
+                    free(_F.c1);
+                }
+                
+                if(_F.area != NULL){
+                    
+                    loop_faces{
+                        
+                        if(_F.area[i_face] != NULL){
+                            
+                            free(_F.area[i_face]);
+                        }
+                    }
+                    
+                    free(_F.area);
+                }
+            }
+            
+            free(Topo.Face);
+        }
+        
+        /* free Topo_Dict after Topo */
         
         if(Topo_Dict.Cell_Dict != NULL){
             
@@ -266,8 +471,8 @@
         if(Topo_Dict.Face_Dict != NULL){
             
             free(Topo_Dict.Face_Dict);
-        }
-                        
+        }       
+        
         if(Tracer.monitor_counter != NULL){ 
         
             free(Tracer.monitor_counter);   

@@ -283,6 +283,14 @@
 
     } Face_type;
 
+    typedef struct Topo_struct
+    {
+        Cell_type   *Cell;
+        
+        Face_type   *Face;
+        
+    } Topo_type;
+    
     enum{   /* C2C shift formats */
 
         c0_n0_c1_n1_w0,

@@ -209,7 +209,9 @@
         Domain  *d=Get_Domain(1);
         Thread  *t;
 
-        int i_phase, i_cell, i_UDMI;
+        int i_phase, i_cell, i_UDMI, i_layer;
+        
+        i_layer = 0;
         
         thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell, t){
             
@@ -217,9 +219,9 @@
             
             loop_phases{
                 
-                C_UDMI(i_cell, t, i_UDMI) = C.crossing_time[i_phase][i_cell];
+                C_UDMI(i_cell, t, i_UDMI) = _C.crossing_time[i_phase][i_cell];
 
-                C_UDMI(i_cell, t, (i_UDMI+1)) = C.average_velocity[i_phase][i_cell];
+                C_UDMI(i_cell, t, (i_UDMI+1)) = _C.average_velocity[i_phase][i_cell];
                 
                 i_UDMI += 2;
             }
@@ -242,7 +244,7 @@
             /* coord's */
             loop_dim{
                 
-                x[i_dim] = C.x[i_cell][i_dim];
+                x[i_dim] = _C.x[i_cell][i_dim];
             }
             
             radius = sqrt((x[0] - 0.935)*(x[0] - 0.935) + x[1]*x[1]);
@@ -253,11 +255,11 @@
                 /* global initialization */
                 if(i_data == c_steel_grade_A){
                     
-                    C.data[_i_data] = 1.0;
+                    _C.data[_i_data] = 1.0;
                 }
                 else{
                     
-                    C.data[_i_data] = 0.0;
+                    _C.data[_i_data] = 0.0;
                 }                   
                 
                 /* inflow initialization */
@@ -267,37 +269,37 @@
                             
                         case c_drift_0p0:
                         {
-                            C.data[_i_data] = 1.0e-3;
+                            _C.data[_i_data] = 1.0e-3;
                             
                             break;
                         }
                         case c_drift_0p001:
                         {
-                            C.data[_i_data] = 1.0e-3;
+                            _C.data[_i_data] = 1.0e-3;
                             
                             break;
                         }
                         case c_drift_0p002:
                         {
-                            C.data[_i_data] = 1.0e-3;
+                            _C.data[_i_data] = 1.0e-3;
                             
                             break;
                         }
                         case c_steel_grade_A:
                         {
-                            C.data[_i_data] = 0.0;
+                            _C.data[_i_data] = 0.0;
                             
                             break;
                         }
                         case c_steel_grade_B:
                         {
-                            C.data[_i_data] = 1.0;
+                            _C.data[_i_data] = 1.0;
                             
                             break;
                         }
                         case c_steel_temp:
                         {
-                            C.data[_i_data] = 23;
+                            _C.data[_i_data] = 23;
                             
                             break;
                         }                       
@@ -348,14 +350,14 @@
                 
                 loop_dim{
                     
-                    x[i_dim] = C.x[i_cell][i_dim];
+                    x[i_dim] = _C.x[i_cell][i_dim];
                 }
 
                 radius_in = sqrt((x[0] - 0.935)*(x[0] - 0.935) + x[1]*x[1]);
 
                 if((radius_in <= 0.0115) && (x[2] > 0.2)){
 
-                    V_in += C.volume[i_cell];
+                    V_in += _C.volume[i_cell];
                      
                     /* constant concentrations */
                     loop_data{
@@ -364,32 +366,32 @@
                             
                             case c_drift_0p0:
                             
-                                C.data[_i_data] = 1.0e-3; break;
+                                _C.data[_i_data] = 1.0e-3; break;
 
                             case c_drift_0p001:
                             
-                                C.data[_i_data] = 1.0e-3; break;
+                                _C.data[_i_data] = 1.0e-3; break;
 
                             case c_drift_0p002:
                             
-                                C.data[_i_data] = 1.0e-3; break;
+                                _C.data[_i_data] = 1.0e-3; break;
                                 
                             case c_steel_grade_A:
                             
-                                C.data[_i_data] = 0.0; break;
+                                _C.data[_i_data] = 0.0; break;
                             
                             case c_steel_grade_B:
                             
-                                C.data[_i_data] = 1.0; break;
+                                _C.data[_i_data] = 1.0; break;
                             
                             case c_steel_temp:
                             
-                                C.data[_i_data] = 23.0; break;
+                                _C.data[_i_data] = 23.0; break;
                             
                             default: break;
                         }
 
-                        mean_value_in[i_data] += C.data[_i_data] * C.volume[i_cell];                                      
+                        mean_value_in[i_data] += _C.data[_i_data] * _C.volume[i_cell];                                      
                     }
                 }
 
@@ -397,12 +399,12 @@
                 
                 if((radius_out <= 0.015) && (x[2] < 0.025)){
 
-                    V_out += C.volume[i_cell];
+                    V_out += _C.volume[i_cell];
 
                     /* mean values */
                     loop_data{
                         
-                        mean_value_out[i_data] += C.data[_i_data] * C.volume[i_cell];                 
+                        mean_value_out[i_data] += _C.data[_i_data] * _C.volume[i_cell];                 
                     }
                     
                 }           
@@ -479,7 +481,7 @@
 
     }
 
-    void rCFD_user_post(void)
+    void rCFD_user_post(const short i_layer)
     {
 #if RP_NODE     
         Domain  *d=Get_Domain(1);
@@ -495,7 +497,7 @@
                 
                 loop_data{
                 
-                    C_UDMI(i_cell, t, i_UDMI) = C.data[_i_data];
+                    C_UDMI(i_cell, t, i_UDMI) = _C.data[_i_data];
                     
                     if(i_data == c_steel_temp){
                         

@@ -120,8 +120,10 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 #if RP_NODE     
         char    filename[40];
         FILE    *fi = NULL;
-        int     i_tmp, c0, node0, c1, node1, my_island_id;
+        int     i_tmp, c0, node0, c1, node1, my_island_id, i_layer;
         double  tmp, w0;
+        
+        i_layer = 0;
 
         loop_states{
             
@@ -199,7 +201,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                                                                         
                                     i_read++;
                                 
-                                    my_island_id = C.island_id[c1];
+                                    my_island_id = _C.island_id[c1];
                                     
                                     if(node0 == node1){ 
                                     
@@ -285,7 +287,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                             {
                                 for(i_shift = 0; i_shift < tmp_C2Cs.number_of_shifts; i_shift++){ 
  
-                                    my_island_id = C.island_id[tmp_C2Cs.shifts[i_shift].c1];
+                                    my_island_id = _C.island_id[tmp_C2Cs.shifts[i_shift].c1];
                                     
                                     node0 = tmp_C2Cs.shifts[i_shift].node0;
                                     node1 = tmp_C2Cs.shifts[i_shift].node1;
@@ -540,13 +542,13 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                 loop_cells{
                     
-                    C.weight_after_shift[i_cell] =  0.0;
-                    C.weight_after_swap[i_cell] =   0.0;
+                    _C.weight_after_shift[i_cell] =  0.0;
+                    _C.weight_after_swap[i_cell] =   0.0;
                     
                     loop_data{
                         
-                        C.data_shift[i_phase][i_cell][i_data] = 0.0;
-                        C.data_swap[i_phase][i_cell][i_data] =  0.0;
+                        _C.data_shift[i_phase][i_cell][i_data] = 0.0;
+                        _C.data_swap[i_phase][i_cell][i_data] =  0.0;
                     }
                 }
                 
@@ -613,16 +615,16 @@ DEFINE_ON_DEMAND(rCFD_run)
                                         
                                         loop_data{
                                  
-                                            data0 = C.data[i_phase][c0][i_data];
+                                            data0 = _C.data[i_phase][c0][i_data];
 
-                                            C.data_shift[i_phase][c1][i_data] =
+                                            _C.data_shift[i_phase][c1][i_data] =
                                             
-                                                (w0 * data0 + C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data])/
+                                                (w0 * data0 + _C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data])/
                                                 
-                                                (w0 +  C.weight_after_shift[c1]);                                       
+                                                (w0 +  _C.weight_after_shift[c1]);                                       
                                         }
                              
-                                        C.weight_after_shift[c1] += w0;
+                                        _C.weight_after_shift[c1] += w0;
                                     }
                                 }
                                 
@@ -631,7 +633,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                         
                             /* C2: cross-partition shifts */
                             {
-                                shift_parallel_C2C_data(i_state, i_phase, i_frame, i_island);
+                                shift_parallel_C2C_data(i_state, i_phase, i_frame, i_island, i_layer);
                             }
                         
                         } /* loop_islands */
@@ -651,28 +653,28 @@ DEFINE_ON_DEMAND(rCFD_run)
                                 /* fill holes by face swaps */
                                 loop_faces{
 
-                                    c0 = F.c0[i_face];
-                                    c1 = F.c1[i_face];
+                                    c0 = _F.c0[i_face];
+                                    c1 = _F.c1[i_face];
                                 
-                                    if((C.weight_after_shift[c0] > 0.)&&(C.weight_after_shift[c1] == 0.0)){
+                                    if((_C.weight_after_shift[c0] > 0.)&&(_C.weight_after_shift[c1] == 0.0)){
                                         
                                         c = c0; c0 = c1; c1 = c;
                                     }
                                   
-                                    if((C.weight_after_shift[c1] > 0.)&&(C.weight_after_shift[c0] == 0.0)){
+                                    if((_C.weight_after_shift[c1] > 0.)&&(_C.weight_after_shift[c0] == 0.0)){
                                   
                                         loop_data{
                                             
-                                            C.data_swap[i_phase][c0][i_data] = 
+                                            _C.data_swap[i_phase][c0][i_data] = 
                                             
-                                                (C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data] + 
+                                                (_C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data] + 
                                                 
-                                                 C.weight_after_swap[c0] * C.data_swap[i_phase][c0][i_data]) / 
+                                                 _C.weight_after_swap[c0] * _C.data_swap[i_phase][c0][i_data]) / 
                                                 
-                                                (C.weight_after_shift[c1] + C.weight_after_swap[c0]);
+                                                (_C.weight_after_shift[c1] + _C.weight_after_swap[c0]);
                                         }
                                                                   
-                                        C.weight_after_swap[c0] += C.weight_after_shift[c1];
+                                        _C.weight_after_swap[c0] += _C.weight_after_shift[c1];
                                     }                       
                                 }
                         
@@ -680,19 +682,19 @@ DEFINE_ON_DEMAND(rCFD_run)
                                 
                                 loop_cells{
                                
-                                    if(C.weight_after_swap[i_cell] > 0.0){
+                                    if(_C.weight_after_swap[i_cell] > 0.0){
                                         
                                         loop_data{
                                             
-                                            C.data_shift[i_phase][i_cell][i_data] = C.data_swap[i_phase][i_cell][i_data];
+                                            _C.data_shift[i_phase][i_cell][i_data] = _C.data_swap[i_phase][i_cell][i_data];
                                         }
 
-                                        C.weight_after_shift[i_cell] = C.weight_after_swap[i_cell];
+                                        _C.weight_after_shift[i_cell] = _C.weight_after_swap[i_cell];
                                         
-                                        C.weight_after_swap[i_cell] = 0.0;
+                                        _C.weight_after_swap[i_cell] = 0.0;
                                     }
                                     
-                                    if(C.weight_after_shift[i_cell] == 0.0){
+                                    if(_C.weight_after_shift[i_cell] == 0.0){
                                         
                                         number_of_unhit_cells++;
                                     }
@@ -707,7 +709,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                             
                                 loop_data{
                                     
-                                    C.data[i_phase][i_cell][i_data] = C.data_shift[i_phase][i_cell][i_data];
+                                    _C.data[i_phase][i_cell][i_data] = _C.data_shift[i_phase][i_cell][i_data];
                                 }   
                             }   
                         }
@@ -739,10 +741,10 @@ DEFINE_ON_DEMAND(rCFD_run)
                             
                             for(i_drift = 0; i_drift < Solver_Dict.number_of_drift_loops; i_drift++){
                                                 
-                                /* init C.drift_exchange */
+                                /* init _C.drift_exchange */
                                 loop_cells{
 
-                                    C.drift_exchange[i_cell] = 0.0;
+                                    _C.drift_exchange[i_cell] = 0.0;
                                 }                               
                                             
                                 switch (Data_Dict[i_phase][i_data].type){
@@ -750,19 +752,19 @@ DEFINE_ON_DEMAND(rCFD_run)
                                     case generic_data:
                                     {
                                 
-                                        /* set C.drift_exchange */
+                                        /* set _C.drift_exchange */
                                         loop_faces{
                                             
                                             if(valid_parallel_face){
                                                 
-                                                c0 = F.c0[i_face];
-                                                c1 = F.c1[i_face];
+                                                c0 = _F.c0[i_face];
+                                                c1 = _F.c1[i_face];
                                                 
-                                                i_frame_c0 = Rec.global_frame[C.island_id[c0]]; 
-                                                i_frame_c1 = Rec.global_frame[C.island_id[c1]]; 
+                                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]]; 
+                                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]]; 
                                                 
-                                                local_mass_c0 = C.volume[c0] * C.vof[i_frame_c0][c0][i_phase] * Phase_Dict[i_phase].density;
-                                                local_mass_c1 = C.volume[c1] * C.vof[i_frame_c1][c1][i_phase] * Phase_Dict[i_phase].density;
+                                                local_mass_c0 = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase] * Phase_Dict[i_phase].density;
+                                                local_mass_c1 = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase] * Phase_Dict[i_phase].density;
                                                     
                                                 /* don't drift across interfaces */
                                                 if(local_mass_c0 * local_mass_c1 > 0.0){
@@ -771,7 +773,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                     
                                                     loop_dim{
                                                         
-                                                        drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * F.area[i_face][i_dim] * Phase_Dict[i_phase].time_step / 
+                                                        drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * _F.area[i_face][i_dim] * Phase_Dict[i_phase].time_step / 
                                                     
                                                             (double)Solver_Dict.number_of_drift_loops;
                                                     }
@@ -788,33 +790,33 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                         drift_volume *= -1.0;
                                                     }
                                                     
-                                                    if(drift_volume > C.volume[c0]){
+                                                    if(drift_volume > _C.volume[c0]){
                                                         
-                                                        drift_volume = C.volume[c0];
+                                                        drift_volume = _C.volume[c0];
                                                     }
                                                                                                                                                 
                                                     local_drift_exchange = 0.0;
 
-                                                    if(C.volume[c0] > 0.0){
+                                                    if(_C.volume[c0] > 0.0){
                                                         
-                                                        local_drift_exchange = C.data[i_phase][c0][i_data] * drift_volume /C.volume[c0];
+                                                        local_drift_exchange = _C.data[i_phase][c0][i_data] * drift_volume /_C.volume[c0];
                                                     }
                                                     
-                                                    C.drift_exchange[c0] -= local_drift_exchange; 
-                                                    C.drift_exchange[c1] += local_drift_exchange;     
+                                                    _C.drift_exchange[c0] -= local_drift_exchange; 
+                                                    _C.drift_exchange[c1] += local_drift_exchange;     
                                                 }                                           
                                             }                               
                                         }
                                         
                                         /* parallel exchange of local_drift_exchange */
                                         {
-                                            sum_up_parallel_corona_cells(C.drift_exchange, i_layer); 
+                                            sum_up_parallel_corona_cells(_C.drift_exchange, i_layer); 
                                         }
                                         
-                                        /* adjust data by C.drift_exchange */
+                                        /* adjust data by _C.drift_exchange */
                                         loop_cells{
 
-                                            C.data[i_phase][i_cell][i_data] += C.drift_exchange[i_cell];
+                                            _C.data[i_phase][i_cell][i_data] += _C.drift_exchange[i_cell];
                                         }
                                         
                                         break;
@@ -823,19 +825,19 @@ DEFINE_ON_DEMAND(rCFD_run)
                                     case concentration_data:
                                     {
                                 
-                                        /* set C.drift_exchange */
+                                        /* set _C.drift_exchange */
                                         loop_faces{
                                             
                                             if(valid_parallel_face){
                                                 
-                                                c0 = F.c0[i_face];
-                                                c1 = F.c1[i_face];
+                                                c0 = _F.c0[i_face];
+                                                c1 = _F.c1[i_face];
                                                 
-                                                i_frame_c0 = Rec.global_frame[C.island_id[c0]]; 
-                                                i_frame_c1 = Rec.global_frame[C.island_id[c1]]; 
+                                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]]; 
+                                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]]; 
                                                 
-                                                local_mass_c0 = C.volume[c0] * C.vof[i_frame_c0][c0][i_phase] * Phase_Dict[i_phase].density;
-                                                local_mass_c1 = C.volume[c1] * C.vof[i_frame_c1][c1][i_phase] * Phase_Dict[i_phase].density;
+                                                local_mass_c0 = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase] * Phase_Dict[i_phase].density;
+                                                local_mass_c1 = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase] * Phase_Dict[i_phase].density;
                                                     
                                                 /* don't drift across interfaces */
                                                 if(local_mass_c0 * local_mass_c1 > 0.0){
@@ -844,7 +846,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                     
                                                     loop_dim{
                                                         
-                                                        drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * F.area[i_face][i_dim] * 
+                                                        drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * _F.area[i_face][i_dim] * 
                                                         
                                                             Phase_Dict[i_phase].time_step / (double)Solver_Dict.number_of_drift_loops;
                                                     }
@@ -861,35 +863,35 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                         drift_volume *= -1.0;
                                                     }
                                                     
-                                                    if(drift_volume > C.volume[c0]){
+                                                    if(drift_volume > _C.volume[c0]){
                                                         
-                                                        drift_volume = C.volume[c0];
+                                                        drift_volume = _C.volume[c0];
                                                     }
                                                                                                                                                 
-                                                    local_drift_exchange = C.data[i_phase][c0][i_data] * drift_volume * C.vof[i_frame_c0][c0][i_phase] * 
+                                                    local_drift_exchange = _C.data[i_phase][c0][i_data] * drift_volume * _C.vof[i_frame_c0][c0][i_phase] * 
                                                         
                                                             Phase_Dict[i_phase].density;
                                                     
-                                                    C.drift_exchange[c0] -= local_drift_exchange; 
-                                                    C.drift_exchange[c1] += local_drift_exchange;     
+                                                    _C.drift_exchange[c0] -= local_drift_exchange; 
+                                                    _C.drift_exchange[c1] += local_drift_exchange;     
                                                 }                                           
                                             }                               
                                         }
                                         
                                         /* parallel exchange of local_drift_exchange */
                                         {
-                                            sum_up_parallel_corona_cells(C.drift_exchange, i_layer); 
+                                            sum_up_parallel_corona_cells(_C.drift_exchange, i_layer); 
                                         }
 
                                         loop_cells{
 
-                                            i_frame = Rec.global_frame[C.island_id[i_cell]];        
+                                            i_frame = Rec.global_frame[_C.island_id[i_cell]];        
                                     
-                                            local_mass = C.volume[i_cell] * C.vof[_i_vof] * Phase_Dict[i_phase].density;
+                                            local_mass = _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density;
 
                                             if(local_mass > 0.0){
                                         
-                                                C.data[_i_data] = ((C.data[_i_data] * local_mass) + C.drift_exchange[i_cell]) / local_mass;
+                                                _C.data[_i_data] = ((_C.data[_i_data] * local_mass) + _C.drift_exchange[i_cell]) / local_mass;
                                             }
                                         }
                                         
@@ -922,40 +924,40 @@ DEFINE_ON_DEMAND(rCFD_run)
                         
                         loop_data{
                             
-                            C.data_swap[i_phase][i_cell][i_data] = 0.0;
+                            _C.data_swap[i_phase][i_cell][i_data] = 0.0;
                         }           
                     }   
 
                     /* define swap masses */
                     loop_faces{
 
-                        c0 = F.c0[i_face];
-                        c1 = F.c1[i_face];
+                        c0 = _F.c0[i_face];
+                        c1 = _F.c1[i_face];
                         
                         loop_data{
                             
-                            if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
+                            if(_C.data[i_phase][c0][i_data] > _C.data[i_phase][c1][i_data]){
                                 
                                 c = c0; c0 = c1; c1 = c;
                             }
                           
-                            if(C.data[i_phase][c1][i_data] > C.data[i_phase][c0][i_data]){
+                            if(_C.data[i_phase][c1][i_data] > _C.data[i_phase][c0][i_data]){
                                 
-                                if(C.volume[c0] < C.volume[c1]){
+                                if(_C.volume[c0] < _C.volume[c1]){
                                     
-                                    vol_flip = C.volume[c0] * Data_Dict[i_phase][i_data].physical_diff;
+                                    vol_flip = _C.volume[c0] * Data_Dict[i_phase][i_data].physical_diff;
                                 }
                                 else{
-                                    vol_flip = C.volume[c1] * Data_Dict[i_phase][i_data].physical_diff;
+                                    vol_flip = _C.volume[c1] * Data_Dict[i_phase][i_data].physical_diff;
                                 }
                                 
-                                C.data_swap[i_phase][c1][i_data] -= vol_flip * 
+                                _C.data_swap[i_phase][c1][i_data] -= vol_flip * 
                                 
-                                    (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                    (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
 
-                                C.data_swap[i_phase][c0][i_data] += vol_flip * 
+                                _C.data_swap[i_phase][c0][i_data] += vol_flip * 
                                 
-                                    (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                    (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
                             }
                         }   
                     }
@@ -965,9 +967,9 @@ DEFINE_ON_DEMAND(rCFD_run)
                         
                         loop_data{
                   
-                            C.data[i_phase][i_cell][i_data] += C.data_swap[i_phase][i_cell][i_data] / C.volume[i_cell];
+                            _C.data[i_phase][i_cell][i_data] += _C.data_swap[i_phase][i_cell][i_data] / _C.volume[i_cell];
 
-                            C.data_swap[i_phase][i_cell][i_data] = 0.0;
+                            _C.data_swap[i_phase][i_cell][i_data] = 0.0;
                         }
                     }                                           
 #endif  
@@ -984,50 +986,50 @@ DEFINE_ON_DEMAND(rCFD_run)
                             /* Init data_swap */
                             loop_cells{
 
-                                C.data_swap[i_phase][i_cell][i_data] = 0.0;
+                                _C.data_swap[i_phase][i_cell][i_data] = 0.0;
                             }   
 
                             /* Artificial Diffusion (mass neutral) */
                             loop_faces{
 
-                                c0 = F.c0[i_face];
-                                c1 = F.c1[i_face];
+                                c0 = _F.c0[i_face];
+                                c1 = _F.c1[i_face];
                                     
-                                if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
+                                if(_C.data[i_phase][c0][i_data] > _C.data[i_phase][c1][i_data]){
                                     
                                     c = c0; c0 = c1; c1 = c;
                                 }
                               
-                                if(C.data[i_phase][c1][i_data] > C.data[i_phase][c0][i_data]){
+                                if(_C.data[i_phase][c1][i_data] > _C.data[i_phase][c0][i_data]){
                                     
-                                    if(C.volume[c0] < C.volume[c1]){
+                                    if(_C.volume[c0] < _C.volume[c1]){
                                         
-                                        vol_flip = C.volume[c0] * Data_Dict[i_phase][i_data].binarization_art_diff;
+                                        vol_flip = _C.volume[c0] * Data_Dict[i_phase][i_data].binarization_art_diff;
                                     }
                                     else{
-                                        vol_flip = C.volume[c1] * Data_Dict[i_phase][i_data].binarization_art_diff;
+                                        vol_flip = _C.volume[c1] * Data_Dict[i_phase][i_data].binarization_art_diff;
                                     }
                                     
-                                    C.data_swap[i_phase][c1][i_data] -= vol_flip * 
+                                    _C.data_swap[i_phase][c1][i_data] -= vol_flip * 
                                     
-                                        (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                        (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
 
-                                    C.data_swap[i_phase][c0][i_data] += vol_flip * 
+                                    _C.data_swap[i_phase][c0][i_data] += vol_flip * 
                                     
-                                        (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) / 2.;
+                                        (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
                                 }
                             }   
                             
                             /* Binarization (mass acting) */
                             loop_cells{
 
-                                if(C.data[i_phase][i_cell][i_data] > 0.5){
+                                if(_C.data[i_phase][i_cell][i_data] > 0.5){
                                         
-                                    C.data[i_phase][i_cell][i_data] = 1.0;
+                                    _C.data[i_phase][i_cell][i_data] = 1.0;
                                 }
                                 else{ 
                                     
-                                    C.data[i_phase][i_cell][i_data] = 0.0;
+                                    _C.data[i_phase][i_cell][i_data] = 0.0;
                                 }   
                             }
                         }           
@@ -1062,7 +1064,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                             
                         loop_int_cells{
                         
-                            i_frame = Rec.global_frame[C.island_id[i_cell]];
+                            i_frame = Rec.global_frame[_C.island_id[i_cell]];
                             
                             loop_data{
                                 
@@ -1070,23 +1072,23 @@ DEFINE_ON_DEMAND(rCFD_run)
                                     
                                     case temperature_data: 
                                     
-                                        Balance[_i_balance].mass_integral += C.data[_i_data] * 
+                                        Balance[_i_balance].mass_integral += _C.data[_i_data] * 
                                         
-                                            C.volume[i_cell] * C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity;
+                                            _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity;
                                         
                                         break;
                                         
                                     case concentration_data:
                                     
-                                        Balance[_i_balance].mass_integral += C.data[_i_data] * 
+                                        Balance[_i_balance].mass_integral += _C.data[_i_data] * 
                                         
-                                            C.volume[i_cell] * C.vof[_i_vof] * Phase_Dict[i_phase].density;
+                                            _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density;
                                             
                                         break;
                                             
                                     case generic_data:
                                     
-                                        Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data];
+                                        Balance[i_phase][i_data].mass_integral += _C.data[i_phase][i_cell][i_data];
                                             
                                         break;
                                         
@@ -1220,17 +1222,17 @@ DEFINE_ON_DEMAND(rCFD_run)
                                     
                                         loop_int_cells{
                                             
-                                            C.data_swap[i_phase][i_cell][i_data] = 0.0;
+                                            _C.data_swap[i_phase][i_cell][i_data] = 0.0;
                                         }
 
                                         available_exchange = 0.0;
                                         
                                         loop_int_faces{
 
-                                            c0 = F.c0[i_face];
-                                            c1 = F.c1[i_face];
+                                            c0 = _F.c0[i_face];
+                                            c1 = _F.c1[i_face];
                                             
-                                            available_exchange += 0.5 * fabs(C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) * Solver_Dict.face_swap_max_per_loop;
+                                            available_exchange += 0.5 * fabs(_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) * Solver_Dict.face_swap_max_per_loop;
                                         }
                                         
                                         if(Balance_Dict[i_phase][i_data].type == global_balancing){
@@ -1255,28 +1257,28 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                                                 
                                         loop_int_faces{
 
-                                            c0 = F.c0[i_face];
-                                            c1 = F.c1[i_face];
+                                            c0 = _F.c0[i_face];
+                                            c1 = _F.c1[i_face];
                                             
-                                            if(C.data[i_phase][c0][i_data] > C.data[i_phase][c1][i_data]){
+                                            if(_C.data[i_phase][c0][i_data] > _C.data[i_phase][c1][i_data]){
                                                 
                                                 c = c0, c1 = c0, c0 = c;
                                             }
                                             
-                                            if(C.data[i_phase][c0][i_data] < C.data[i_phase][c1][i_data]){
+                                            if(_C.data[i_phase][c0][i_data] < _C.data[i_phase][c1][i_data]){
                                                 
                                                 if(Balance[i_phase][i_data].mass_error_global > 0.0){
                                                     
-                                                    C.data_swap[i_phase][c0][i_data] += 0.5 * exchange_ratio *
+                                                    _C.data_swap[i_phase][c0][i_data] += 0.5 * exchange_ratio *
                                                     
-                                                        (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) * Solver_Dict.face_swap_max_per_loop;
+                                                        (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) * Solver_Dict.face_swap_max_per_loop;
                                                 }
 
                                                 if(Balance[i_phase][i_data].mass_error_global < 0.0){
                                                     
-                                                    C.data_swap[i_phase][c1][i_data] -= 0.5 * exchange_ratio *
+                                                    _C.data_swap[i_phase][c1][i_data] -= 0.5 * exchange_ratio *
                                                     
-                                                        (C.data[i_phase][c1][i_data] - C.data[i_phase][c0][i_data]) * Solver_Dict.face_swap_max_per_loop;
+                                                        (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) * Solver_Dict.face_swap_max_per_loop;
                                                 }
                                             }
                                         }
@@ -1285,9 +1287,9 @@ DEFINE_ON_DEMAND(rCFD_run)
                                         
                                         loop_int_cells{
                                             
-                                            C.data[i_phase][i_cell][i_data] += C.data_swap[i_phase][i_cell][i_data];
+                                            _C.data[i_phase][i_cell][i_data] += _C.data_swap[i_phase][i_cell][i_data];
                                             
-                                            Balance[i_phase][i_data].mass_integral += C.data[i_phase][i_cell][i_data];
+                                            Balance[i_phase][i_data].mass_integral += _C.data[i_phase][i_cell][i_data];
                                         }
                                         
                                         Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
@@ -1320,35 +1322,35 @@ DEFINE_ON_DEMAND(rCFD_run)
                                     
                                         loop_int_cells{
                                             
-                                            C.data_swap[_i_data] = 0.0;
+                                            _C.data_swap[_i_data] = 0.0;
                                         }
 
                                         available_exchange = 0.0;
                                         
                                         loop_int_faces{
 
-                                            c0 = F.c0[i_face];
-                                            c1 = F.c1[i_face];
+                                            c0 = _F.c0[i_face];
+                                            c1 = _F.c1[i_face];
 
-                                            if(C.data[_c0_data] > C.data[_c1_data]){
+                                            if(_C.data[_c0_data] > _C.data[_c1_data]){
                                                 
                                                 c = c0; c0 = c1; c1 = c;
                                             }
 
-                                            if(C.data[_c1_data] > C.data[_c0_data]){
+                                            if(_C.data[_c1_data] > _C.data[_c0_data]){
                                                 
-                                                i_frame_c0 = Rec.global_frame[C.island_id[c0]];
-                                                i_frame_c1 = Rec.global_frame[C.island_id[c1]];
+                                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
                                                 
-                                                if((C.volume[c0] * C.vof[i_frame_c0][c0][i_phase]) < (C.volume[c1] * C.vof[i_frame_c1][c1][i_phase])){
+                                                if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
                                                     
-                                                    vol_flip = C.volume[c0] * C.vof[i_frame_c0][c0][i_phase];
+                                                    vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
                                                 }
                                                 else{
-                                                    vol_flip = C.volume[c1] * C.vof[i_frame_c1][c1][i_phase];
+                                                    vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
                                                 }
                                                 
-                                                available_exchange += 0.5 * (C.data[_c1_data] - C.data[_c0_data]) * 
+                                                available_exchange += 0.5 * (_C.data[_c1_data] - _C.data[_c0_data]) * 
                                                 
                                                     vol_flip * Phase_Dict[i_phase].density * Solver_Dict.face_swap_max_per_loop;
                                             }
@@ -1382,37 +1384,37 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             
                                         loop_int_faces{
 
-                                            c0 = F.c0[i_face];
-                                            c1 = F.c1[i_face];
+                                            c0 = _F.c0[i_face];
+                                            c1 = _F.c1[i_face];
                                             
-                                            if(C.data[_c0_data] > C.data[_c1_data]){
+                                            if(_C.data[_c0_data] > _C.data[_c1_data]){
                                                 
                                                 c = c0, c1 = c0, c0 = c;
                                             }
                                             
-                                            if(C.data[_c0_data] < C.data[_c1_data]){
+                                            if(_C.data[_c0_data] < _C.data[_c1_data]){
                                                 
-                                                i_frame_c0 = Rec.global_frame[C.island_id[c0]];
-                                                i_frame_c1 = Rec.global_frame[C.island_id[c1]];
+                                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
 
-                                                if((C.volume[c0] * C.vof[i_frame_c0][c0][i_phase]) < (C.volume[c1] * C.vof[i_frame_c1][c1][i_phase])){
+                                                if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
                                                     
-                                                    vol_flip = C.volume[c0] * C.vof[i_frame_c0][c0][i_phase];
+                                                    vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
                                                 }
                                                 else{
-                                                    vol_flip = C.volume[c1] * C.vof[i_frame_c1][c1][i_phase];
+                                                    vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
                                                 }
                                                                                                 
                                                 if(Balance[_i_balance].mass_error_global > 0.0){
                                                     
-                                                    C.data_swap[_c0_data] += exchange_ratio * (C.data[_c1_data] - C.data[_c0_data]) * 
+                                                    _C.data_swap[_c0_data] += exchange_ratio * (_C.data[_c1_data] - _C.data[_c0_data]) * 
                                                     
                                                         vol_flip * Phase_Dict[i_phase].density * Solver_Dict.face_swap_max_per_loop;
                                                 }
 
                                                 if(Balance[_i_balance].mass_error_global < 0.0){
                                                     
-                                                    C.data_swap[_c1_data] -= exchange_ratio * (C.data[_c1_data] - C.data[_c0_data]) *
+                                                    _C.data_swap[_c1_data] -= exchange_ratio * (_C.data[_c1_data] - _C.data[_c0_data]) *
                                                     
                                                         vol_flip * Phase_Dict[i_phase].density * Solver_Dict.face_swap_max_per_loop;
                                                 }
@@ -1423,15 +1425,15 @@ DEFINE_ON_DEMAND(rCFD_run)
                                         
                                         loop_int_cells{
                                             
-                                            i_frame = Rec.global_frame[C.island_id[i_cell]];
+                                            i_frame = Rec.global_frame[_C.island_id[i_cell]];
                                             
-                                            C.data[_i_data] = (C.data[_i_data] * C.volume[i_cell] * C.vof[_i_vof] * Phase_Dict[i_phase].density + C.data_swap[_i_data]) / 
+                                            _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density + _C.data_swap[_i_data]) / 
                                                 
-                                                (C.volume[i_cell] * C.vof[_i_vof] * Phase_Dict[i_phase].density);
+                                                (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density);
                                             
-                                            Balance[_i_balance].mass_integral += C.data[_i_data] * 
+                                            Balance[_i_balance].mass_integral += _C.data[_i_data] * 
                                             
-                                                C.volume[i_cell] * C.vof[_i_vof] * Phase_Dict[i_phase].density;
+                                                _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density;
                                         }
                                         
                                         Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
@@ -1466,35 +1468,35 @@ DEFINE_ON_DEMAND(rCFD_run)
                                     
                                         loop_int_cells{
                                             
-                                            C.data_swap[_i_data] = 0.0;
+                                            _C.data_swap[_i_data] = 0.0;
                                         }
 
                                         available_exchange = 0.0;
                                         
                                         loop_int_faces{
 
-                                            c0 = F.c0[i_face];
-                                            c1 = F.c1[i_face];
+                                            c0 = _F.c0[i_face];
+                                            c1 = _F.c1[i_face];
 
-                                            if(C.data[_c0_data] > C.data[_c1_data]){
+                                            if(_C.data[_c0_data] > _C.data[_c1_data]){
                                                 
                                                 c = c0; c0 = c1; c1 = c;
                                             }
 
-                                            if(C.data[_c1_data] > C.data[_c0_data]){
+                                            if(_C.data[_c1_data] > _C.data[_c0_data]){
                                                 
-                                                i_frame_c0 = Rec.global_frame[C.island_id[c0]];
-                                                i_frame_c1 = Rec.global_frame[C.island_id[c1]];
+                                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
                                                 
-                                                if((C.volume[c0] * C.vof[i_frame_c0][c0][i_phase]) < (C.volume[c1] * C.vof[i_frame_c1][c1][i_phase])){
+                                                if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
                                                     
-                                                    vol_flip = C.volume[c0] * C.vof[i_frame_c0][c0][i_phase];
+                                                    vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
                                                 }
                                                 else{
-                                                    vol_flip = C.volume[c1] * C.vof[i_frame_c1][c1][i_phase];
+                                                    vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
                                                 }
                                                 
-                                                available_exchange += 0.5 * (C.data[_c1_data] - C.data[_c0_data]) * 
+                                                available_exchange += 0.5 * (_C.data[_c1_data] - _C.data[_c0_data]) * 
                                                 
                                                     vol_flip * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity *
                                                 
@@ -1530,30 +1532,30 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                         loop_int_faces{
 
-                                            c0 = F.c0[i_face];
-                                            c1 = F.c1[i_face];
+                                            c0 = _F.c0[i_face];
+                                            c1 = _F.c1[i_face];
                                             
-                                            if(C.data[_c0_data] > C.data[_c1_data]){
+                                            if(_C.data[_c0_data] > _C.data[_c1_data]){
                                                 
                                                 c = c0, c1 = c0, c0 = c;
                                             }
                                             
-                                            if(C.data[_c0_data] < C.data[_c1_data]){
+                                            if(_C.data[_c0_data] < _C.data[_c1_data]){
                                                 
-                                                i_frame_c0 = Rec.global_frame[C.island_id[c0]];
-                                                i_frame_c1 = Rec.global_frame[C.island_id[c1]];
+                                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
 
-                                                if((C.volume[c0] * C.vof[i_frame_c0][c0][i_phase]) < (C.volume[c1] * C.vof[i_frame_c1][c1][i_phase])){
+                                                if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
                                                     
-                                                    vol_flip = C.volume[c0] * C.vof[i_frame_c0][c0][i_phase];
+                                                    vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
                                                 }
                                                 else{
-                                                    vol_flip = C.volume[c1] * C.vof[i_frame_c1][c1][i_phase];
+                                                    vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
                                                 }
                                                                                                 
                                                 if(Balance[i_phase][i_data].mass_error_global > 0.0){
                                                     
-                                                    C.data_swap[_c0_data] += exchange_ratio * (C.data[_c1_data] - C.data[_c0_data]) * 
+                                                    _C.data_swap[_c0_data] += exchange_ratio * (_C.data[_c1_data] - _C.data[_c0_data]) * 
                                                         
                                                         vol_flip * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity *
                                                         
@@ -1562,7 +1564,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                                 if(Balance[i_phase][i_data].mass_error_global < 0.0){
                                                     
-                                                    C.data_swap[_c1_data] -= exchange_ratio * (C.data[_c1_data] - C.data[_c0_data]) *
+                                                    _C.data_swap[_c1_data] -= exchange_ratio * (_C.data[_c1_data] - _C.data[_c0_data]) *
                                                     
                                                         vol_flip * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity *
                                                     
@@ -1575,17 +1577,17 @@ DEFINE_ON_DEMAND(rCFD_run)
                                         
                                         loop_int_cells{
                                             
-                                            i_frame = Rec.global_frame[C.island_id[i_cell]];
+                                            i_frame = Rec.global_frame[_C.island_id[i_cell]];
                                             
-                                            C.data[_i_data] = (C.data[_i_data] * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase] *
+                                            _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase] *
                                             
-                                                Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + C.data_swap[_i_data]) / 
+                                                Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + _C.data_swap[_i_data]) / 
                                                 
-                                                (C.volume[i_cell] * C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity);
+                                                (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity);
                                             
-                                            Balance[_i_balance].mass_integral += C.data[_i_data] * 
+                                            Balance[_i_balance].mass_integral += _C.data[_i_data] * 
                                             
-                                                C.volume[i_cell] * C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity;
+                                                _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity;
                                         }
                                         
                                         Balance[_i_balance].mass_integral_global = PRF_GRSUM1(Balance[_i_balance].mass_integral);
@@ -1668,7 +1670,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                         
                             if(Data_Dict[i_phase][i_data].type == concentration_data){
                                 
-                                sum_of_conc += C.data[i_phase][i_cell][i_data];
+                                sum_of_conc += _C.data[i_phase][i_cell][i_data];
                             }
                         }
         
@@ -1678,7 +1680,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                 
                                 if(sum_of_conc > 0.0){
                                     
-                                    C.data[i_phase][i_cell][i_data] /= sum_of_conc;
+                                    _C.data[i_phase][i_cell][i_data] /= sum_of_conc;
                                 }
                             }
                         }
@@ -1701,7 +1703,7 @@ DEFINE_ON_DEMAND(rCFD_run)
         /* Post processing */
         {
 #if RP_NODE                                             
-            rCFD_user_post();
+            rCFD_user_post(i_layer);
 #endif  
         }
         

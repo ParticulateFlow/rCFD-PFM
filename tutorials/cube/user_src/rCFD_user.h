@@ -193,7 +193,9 @@
         Domain  *d=Get_Domain(1);
         Thread  *t;
 
-        int i_phase, i_cell, i_UDMI;
+        int i_phase, i_cell, i_UDMI, i_layer;
+        
+        i_layer = 0;
         
         thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell, t){
             
@@ -201,9 +203,9 @@
             
             loop_phases{
                 
-                C_UDMI(i_cell, t, i_UDMI) = C.crossing_time[i_phase][i_cell];
+                C_UDMI(i_cell, t, i_UDMI) = _C.crossing_time[i_phase][i_cell];
 
-                C_UDMI(i_cell, t, (i_UDMI+1)) = C.average_velocity[i_phase][i_cell];
+                C_UDMI(i_cell, t, (i_UDMI+1)) = _C.average_velocity[i_phase][i_cell];
                 
                 i_UDMI += 2;
             }
@@ -223,7 +225,7 @@
                              
                 loop_data{
             
-                    C.data[_i_data] = 0.0; 
+                    _C.data[_i_data] = 0.0; 
                 }
             }
         }
@@ -257,14 +259,14 @@
             
             loop_dim{
                 
-                x[i_dim] = C.x[i_cell][i_dim];
+                x[i_dim] = _C.x[i_cell][i_dim];
             }
             
             radius_in = sqrt(x[0]*x[0] + x[1]*x[1]);
             
             if((radius_in <= 0.01) && (x[2] < 0.075)){
 
-                V_in += C.volume[i_cell];
+                V_in += _C.volume[i_cell];
             }
         }
                 
@@ -275,7 +277,7 @@
             /* coord's */
             loop_dim{
                 
-                x[i_dim] = C.x[i_cell][i_dim];
+                x[i_dim] = _C.x[i_cell][i_dim];
             }
             
             /* inflow bc */
@@ -286,13 +288,13 @@
 
                     loop_data{
                         
-                        C.data[_i_data] = (C.data[_i_data] * C.volume[i_cell] * Phase_Dict[i_phase].density +
+                        _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * Phase_Dict[i_phase].density +
                         
-                            C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step) /
+                            _C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step) /
                             
-                            (C.volume[i_cell] * Phase_Dict[i_phase].density);  /* (.) */
+                            (_C.volume[i_cell] * Phase_Dict[i_phase].density);  /* (.) */
 
-                        Balance[i_phase][i_data].mass_source +=  C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                        Balance[i_phase][i_data].mass_source +=  _C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
                     }
                 }   
             }
@@ -303,9 +305,9 @@
 
                     loop_data{
                         
-                        Balance[_i_balance].mass_source -=  C.data[_i_data] * C.volume[i_cell] * Phase_Dict[i_phase].density;  /* (kg) */
+                        Balance[_i_balance].mass_source -=  _C.data[_i_data] * _C.volume[i_cell] * Phase_Dict[i_phase].density;  /* (kg) */
 
-                        C.data[_i_data] = 0.0;  /* (kg) */
+                        _C.data[_i_data] = 0.0;  /* (kg) */
                     }
                 }   
             }
@@ -318,7 +320,7 @@
 
     }
 
-    void rCFD_user_post(void)
+    void rCFD_user_post(const short i_layer)
     {
 #if RP_NODE     
         Domain  *d=Get_Domain(1);
@@ -334,7 +336,7 @@
                 
                 loop_data{
                 
-                    C_UDMI(i_cell, t, i_UDMI) = C.data[_i_data];
+                    C_UDMI(i_cell, t, i_UDMI) = _C.data[_i_data];
                     
                     i_UDMI++;
                 }

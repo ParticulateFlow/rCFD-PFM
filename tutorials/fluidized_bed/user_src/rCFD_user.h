@@ -221,7 +221,9 @@
         Domain  *d=Get_Domain(1);
         Thread  *t;
 
-        int i_phase, i_cell, i_UDMI;
+        int i_phase, i_cell, i_UDMI, i_layer;
+        
+        i_layer = 0;
         
         thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell, t){
             
@@ -229,9 +231,9 @@
             
             loop_phases{
                 
-                C_UDMI(i_cell, t, i_UDMI) = C.crossing_time[i_phase][i_cell];
+                C_UDMI(i_cell, t, i_UDMI) = _C.crossing_time[i_phase][i_cell];
 
-                C_UDMI(i_cell, t, (i_UDMI+1)) = C.average_velocity[i_phase][i_cell];
+                C_UDMI(i_cell, t, (i_UDMI+1)) = _C.average_velocity[i_phase][i_cell];
                 
                 i_UDMI += 2;
             }
@@ -253,63 +255,27 @@
                 
                 loop_dim{
                     
-                    x[i_dim] = C.x[i_cell][i_dim];
+                    x[i_dim] = _C.x[i_cell][i_dim];
                 }
                              
                 loop_data{
             
                     if(i_phase == solid){
                         
-                        C.data[_i_data] = 1./3.;
-#if 0                       
-                        if(i_data == c_drift_0){
-                            
-                            if(x[0] > 0.0){
-                                
-                                C.data[i_phase][i_cell][i_data] = 1.;
-                            }
-                            else{
-                                
-                                C.data[i_phase][i_cell][i_data] = 0.;
-                            }
-                        }
-                        
-                        if(i_data == c_drift_z_pos){
-                            
-                            if(x[1] > 0.0){
-                                
-                                C.data[i_phase][i_cell][i_data] = 1.;
-                            }
-                            else{
-                                
-                                C.data[i_phase][i_cell][i_data] = 0.;
-                            }
-                        }
-                        
-                        if(i_data == c_drift_z_neg){
-                            
-                            if(x[2] < 0.05){
-                                
-                                C.data[i_phase][i_cell][i_data] = 1.;
-                            }
-                            else{
-                                
-                                C.data[i_phase][i_cell][i_data] = 0.;
-                            }
-                        }
-#endif                      
+                        _C.data[_i_data] = 1./3.;
                     }
+                    
                     if(i_phase == gas){
                         
                         if(x[1] < -0.074){
                             
-                            C.data[i_phase][i_cell][c_gas_A] = 1.0; 
-                            C.data[i_phase][i_cell][c_gas_B] = 0.0; 
+                            _C.data[i_phase][i_cell][c_gas_A] = 1.0; 
+                            _C.data[i_phase][i_cell][c_gas_B] = 0.0; 
                         }
                         else{
                             
-                            C.data[i_phase][i_cell][c_gas_A] = 0.0; 
-                            C.data[i_phase][i_cell][c_gas_B] = 1.0; 
+                            _C.data[i_phase][i_cell][c_gas_A] = 0.0; 
+                            _C.data[i_phase][i_cell][c_gas_B] = 1.0; 
                         }
                     }
                 }
@@ -331,7 +297,6 @@
     {
 #if RP_NODE
 
-
         if(i_phase == gas){
             
             int     i_cell, i_frame;
@@ -352,33 +317,33 @@
             
             loop_cells{
                 
-                i_frame = Rec.global_frame[C.island_id[i_cell]];
+                i_frame = Rec.global_frame[_C.island_id[i_cell]];
                 
-                if(C.x[i_cell][2] < 0.02){
+                if(_C.x[i_cell][2] < 0.02){
                     
-                    C.data[i_phase][i_cell][c_gas_A] = 0.0;
+                    _C.data[i_phase][i_cell][c_gas_A] = 0.0;
                     
-                    C.data[i_phase][i_cell][c_gas_B] = 1.0;
+                    _C.data[i_phase][i_cell][c_gas_B] = 1.0;
                     
-                    volume_in += C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                    volume_in += _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
                 }
 
-                if(C.x[i_cell][1] < -0.075){
+                if(_C.x[i_cell][1] < -0.075){
                     
-                    C.data[i_phase][i_cell][c_gas_A] = 1.0;
+                    _C.data[i_phase][i_cell][c_gas_A] = 1.0;
                     
-                    C.data[i_phase][i_cell][c_gas_B] = 0.0;
+                    _C.data[i_phase][i_cell][c_gas_B] = 0.0;
                     
-                    volume_in2 += C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                    volume_in2 += _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
                 }
                 
-                if(C.x[i_cell][2] > 0.4){
+                if(_C.x[i_cell][2] > 0.4){
                     
-                    mean_value[c_gas_A] += C.data[i_phase][i_cell][c_gas_A] * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                    mean_value[c_gas_A] += _C.data[i_phase][i_cell][c_gas_A] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
                     
-                    mean_value[c_gas_B] += C.data[i_phase][i_cell][c_gas_B] * C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                    mean_value[c_gas_B] += _C.data[i_phase][i_cell][c_gas_B] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
                     
-                    volume_out += C.volume[i_cell] * C.vof[i_frame][i_cell][i_phase];
+                    volume_out += _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
                 }
             }
             
@@ -418,7 +383,7 @@
 
     }
 
-    void rCFD_user_post(void)
+    void rCFD_user_post(const short i_layer)
     {
 #if RP_NODE
         Domain  *d=Get_Domain(1);
@@ -430,9 +395,9 @@
             
             i_UDMI = 0;     /* start index */
             
-            i_frame = Rec.global_frame[C.island_id[i_cell]];
+            i_frame = Rec.global_frame[_C.island_id[i_cell]];
             
-            C_UDMI(i_cell, t, i_UDMI) = C.vof[i_frame][i_cell][i_phase];
+            C_UDMI(i_cell, t, i_UDMI) = _C.vof[i_frame][i_cell][i_phase];
             
             i_UDMI++;
 
@@ -440,9 +405,9 @@
             
             loop_data{
             
-                i_frame = Rec.global_frame[C.island_id[i_cell]];
+                i_frame = Rec.global_frame[_C.island_id[i_cell]];
                 
-                C_UDMI(i_cell, t, i_UDMI) = C.data[i_phase][i_cell][i_data];
+                C_UDMI(i_cell, t, i_UDMI) = _C.data[i_phase][i_cell][i_data];
 
                 i_UDMI++;
             }
@@ -451,9 +416,9 @@
             
             loop_data{
             
-                i_frame = Rec.global_frame[C.island_id[i_cell]];
+                i_frame = Rec.global_frame[_C.island_id[i_cell]];
                 
-                C_UDMI(i_cell, t, i_UDMI) = C.data[i_phase][i_cell][i_data] * C.vof[i_frame][i_cell][i_phase];;
+                C_UDMI(i_cell, t, i_UDMI) = _C.data[i_phase][i_cell][i_data] * _C.vof[i_frame][i_cell][i_phase];;
 
                 i_UDMI++;
             }
@@ -473,25 +438,25 @@
             
             loop_cells{
                 
-                i_frame = Rec.global_frame[C.island_id[i_cell]];
+                i_frame = Rec.global_frame[_C.island_id[i_cell]];
                 
                 i_data = c_drift_0;
                 
-                data_z_0 += C.data[_i_data] * C.volume[i_cell] * C.vof[_i_vof] * C.x[i_cell][2];
+                data_z_0 += _C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * _C.x[i_cell][2];
                 
-                vol_z_0 += C.data[_i_data] * C.volume[i_cell] * C.vof[_i_vof];
+                vol_z_0 += _C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof];
                 
                 i_data = c_drift_z_pos;
                 
-                data_z_pos += C.data[_i_data] * C.volume[i_cell] * C.vof[_i_vof] * C.x[i_cell][2];
+                data_z_pos += _C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * _C.x[i_cell][2];
                 
-                vol_z_pos += C.data[_i_data] * C.volume[i_cell] * C.vof[_i_vof];
+                vol_z_pos += _C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof];
                 
                 i_data = c_drift_z_neg;
                 
-                data_z_neg += C.data[_i_data] * C.volume[i_cell] * C.vof[_i_vof] * C.x[i_cell][2];
+                data_z_neg += _C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * _C.x[i_cell][2];
                 
-                vol_z_neg += C.data[_i_data] * C.volume[i_cell] * C.vof[_i_vof];
+                vol_z_neg += _C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof];
             }
             
             data_z_0 =      PRF_GRSUM1(data_z_0);

@@ -5,7 +5,7 @@
 #include "rCFD_macros.h"
 #include "rCFD_globals.h"
 
-/* (C)  2021 
+/* (C)  2021-22
     Stefan Pirker
     Particulate Flow Modelling
     Johannes Kepler University, Linz, Austria
@@ -204,9 +204,9 @@
                         
                         list_of_int[i_list] = MPI_cells.host_of_cell[i_cell];
                         
-                        list_of_double[(3 * i_list)] =      C.x[i_cell][0];
-                        list_of_double[(3 * i_list + 1)] =  C.x[i_cell][1];
-                        list_of_double[(3 * i_list + 2)] =  C.x[i_cell][2];
+                        list_of_double[(3 * i_list)] =      _C.x[i_cell][0];
+                        list_of_double[(3 * i_list + 1)] =  _C.x[i_cell][1];
+                        list_of_double[(3 * i_list + 2)] =  _C.x[i_cell][2];
                         
                         i_list++;
                     }
@@ -230,9 +230,9 @@
                         
                         MPI_cells.host_of_ext_cells[i_list] = MPI_cells.host_of_cell[i_cell];
                         
-                        tmp_x[(3 * i_list)] =       C.x[i_cell][0];
-                        tmp_x[(3 * i_list + 1)] =   C.x[i_cell][1];
-                        tmp_x[(3 * i_list + 2)] =   C.x[i_cell][2];
+                        tmp_x[(3 * i_list)] =       _C.x[i_cell][0];
+                        tmp_x[(3 * i_list + 1)] =   _C.x[i_cell][1];
+                        tmp_x[(3 * i_list + 2)] =   _C.x[i_cell][2];
                         
                         i_list++;
                     }
@@ -332,9 +332,9 @@
                         
                         loop_cells{
                             
-                            if( (C.x[i_cell][0] == list_of_double[(3 * i_list + 0)]) && 
-                                (C.x[i_cell][1] == list_of_double[(3 * i_list + 1)]) &&
-                                (C.x[i_cell][2] == list_of_double[(3 * i_list + 2)])){
+                            if( (_C.x[i_cell][0] == list_of_double[(3 * i_list + 0)]) && 
+                                (_C.x[i_cell][1] == list_of_double[(3 * i_list + 1)]) &&
+                                (_C.x[i_cell][2] == list_of_double[(3 * i_list + 2)])){
                                    
                                 MPI_cells.hosting_cell_index[i_list] = i_cell;
                             }
@@ -388,9 +388,9 @@
                         
                         loop_cells{
                             
-                            if( (C.x[i_cell][0] == list_of_double[(3 * i_list + 0)]) && 
-                                (C.x[i_cell][1] == list_of_double[(3 * i_list + 1)]) &&
-                                (C.x[i_cell][2] == list_of_double[(3 * i_list + 2)])){
+                            if( (_C.x[i_cell][0] == list_of_double[(3 * i_list + 0)]) && 
+                                (_C.x[i_cell][1] == list_of_double[(3 * i_list + 1)]) &&
+                                (_C.x[i_cell][2] == list_of_double[(3 * i_list + 2)])){
                                    
                                 MPI_cells.hosting_cell_index[i_list] = i_cell;
                             }
@@ -1085,7 +1085,7 @@
         
     }
 
-    void shift_parallel_C2C_data(const int i_state, const int i_phase, const int i_frame, const int i_island)
+    void shift_parallel_C2C_data(const int i_state, const int i_phase, const int i_frame, const int i_island, const short i_layer)
     {
         int     i_list, i_data, i_shift, i_node;
         
@@ -1117,7 +1117,7 @@
                             
                             i_list =  Phase_Dict[i_phase].number_of_data * i_shift + i_data;
                
-                            list_of_double[i_list] = C.data[i_phase][c0][i_data];
+                            list_of_double[i_list] = _C.data[i_phase][c0][i_data];
                             
                             if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
                             
@@ -1134,7 +1134,7 @@
                                 }
                                     
                                 Balance[i_phase][i_data].node2node_flux[myid][n1] += w0;
-                                Balance[i_phase][i_data].node2node_data_flux[myid][n1] += w0 * C.data[i_phase][c0][i_data];
+                                Balance[i_phase][i_data].node2node_data_flux[myid][n1] += w0 * _C.data[i_phase][c0][i_data];
                             }
                         }
                     }
@@ -1157,7 +1157,7 @@
                     
                     loop_data{
                
-                        C2Cs_MPI.shifts_in[MPI_index].data[i_data] = C.data[i_phase][c0][i_data];
+                        C2Cs_MPI.shifts_in[MPI_index].data[i_data] = _C.data[i_phase][c0][i_data];
                         
                         if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
                         
@@ -1165,7 +1165,7 @@
                             n1 = C2Cs[_i_C2C].shifts_out[_i_shift].node1;
                             
                             Balance[i_phase][i_data].node2node_flux[myid][n1] += w0;
-                            Balance[i_phase][i_data].node2node_data_flux[myid][n1] += w0 * C.data[i_phase][c0][i_data];
+                            Balance[i_phase][i_data].node2node_data_flux[myid][n1] += w0 * _C.data[i_phase][c0][i_data];
 
                             if((n1<0) ||(n1>node_last)){
                                 
@@ -1207,7 +1207,7 @@
             }
         }
         
-        /* C2.b: Node-0 sends C2Cs.shifts_in to other Nodes; all nodes set C.data_shift */
+        /* C2.b: Node-0 sends C2Cs.shifts_in to other Nodes; all nodes set _C.data_shift */
         {
             if (myid == 0){
                 
@@ -1262,11 +1262,11 @@
              
                             data0 = C2Cs_MPI.shifts_in[_i_shift].data[i_data];
                                             
-                            C.data_shift[i_phase][c1][i_data] =  
+                            _C.data_shift[i_phase][c1][i_data] =  
                             
-                                (w0 * data0 + C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data])/
+                                (w0 * data0 + _C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data])/
                                 
-                                (w0 + C.weight_after_shift[c1]);
+                                (w0 + _C.weight_after_shift[c1]);
                                 
                                 
                             if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
@@ -1278,7 +1278,7 @@
                             }
                         }
                 
-                        C.weight_after_shift[c1] += w0; 
+                        _C.weight_after_shift[c1] += w0; 
                     }
                 }
             }
@@ -1312,11 +1312,11 @@
                                 
                                 data0 = list_of_double[i_list];
                                                                     
-                                C.data_shift[i_phase][c1][i_data] =  
+                                _C.data_shift[i_phase][c1][i_data] =  
                                 
-                                    (w0 * data0 + C.weight_after_shift[c1] * C.data_shift[i_phase][c1][i_data])/
+                                    (w0 * data0 + _C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data])/
                                     
-                                    (w0 + C.weight_after_shift[c1]);                                   
+                                    (w0 + _C.weight_after_shift[c1]);                                   
                                     
                                 if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
                                 
@@ -1328,7 +1328,7 @@
                                 }
                             }
                     
-                            C.weight_after_shift[c1] += w0; 
+                            _C.weight_after_shift[c1] += w0; 
                         }
                     }
 

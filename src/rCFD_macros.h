@@ -60,6 +60,9 @@
     
     #define     _C                              Topo.Cell[i_layer]
     #define     _F                              Topo.Face[i_layer]
+	
+	#define		_MPI_Cell						MPI_Topo.MPI_Cell[i_layer]
+	#define		_MPI_Face						MPI_Topo.MPI_Face[i_layer]
     
     #define     _i_balance                      i_phase][i_data
     

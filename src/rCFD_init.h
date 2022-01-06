@@ -561,10 +561,8 @@ void init_all(void)
     /* P: Parallel grid communication */
     {
 #if RP_NODE
-        /* for the moment, just consider MPI communication for i_layer = 0 */
-        int i_layer = 0;
         
-        init_parallel_grid(i_layer);
+        init_parallel_grid_L0();
 #endif
     }       
 }

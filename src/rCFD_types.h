@@ -222,7 +222,7 @@
 
         int     number_of_faces;
 
-        } Face_Dict_type;
+    } Face_Dict_type;
 
     typedef struct Topo_Dict_struct
     {

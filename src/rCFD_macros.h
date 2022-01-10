@@ -36,6 +36,7 @@
     #define     loop_islands                    for(i_island = 0; i_island < Solver_Dict.number_of_islands; i_island++)
         
     #define     loop_layers                     for(i_layer = 0; i_layer < Solver_Dict.number_of_layers; i_layer++)
+	#define		loop_layers_but_L0				for(i_layer = 1; i_layer < Solver_Dict.number_of_layers; i_layer++)
     
     #define     loop_max_swap_loops             for(i_swap = 0; i_swap < max_swap_loops; i_swap ++) 
 
@@ -60,9 +61,6 @@
     
     #define     _C                              Topo.Cell[i_layer]
     #define     _F                              Topo.Face[i_layer]
-	
-	#define		_MPI_Cell						MPI_Topo.MPI_Cell[i_layer]
-	#define		_MPI_Face						MPI_Topo.MPI_Face[i_layer]
     
     #define     _i_balance                      i_phase][i_data
     

@@ -241,6 +241,42 @@ void init_all(void)
         {
             rCFD_default_Face_L0();                         
         }       
+
+		/* T.5. set pointers of upper grid layers to NULL */
+		if(Solver_Dict.number_of_layers > 1){
+			
+			loop_layers_but_L0{
+				
+				_C.x					= NULL;
+				_C.volume				= NULL;
+
+				_C.average_velocity		= NULL;
+				_C.crossing_time		= NULL;
+
+				_C.hit_by_other_cell	= NULL;
+				_C.island_id			= NULL;
+
+				_C.weight_after_shift	= NULL;
+				_C.weight_after_swap	= NULL;
+
+				_C.vof					= NULL;
+
+				_C.data					= NULL;
+				_C.data_shift			= NULL;
+				_C.data_swap			= NULL;
+
+				_C.drift_exchange		= NULL;
+
+				_C.user					= NULL;
+				_C.rec_user				= NULL;
+			
+				_F.c0 					= NULL;
+				_F.c1 					= NULL;
+				
+				_F.area					= NULL;			
+			}
+		}
+
 #endif      
     }
     

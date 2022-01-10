@@ -14,7 +14,11 @@
 
 #if 1 /* macros */
 
-#define valid_parallel_face     _MPI_Face.principal_face[i_face]
+	
+	#define		_MPI_Cell				MPI_Topo.MPI_Cell[i_layer]
+	#define		_MPI_Face				MPI_Topo.MPI_Face[i_layer]
+
+	#define 	valid_parallel_face     _MPI_Face.principal_face[i_face]
 
 #endif
 
@@ -429,6 +433,24 @@
             }
             
         }
+		
+		/* P.4 set pointers of upper grid layers to NULL */
+		if(Solver_Dict.number_of_layers > 1){
+			
+			loop_layers_but_L0{
+				
+				_MPI_Cell.number_of_ext_cells_per_node = 	NULL;
+				_MPI_Cell.number_of_host_cells_per_node = 	NULL;
+				_MPI_Cell.host_of_cell = 					NULL;
+				_MPI_Cell.host_of_ext_cells =				NULL;
+				_MPI_Cell.hosting_cell_index =				NULL;
+				_MPI_Cell.host2ext_index =					NULL;
+				_MPI_Cell.data = 							NULL;
+			
+				_MPI_Face.principal_face = NULL;
+			}
+		}
+		
     }
     
     void init_parallel_C2Cs(void)   /* to be adapted for i_layer */

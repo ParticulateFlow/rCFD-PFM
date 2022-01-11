@@ -425,6 +425,34 @@
                     
                     free(_C.user);
                 }               
+                
+                if(_C.marked != NULL){
+                    
+                    free(_C.marked);
+                }               
+                
+                if(_C.parent_cell != NULL){
+                    
+                    free(_C.parent_cell);
+                }               
+                
+                if(_C.number_of_children != NULL){
+                    
+                    free(_C.number_of_children);
+                }               
+                
+                if(_C.children != NULL){
+                    
+                    loop_cells{
+                        
+                        if(_C.children[i_cell] !=  NULL){
+                            
+                            free(_C.children[i_cell]);
+                        }
+                    }
+                    
+                    free(_C.children);
+                }               
             }
             
             free(Topo.Cell);

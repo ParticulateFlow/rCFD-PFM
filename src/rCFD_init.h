@@ -137,7 +137,7 @@ void init_all(void)
 
         i_layer = 0;
                 
-        /* T.1. allocate cells per layer */
+        /* T.1. allocate cells for L0 */
         {
             _C.x = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
             
@@ -216,14 +216,20 @@ void init_all(void)
                 
                 _C.user = NULL;
             }                        
-        }
         
-        /* T.2. set cell default values per layer */
+			/* allocation is done in init_layer */
+			_C.marked				= NULL;
+			_C.parent_cell			= NULL;
+			_C.number_of_children	= NULL;
+			_C.children				= NULL;						
+		}
+        
+        /* T.2. set cell default values for L0 */
         {
             rCFD_default_Cell_L0();                         
         }
         
-        /* T.3. allocate faces per layer */
+        /* T.3. allocate faces for L0 */
         {
             _F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
     
@@ -237,7 +243,7 @@ void init_all(void)
             }
         }
         
-        /* T.4. set face default values per layer */
+        /* T.4. set face default values for L0 */
         {
             rCFD_default_Face_L0();                         
         }       
@@ -269,6 +275,11 @@ void init_all(void)
 
 				_C.user					= NULL;
 				_C.rec_user				= NULL;
+						
+				_C.marked				= NULL;
+				_C.parent_cell			= NULL;
+				_C.number_of_children	= NULL;
+				_C.children				= NULL;				
 			
 				_F.c0 					= NULL;
 				_F.c1 					= NULL;
@@ -601,6 +612,359 @@ void init_all(void)
         init_parallel_grid_L0();
 #endif
     }       
+
+	/* L: Initialize layers */
+	if(Solver_Dict.number_of_layers > 1){
+#if RP_NODE		
+		int		i_layer, i_cell, i_face, i_cell_face, i_face2, i_cell_face2, i_child, i_dim, i_tmp;
+		
+		int		cell_index_in_upper_layer, number_of_cells_in_upper_layer, upper_cell, c0, c1, c1_c0, c1_c1, min_dist_parent_cell;
+		
+		double	dist, min_dist;
+		
+		short	debug_this_code = 1;
+		
+		int		**tmp_faces_of_cell = NULL;	/* [i_cell][i_cell_face] */
+		
+		i_layer = 0;
+		
+		while(	((i_layer + 1) < Solver_Dict.number_of_layers) && 
+		
+				(_Cell_Dict.number_of_cells > Solver_Dict.min_number_of_cells_per_layer))
+		{
+
+			/* L.1 create tmp_faces_of_cell */
+			{
+
+				tmp_faces_of_cell = (int**)malloc(_Cell_Dict.number_of_cells * sizeof(int*));
+				
+				loop_cells{
+					
+					tmp_faces_of_cell[i_cell] = (int*)malloc(Solver_Dict.max_number_of_faces_per_cell * sizeof(int));
+					
+					for(i_cell_face = 0; i_cell_face < Solver_Dict.max_number_of_faces_per_cell; i_cell_face++){
+						
+						tmp_faces_of_cell[i_cell][i_cell_face] = -1;
+					}
+				}
+				
+				loop_faces{
+					
+					c0 = _F.c0[i_face];
+					c1 = _F.c1[i_face];
+					
+					i_cell_face = 0;
+					
+					while((tmp_faces_of_cell[c0][i_cell_face] > 0) && (i_cell_face < Solver_Dict.max_number_of_faces_per_cell)){
+						
+						i_cell_face++;
+					}
+					
+					if(i_cell_face < Solver_Dict.max_number_of_faces_per_cell){
+						
+						tmp_faces_of_cell[c0][i_cell_face] = i_face;
+					}
+					else{
+						
+						Message("\nWARNING: init layers, L1: myid %d i_cell_face %d\n", myid, i_cell_face);
+					}
+
+					i_cell_face = 0;
+					
+					while((tmp_faces_of_cell[c1][i_cell_face] > 0) && (i_cell_face < Solver_Dict.max_number_of_faces_per_cell)){
+						
+						i_cell_face++;
+					}
+					
+					if(i_cell_face < Solver_Dict.max_number_of_faces_per_cell){
+						
+						tmp_faces_of_cell[c1][i_cell_face] = i_face;
+					}
+					else{
+						
+						Message("\nWARNING: init layers, L1: myid %d i_cell_face %d\n", myid, i_cell_face);
+					}
+				}
+			}				
+					
+			/* L.2 create cell clusters, set number of upper layer cells */
+			{				
+				_C.marked = (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
+				_C.parent_cell = (int*)malloc(_Cell_Dict.number_of_cells * sizeof(int));
+				
+				enum{
+					not_yet_visited,
+					center_of_cluster,
+					member_of_cluster,
+					neighbor_of_cluster
+				};
+					
+				loop_cells{
+					
+					_C.marked[i_cell] = not_yet_visited;
+					_C.parent_cell[i_cell] = -1;
+				}
+				
+				cell_index_in_upper_layer = 0;
+				
+				loop_cells{
+					
+					if(_C.marked[i_cell] == not_yet_visited){
+						
+						_C.marked[i_cell] = center_of_cluster;
+						
+						_C.parent_cell[i_cell] = cell_index_in_upper_layer;
+						
+						/* also mark neighbors */
+						{
+							i_cell_face = 0;
+							
+							while ((tmp_faces_of_cell[i_cell][i_cell_face] > -1) && (i_cell_face < Solver_Dict.max_number_of_faces_per_cell)){
+							
+								i_face = tmp_faces_of_cell[i_cell][i_cell_face];
+								
+								c0 = _F.c0[i_face];
+								c1 = _F.c1[i_face];
+								
+								if(_C.marked[c1] == center_of_cluster){
+									
+									i_tmp = c1; c1 = c0; c0 = i_tmp;
+								}
+								
+								_C.marked[c1] = member_of_cluster;
+								
+								_C.parent_cell[c1] = cell_index_in_upper_layer;	
+
+								/* also mark neighbors of neighbor */
+								{
+									i_cell_face2 = 0;
+									
+									while ((tmp_faces_of_cell[c1][i_cell_face2] > -1) && (i_cell_face2 < Solver_Dict.max_number_of_faces_per_cell)){
+									
+										i_face2 = tmp_faces_of_cell[c1][i_cell_face2];
+										
+										c1_c0 = _F.c0[i_face2];
+										c1_c1 = _F.c1[i_face2];
+										
+										if(_C.marked[c1_c0] == not_yet_visited){
+											
+											_C.marked[c1_c0] = neighbor_of_cluster;
+										}
+										else if(_C.marked[c1_c1] == not_yet_visited){
+											
+											_C.marked[c1_c1] = neighbor_of_cluster;
+										}
+										
+										i_cell_face2++;
+									}
+								}
+								
+								i_cell_face++;
+							}
+						}
+						
+						cell_index_in_upper_layer++;
+					}
+				}
+				
+				number_of_cells_in_upper_layer = cell_index_in_upper_layer;
+				
+				Topo_Dict.Cell_Dict[upper_layer].number_of_cells = number_of_cells_in_upper_layer;
+
+				if(debug_this_code){
+										
+					i_tmp = 0;
+				
+					loop_cells{
+						
+						if(_C.marked[i_cell] == neighbor_of_cluster){
+							
+							i_tmp++;
+						}
+					}
+								
+					Message("\nDEBUG myid %d Topo_Dict.Cell_Dict[%d].number_of_cells %d; unused neighbors %d\n", 
+					
+						myid, upper_layer, Topo_Dict.Cell_Dict[upper_layer].number_of_cells, i_tmp);
+				}
+
+				loop_cells{
+					
+					if(_C.marked[i_cell] == neighbor_of_cluster){
+						
+						i_cell_face = 0;
+						
+						min_dist = 1.0e10;
+						
+						min_dist_parent_cell = 0;
+							
+						while ((tmp_faces_of_cell[i_cell][i_cell_face] > -1) && (i_cell_face < Solver_Dict.max_number_of_faces_per_cell)){
+						
+							i_face = tmp_faces_of_cell[i_cell][i_cell_face];
+														
+							c0 = _F.c0[i_face];
+							c1 = _F.c1[i_face];
+							
+							if(c1 == i_cell){
+								
+								i_tmp = c1; c1 = c0; c0 = i_tmp;
+							}
+							
+							if(_C.marked[c1] != neighbor_of_cluster){
+								
+								dist = (_C.x[c0][0] - _C.x[c1][0])*(_C.x[c0][0] - _C.x[c1][0]) +
+									   (_C.x[c0][1] - _C.x[c1][1])*(_C.x[c0][1] - _C.x[c1][1]) +
+									   (_C.x[c0][2] - _C.x[c1][2])*(_C.x[c0][2] - _C.x[c1][2]);
+								
+								if(dist < min_dist){
+									
+									min_dist = dist;
+									
+									min_dist_parent_cell = _C.parent_cell[c1];
+								}
+							}
+							
+							i_cell_face++;
+						}
+						
+						_C.marked[i_cell] = member_of_cluster;
+						
+						_C.parent_cell[i_cell] = min_dist_parent_cell;						
+					}
+				}
+				
+				if(debug_this_code){
+										
+					i_tmp = 0;
+				
+					loop_cells{
+						
+						if(_C.marked[i_cell] == neighbor_of_cluster){
+							
+							i_tmp++;
+						}
+					}
+								
+					Message("\nDEBUG myid %d unused neighbors %d\n", 
+					
+						myid, i_tmp);
+				}
+				
+			}
+			
+			/* L.2 allocate and initialize upper layer grid vars */
+			{
+				Topo.Cell[upper_layer].x = 					(double**)malloc(number_of_cells_in_upper_layer * sizeof(double*));
+				
+				Topo.Cell[upper_layer].volume = 			(double*)malloc(number_of_cells_in_upper_layer * sizeof(double));
+
+				Topo.Cell[upper_layer].number_of_children = (short*)malloc(number_of_cells_in_upper_layer * sizeof(short));
+
+				Topo.Cell[upper_layer].children = 			(int**)malloc(number_of_cells_in_upper_layer * sizeof(int*));
+				
+				loop_cells_of_upper_layer{
+				
+					Topo.Cell[upper_layer].x[i_cell] = (double*)malloc(3 * sizeof(double));
+					
+					loop_dim{
+						
+						Topo.Cell[upper_layer].x[i_cell][i_dim] = 0.0;
+					}
+
+					Topo.Cell[upper_layer].volume[i_cell] = 0.0;
+					
+					Topo.Cell[upper_layer].number_of_children[i_cell] = 0;
+				}
+			}
+			
+			/* L.3 fill upper layer grid vars */
+			{
+				loop_cells{
+					
+					if(_C.marked[i_cell] == 1){
+						
+						upper_cell = _C.parent_cell[i_cell];
+
+						loop_dim{
+							
+							Topo.Cell[upper_layer].x[upper_cell][i_dim] += _C.x[i_cell][i_dim];
+						}
+					
+						Topo.Cell[upper_layer].volume[upper_cell] += _C.volume[i_cell];
+					
+						Topo.Cell[upper_layer].number_of_children[upper_cell] += 1;
+					}
+				}
+				
+				/* average coordinates */
+				loop_cells_of_upper_layer{
+					
+					if(Topo.Cell[upper_layer].number_of_children[i_cell] > 0){
+						
+						loop_dim{
+						
+							Topo.Cell[upper_layer].x[i_cell][i_dim] /= (double)Topo.Cell[upper_layer].number_of_children[i_cell];
+						}
+					}
+				}
+			}
+			
+			/* L.X fill upper layer list of children */
+			{
+				/* allocate upper layer list of children */
+				loop_cells_of_upper_layer{
+					
+					Topo.Cell[upper_layer].children[i_cell] = 
+					
+						(int*)malloc(Topo.Cell[upper_layer].number_of_children[i_cell] * sizeof(int));
+					
+					for(i_child = 0; i_child < Topo.Cell[upper_layer].number_of_children[i_cell]; i_child++){
+						
+						Topo.Cell[upper_layer].children[i_cell][i_child] = -1;
+					}					
+				}
+
+				/* fill upper layer list of children */
+				loop_cells{
+					
+					if(_C.parent_cell[i_cell] > -1){
+						
+						upper_cell = _C.parent_cell[i_cell];
+						
+						{
+							i_child = 0;
+							
+							while(	(Topo.Cell[upper_layer].children[upper_cell][i_child] < 0) && 
+							
+									(i_child < Solver_Dict.max_number_of_children)){
+								
+								i_child++;
+							}
+							
+							if(i_child < Solver_Dict.max_number_of_children){
+								
+								Topo.Cell[upper_layer].children[upper_cell][i_child] = i_cell;
+							}
+							else{
+								
+								Message("ERROR: init_layers, LX: myid %d, i_layer %d i_child %d\n", myid, i_layer, i_child);
+								
+								return;
+							}
+						}
+					}
+				}
+			}
+			
+			/* L.Y free local vars */
+			{
+				free(tmp_faces_of_cell);
+			}
+			
+			i_layer++;
+		}
+#endif		
+	}
 }
 
 #endif

@@ -441,17 +441,17 @@
                     free(_C.number_of_children);
                 }               
                 
-                if(_C.children != NULL){
+                if(_C.child_index != NULL){
                     
                     loop_cells{
                         
-                        if(_C.children[i_cell] !=  NULL){
+                        if(_C.child_index[i_cell] !=  NULL){
                             
-                            free(_C.children[i_cell]);
+                            free(_C.child_index[i_cell]);
                         }
                     }
                     
-                    free(_C.children);
+                    free(_C.child_index);
                 }               
             }
             

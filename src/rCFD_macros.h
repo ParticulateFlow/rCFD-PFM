@@ -21,10 +21,9 @@
     #define     loop_cells                      for(i_cell = 0; i_cell < _Cell_Dict.number_of_cells; i_cell++)
     #define     loop_int_cells                  for(i_cell = 0; i_cell < _Cell_Dict.number_of_int_cells; i_cell++)
     #define     loop_ext_cells                  for(i_cell = _Cell_Dict.number_of_int_cells; i_cell < _Cell_Dict.number_of_cells; i_cell++)
-	#define		loop_cells_of_upper_layer		for(i_cell = 0; i_cell < Topo_Dict.Cell_Dict[(i_layer + 1)].number_of_cells; i_cell++)
-	
-	#define		loop_children					for(i_cild = 0; i_child < Topo.Cell[i_layer].number_of_children[i_cell]; i_child++)
-	/*#define		loop_children_of_upper_cell		for(i_cild = 0; i_child < Topo.Cell[(i_layer+1)].number_of_children[i_cell]; i_child++)*/
+    #define     loop_cells_of_upper_layer       for(i_cell = 0; i_cell < Topo_Dict.Cell_Dict[(i_layer + 1)].number_of_cells; i_cell++)
+    
+    #define     loop_children                   for(i_child = 0; i_child < Topo.Cell[i_layer].number_of_children[i_cell]; i_child++)
 
     #define     loop_data                       for(i_data = 0; i_data < Phase_Dict[i_phase].number_of_data; i_data++)
     #define     loop_data_user                  for(i_user = 0; i_user < Data_Dict[i_phase][i_data].number_of_user_vars; i_user++)  
@@ -33,6 +32,7 @@
 
     #define     loop_faces                      for(i_face = 0; i_face < _Face_Dict.number_of_faces; i_face++)
     #define     loop_int_faces                  for(i_face = 0; i_face < _Face_Dict.number_of_int_faces; i_face++)
+    #define     loop_faces_of_upper_layer       for(i_face = 0; i_face < Topo_Dict.Face_Dict[(i_layer + 1)].number_of_faces; i_face++)
     
     #define     loop_frames                     for(i_frame = 0; i_frame < Solver_Dict.number_of_frames; i_frame++)
     #define     loop_frames2                    for(i_frame2 = 0; i_frame2 < Solver_Dict.number_of_frames; i_frame2++)
@@ -40,7 +40,7 @@
     #define     loop_islands                    for(i_island = 0; i_island < Solver_Dict.number_of_islands; i_island++)
         
     #define     loop_layers                     for(i_layer = 0; i_layer < Solver_Dict.number_of_layers; i_layer++)
-	#define		loop_layers_but_L0				for(i_layer = 1; i_layer < Solver_Dict.number_of_layers; i_layer++)
+    #define     loop_layers_but_L0              for(i_layer = 1; i_layer < Solver_Dict.number_of_layers; i_layer++)
     
     #define     loop_max_swap_loops             for(i_swap = 0; i_swap < max_swap_loops; i_swap ++) 
 
@@ -77,8 +77,8 @@
     #define     _i_shift                        i_shift         /* prep for i_layer][i_shift */
     
     #define     _i_vof                          i_frame][i_cell][i_phase
-	
-	#define		upper_layer						(i_layer + 1)
+    
+    #define     upper_layer                     (i_layer + 1)
     
 #endif
 

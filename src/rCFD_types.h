@@ -47,10 +47,10 @@
 
         int     time_steps_per_monitoring_interval;
         double  start_time_for_monitoring;
-		
-		int		min_number_of_cells_per_layer;
-		short	max_number_of_faces_per_cell;
-		short	max_number_of_children;
+        
+        int     min_number_of_cells_per_layer;
+        short   max_number_of_faces_per_cell;
+        short   max_number_of_children;
 
         short   C2C_loading_reduction;
 
@@ -276,11 +276,11 @@
 
         double      **user;             /* [i_cell][i_user] */
         double      ***rec_user;        /* [i_frame][i_cell][i_rec_user] */
-		
-		short		*marked;			/* [i_cell] */
-		int			*parent_cell;
-		short		*number_of_children;
-		int			**children;
+        
+        short       *marked;            /* [i_cell] */
+        int         *parent_cell;
+        short       *number_of_children;
+        int         **child_index;
 
     } Cell_type;
 

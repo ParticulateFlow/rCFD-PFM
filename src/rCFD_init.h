@@ -6,6 +6,7 @@
 #include "rCFD_macros.h"
 #include "rCFD_parallel.h"
 #include "rCFD_user.h"
+#include "rCFD_layer.h"
 
 /* (C)  2021 
     Stefan Pirker
@@ -528,7 +529,7 @@ void init_all(void)
 
 #if 1   /* local vars */
         
-        short   debug_this_code = 1;       
+        short   debug_this_code = 0;       
    
         int     i_layer, i_cell, i_face, i_cell_face, i_face2, i_cell_face2, i_child, i_dim, i_tmp, i_tmp2, i_parent_face;
         
@@ -930,10 +931,10 @@ void init_all(void)
 
                 /* fill upper layer list of child_index */
                 
-                number_of_unassigned_parents = 0;
-                
-                number_of_unassigned_children = 0;
-                
+                number_of_unassigned_parents =      0;
+                number_of_unassigned_children =     0;
+                number_of_negative_child_indices =  0;
+                        
                 loop_cells{
                     
                     if(_C.parent_cell[i_cell] > -1){
@@ -966,22 +967,20 @@ void init_all(void)
                         number_of_unassigned_parents++;
                     }
                 }
+
+                loop_cells_of_upper_layer{
+                    
+                    for(i_child = 0; i_child < Topo.Cell[upper_layer].number_of_children[i_cell]; i_child++){
+                    
+                        if(Topo.Cell[upper_layer].child_index[i_cell][i_child] == -1){
+                            
+                            number_of_negative_child_indices++;
+                        }
+                    }                   
+                }
                 
                 if(debug_this_code){
-                    
-                    number_of_negative_child_indices = 0;
-                    
-                    loop_cells_of_upper_layer{
-                        
-                        for(i_child = 0; i_child < Topo.Cell[upper_layer].number_of_children[i_cell]; i_child++){
-                        
-                            if(Topo.Cell[upper_layer].child_index[i_cell][i_child] == -1){
-                                
-                                number_of_negative_child_indices++;
-                            }
-                        }                   
-                    }
-                                        
+                                                            
                     Message("\nDEBUG L.6 myid %d i_layer %d number_of_unassigned_parents %d, number_of_unassigned_children %d neg_child_index %d", 
                     
                         myid, i_layer, number_of_unassigned_parents, number_of_unassigned_children, number_of_negative_child_indices);
@@ -1257,6 +1256,44 @@ void init_all(void)
                 
                 Message("   Layer %d: Cells %d Faces %d\n", i_layer, _Cell_Dict.number_of_cells, _Face_Dict.number_of_faces);
             }
+        }
+
+        /* Test mapping */
+        {
+            i_layer = 0;
+            
+            rCFD_map_parent(i_layer);
+            /* layer-1 should have number of layer-0 children in data[0] */
+            
+            i_layer = 1;
+            
+            rCFD_map_parent(i_layer);
+            /* layer-2 should have number of their layer-0 children in data[0] */
+            
+            i_layer = 2;
+            
+            rCFD_map_parent(i_layer);
+            /* layer-3 cells should have their layer-2 siblings */
+            
+            i_layer = 3;
+            
+            rCFD_map_children(i_layer);
+            /* layer-1 cells should have their layer-2 siblings */
+
+            i_layer = 2;
+            
+            rCFD_map_children(i_layer);
+            /* layer-0 cells should have their layer-2 siblings */
+
+            i_layer = 1;
+            
+            rCFD_map_children(i_layer);
+            /* layer-0 cells should have their layer-2 siblings */
+            
+            i_layer = 0;
+            
+            rCFD_user_post(i_layer);
+            /* data[0] should visualize clusters */
         }
 #endif      
     }

@@ -22,6 +22,7 @@
     #define     loop_int_cells                  for(i_cell = 0; i_cell < _Cell_Dict.number_of_int_cells; i_cell++)
     #define     loop_ext_cells                  for(i_cell = _Cell_Dict.number_of_int_cells; i_cell < _Cell_Dict.number_of_cells; i_cell++)
     #define     loop_cells_of_upper_layer       for(i_cell = 0; i_cell < Topo_Dict.Cell_Dict[(i_layer + 1)].number_of_cells; i_cell++)
+    #define     loop_cells_of_lower_layer       for(i_cell = 0; i_cell < Topo_Dict.Cell_Dict[(i_layer - 1)].number_of_cells; i_cell++)
     
     #define     loop_children                   for(i_child = 0; i_child < Topo.Cell[i_layer].number_of_children[i_cell]; i_child++)
 
@@ -79,6 +80,7 @@
     #define     _i_vof                          i_frame][i_cell][i_phase
     
     #define     upper_layer                     (i_layer + 1)
+    #define     lower_layer                     (i_layer - 1)
     
 #endif
 

@@ -51,6 +51,7 @@
         int     min_number_of_cells_per_layer;
         short   max_number_of_faces_per_cell;
         short   max_number_of_children;
+        short   number_redist_loops_per_layer;
 
         short   C2C_loading_reduction;
 

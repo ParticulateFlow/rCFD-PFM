@@ -270,6 +270,7 @@
         rCFD_defaults.h
         rCFD_macros.h
         rCFD_init.h
+        rCFD_layer.h
         rCFD_free.h
         \"\" ")
 )

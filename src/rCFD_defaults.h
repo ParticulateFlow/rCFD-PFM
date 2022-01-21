@@ -53,9 +53,10 @@
         Solver_Dict.time_steps_per_monitoring_interval =   10;
         Solver_Dict.start_time_for_monitoring =            0.0;
         
-        Solver_Dict.min_number_of_cells_per_layer = 100;
-        Solver_Dict.max_number_of_faces_per_cell =  100;
-        Solver_Dict.max_number_of_children =        100;
+        Solver_Dict.min_number_of_cells_per_layer =     100;
+        Solver_Dict.max_number_of_faces_per_cell =      100;
+        Solver_Dict.max_number_of_children =            100;
+        Solver_Dict.number_redist_loops_per_layer =     20;
         
         Solver_Dict.C2C_loading_reduction =    1;
         

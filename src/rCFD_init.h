@@ -529,13 +529,13 @@ void init_all(void)
 
 #if 1   /* local vars */
         
-        short   debug_this_code = 0;       
+        short   debug_this_code = 1;       
    
-        int     i_layer, i_cell, i_face, i_cell_face, i_face2, i_cell_face2, i_child, i_dim, i_tmp, i_tmp2, i_parent_face;
+        int     i_layer, i_cell, i_face, i_cell_face, i_face2, i_cell_face2, i_child, i_dim, i_tmp, i_tmp2, i_parent_face, i_redist;
         
         int     cell_index_in_upper_layer, number_of_cells_in_upper_layer, upper_cell, c0, c1, c1_c0, c1_c1;
 
-        int     min_dist_parent_cell, max_number_of_faces_per_cell, max_number_of_children;
+        int     min_dist_parent_cell, max_number_of_faces_per_cell, max_number_of_children, min_number_of_children;
 
         int     number_of_unassigned_parents, number_of_unassigned_children, number_of_negative_child_indices;
         
@@ -550,6 +550,8 @@ void init_all(void)
         int     **tmp_parent_cell_cell_index = NULL;    /* [i_cell (upper_layer)][i_cell_face] */
         
         int     **tmp_parent_cell_face_index = NULL;
+        
+        short   *tmp_cluster_already_visited = NULL;
 
         enum{
             not_yet_visited,
@@ -767,6 +769,7 @@ void init_all(void)
             /* L.4 fill upper layer grid vars (by first set of clusters) */
             {
                 max_number_of_children = 0;
+                min_number_of_children = 9999;
                 
                 loop_cells{
                     
@@ -787,6 +790,11 @@ void init_all(void)
                             
                             max_number_of_children = Topo.Cell[upper_layer].number_of_children[upper_cell];
                         }
+                        
+                        if(Topo.Cell[upper_layer].number_of_children[upper_cell] < min_number_of_children){
+                            
+                            min_number_of_children = Topo.Cell[upper_layer].number_of_children[upper_cell];
+                        }
                     }
                 }
                 
@@ -804,7 +812,7 @@ void init_all(void)
 
                 if(debug_this_code){
                                         
-                    Message("\nDEBUG L.4 myid %d i_layer %d, max_number_of_children %d", myid, i_layer, max_number_of_children);
+                    Message("\nDEBUG L.4 myid %d i_layer %d, max/min_number_of_children %d/%d", myid, i_layer, max_number_of_children, min_number_of_children);
                 }
                 
             }
@@ -1004,6 +1012,188 @@ void init_all(void)
                         fclose(f_out);
                     }
                 }               
+            }
+            
+            /* L.6.a re-distribute upper-layer's children */
+            {
+                i_redist = 0;
+                
+                while(((max_number_of_children - min_number_of_children) > 2) && (i_redist < Solver_Dict.number_redist_loops_per_layer))
+                {
+                    /* adapt min clusters */
+                    loop_faces{
+                        
+                        c0 = _F.c0[i_face];
+                        c1 = _F.c1[i_face];
+                        
+                        upper_c0 = _C.parent_cell[c0];
+                        upper_c1 = _C.parent_cell[c1];
+                        
+                        if((Topo.Cell[upper_layer].number_of_children[upper_c1] == min_number_of_children) && 
+                           (Topo.Cell[upper_layer].number_of_children[upper_c0] > (min_number_of_children + 1))){
+                            
+                            i_tmp = c0; c0 = c1; c1 = i_tmp; i_tmp = upper_c0; upper_c0 = upper_c1; upper_c1 = i_tmp;
+                        }
+
+                        if((Topo.Cell[upper_layer].number_of_children[upper_c0] == min_number_of_children) && 
+                           (Topo.Cell[upper_layer].number_of_children[upper_c1] > (min_number_of_children + 1))){
+                            
+                            _C.parent_cell[c1] = _C.parent_cell[c0];
+                            
+                            Topo.Cell[upper_layer].number_of_children[upper_c0] += 1;
+                            Topo.Cell[upper_layer].number_of_children[upper_c1] -= 1;
+                        }
+                    }
+                    
+                    /* adapt max clusters */
+                    loop_faces{
+                        
+                        c0 = _F.c0[i_face];
+                        c1 = _F.c1[i_face];
+                        
+                        upper_c0 = _C.parent_cell[c0];
+                        upper_c1 = _C.parent_cell[c1];
+                        
+                        if((Topo.Cell[upper_layer].number_of_children[upper_c1] == max_number_of_children) && 
+                           (Topo.Cell[upper_layer].number_of_children[upper_c0] < (max_number_of_children - 1))){
+                            
+                            i_tmp = c0; c0 = c1; c1 = i_tmp; i_tmp = upper_c0; upper_c0 = upper_c1; upper_c1 = i_tmp;
+                        }
+
+                        if((Topo.Cell[upper_layer].number_of_children[upper_c0] == max_number_of_children) && 
+                           (Topo.Cell[upper_layer].number_of_children[upper_c1] < (max_number_of_children - 1))){
+                            
+                            _C.parent_cell[c0] = _C.parent_cell[c1];
+                            
+                            Topo.Cell[upper_layer].number_of_children[upper_c0] -= 1;
+                            Topo.Cell[upper_layer].number_of_children[upper_c1] += 1;
+                        }
+                    }
+
+                    /* adapt clusters in between min and max */
+                    {
+                        tmp_cluster_already_visited = (short*)malloc(Topo_Dict.Cell_Dict[upper_layer].number_of_cells * sizeof(short));
+                        
+                        loop_cells_of_upper_layer{
+                            
+                            tmp_cluster_already_visited[i_cell] = 0;
+                        }
+                        
+                        loop_faces{
+                            
+                            c0 = _F.c0[i_face];
+                            c1 = _F.c1[i_face];
+                            
+                            upper_c0 = _C.parent_cell[c0];
+                            upper_c1 = _C.parent_cell[c1];
+                            
+                            if((tmp_cluster_already_visited[upper_c0] + tmp_cluster_already_visited[upper_c1]) == 0){
+                            
+                                if(Topo.Cell[upper_layer].number_of_children[upper_c0] > (Topo.Cell[upper_layer].number_of_children[upper_c1] + 1)){
+                                    
+                                    i_tmp = c0; c0 = c1; c1 = i_tmp; i_tmp = upper_c0; upper_c0 = upper_c1; upper_c1 = i_tmp;
+                                }
+
+                                if(Topo.Cell[upper_layer].number_of_children[upper_c0] < (Topo.Cell[upper_layer].number_of_children[upper_c1] - 1)){
+                                    
+                                    _C.parent_cell[c1] = _C.parent_cell[c0];
+                                    
+                                    Topo.Cell[upper_layer].number_of_children[upper_c0] += 1;
+                                    Topo.Cell[upper_layer].number_of_children[upper_c1] -= 1;
+                                    
+                                    tmp_cluster_already_visited[upper_c0] = 1;
+                                    tmp_cluster_already_visited[upper_c1] = 1;
+                                }
+                            }
+                        }
+                        
+                        free(tmp_cluster_already_visited);
+                    }
+                    
+                    /* re-allocate upper_layer_children, re-initialize upper layer vars */
+                    loop_cells_of_upper_layer{
+                        
+                        free(Topo.Cell[upper_layer].child_index[i_cell]);
+                        
+                        Topo.Cell[upper_layer].child_index[i_cell] = (int*)malloc(Topo.Cell[upper_layer].number_of_children[i_cell] * sizeof(int));
+                        
+                        for(i_child = 0; i_child < Topo.Cell[upper_layer].number_of_children[i_cell]; i_child++){
+                            
+                            Topo.Cell[upper_layer].child_index[i_cell][i_child] = -1;
+                        }
+                        
+                        loop_dim{
+                            
+                            Topo.Cell[upper_layer].x[i_cell][i_dim] = 0.0;
+                        }
+                        
+                        Topo.Cell[upper_layer].volume[i_cell] = 0.0;
+                    }
+                    
+                    /* set upper_layer grid vars */
+                    loop_cells{
+                        
+                        upper_cell = _C.parent_cell[i_cell];
+                        
+                        loop_dim{
+                            
+                            Topo.Cell[upper_layer].x[upper_cell][i_dim] += _C.x[i_cell][i_dim];
+                        }
+                        
+                        Topo.Cell[upper_layer].volume[upper_cell] += _C.volume[i_cell];
+                        
+                        /* add child_index */
+                        if(upper_cell > -1){
+                            
+                            i_child = 0;
+                            
+                            while(i_child < Topo.Cell[upper_layer].number_of_children[upper_cell]){
+                                
+                                if (Topo.Cell[upper_layer].child_index[upper_cell][i_child] < 0){
+                                    
+                                    Topo.Cell[upper_layer].child_index[upper_cell][i_child] = i_cell;
+                                    
+                                    i_child =  2 * Topo.Cell[upper_layer].number_of_children[upper_cell];
+                                }
+                                else{
+                                    
+                                    i_child++;
+                                }
+                            }
+                        }
+                    }
+                        
+                    /* average upper-layer coords, get new min/max number_of_children */
+                    {   
+                        max_number_of_children = 0;
+                        min_number_of_children = 9999;
+
+                        loop_cells_of_upper_layer{
+                        
+                            loop_dim{
+                                
+                                Topo.Cell[upper_layer].x[i_cell][i_dim] /= (double)Topo.Cell[upper_layer].number_of_children[i_cell];
+                            }               
+                            
+                            if(Topo.Cell[upper_layer].number_of_children[i_cell] > max_number_of_children){
+                                
+                                max_number_of_children = Topo.Cell[upper_layer].number_of_children[i_cell];
+                            }
+                            
+                            if(Topo.Cell[upper_layer].number_of_children[i_cell] < min_number_of_children){
+                                
+                                min_number_of_children = Topo.Cell[upper_layer].number_of_children[i_cell];
+                            }   
+                        }
+                    }
+                    
+                    if(debug_this_code){
+                        
+                        Message("\nDEBUG myid %d: L.6.a: i_redist %d, min/max number_of_children %d/%d", myid, i_redist, min_number_of_children, max_number_of_children);
+                    }
+                    
+                    i_redist++;
+                }
             }
             
             /* L.7 create tmp_parent_xy vars for upper_layer faces */
@@ -1269,7 +1459,7 @@ void init_all(void)
             
             rCFD_map_parent(i_layer);
             /* layer-2 should have number of their layer-0 children in data[0] */
-            
+#if 0            
             i_layer = 2;
             
             rCFD_map_parent(i_layer);
@@ -1279,7 +1469,7 @@ void init_all(void)
             
             rCFD_map_children(i_layer);
             /* layer-1 cells should have their layer-2 siblings */
-
+#endif
             i_layer = 2;
             
             rCFD_map_children(i_layer);

@@ -242,12 +242,14 @@
     typedef struct Solver_struct
     {
         int         current_state;
+        
+        int         current_layer;
 
         int         global_run_counter;
         
         double      global_time;
         
-        double      *timestep_width_per_layer;
+        double      *timestep_width;
 
         clock_t     clock;
 
@@ -267,7 +269,7 @@
         double      *weight_after_shift;
         double      *weight_after_swap;
 
-        double      ***vof;             /* [i_frame][i_phase][i_cell] */
+        double      ***vof;             /* [i_frame][i_cell][i_phase] */
 
         double      ***data;            /* [i_phase][i_cell][i_data] */
         double      ***data_shift;
@@ -320,25 +322,49 @@
     {
         short               format;
 
-        int                 number_of_shifts;
+        int                 *number_of_shifts;      /* [i_layer] */
+        int                 *number_of_shifts_in;
+        int                 *number_of_shifts_out;
+
+        C2C_shift_type      **shifts;               /* [i_layer][i_shift] */
+        C2C_shift_type      **shifts_in;
+        C2C_shift_type      **shifts_out;
+
+        int                 **island_offsets;       /* [i_layer][i_island] */
+        int                 **island_offsets_in;
+
+        /* MPI variables, only used by Node-0 */
+
+        int                 **number_of_shifts_to_node_zero;        /* [i_layer][i_node] */
+        int                 **number_of_shifts_from_node_zero;
+        int                 ***in2out;                              /* [i_layer][i_node][i_node] */
+
+     } C2C_type;
+
+    typedef struct tmp_C2C_struct
+    {
+        /* same as C2C_type, but only for one layer */
+        short               format;
+
+        int                 number_of_shifts;       
         int                 number_of_shifts_in;
         int                 number_of_shifts_out;
 
-        C2C_shift_type      *shifts;
+        C2C_shift_type      *shifts;                
         C2C_shift_type      *shifts_in;
         C2C_shift_type      *shifts_out;
 
-        int                 *island_offsets;
+        int                 *island_offsets;        
         int                 *island_offsets_in;
 
         /* MPI variables, only used by Node-0 */
 
-        int                 number_of_MPI_shifts;
-        int                 *number_of_shifts_to_node_zero;
+        int                 *number_of_shifts_to_node_zero;     
         int                 *number_of_shifts_from_node_zero;
         int                 **in2out;
-
-     } C2C_type;
+        
+    } tmp_C2C_type;
+    
 
     typedef struct Balance_struct
     {

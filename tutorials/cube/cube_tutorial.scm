@@ -5,7 +5,7 @@
 ;;  www.particulate-flow.at 
 
 
-(define rCFD_src_dir  "../../src")
+(define rCFD_src_dir  "../2021_rCFD_CORE")
 (define rCFD_user_src_dir  "./user_src")
 (define ANSYS_Fluent_case_dir "./ansys_fluent")
 (define ANSYS_Fluent_case_file  "Cube_1.2M_fullCFD_t=2.5s")
@@ -73,6 +73,7 @@
         rCFD_defaults.h
         rCFD_macros.h
         rCFD_init.h
+        rCFD_layer.h
         rCFD_free.h
         \"\" ")
 )

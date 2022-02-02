@@ -11,11 +11,122 @@
     Johannes Kepler University, Linz, Austria
     www.particulate-flow.at
 */  
+
+
+    void rCFD_allocate_layer(const short i_layer)
+    {
+    #if RP_NODE
+
+        int i_cell, i_phase, i_frame;
+
+        _C.x = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+        
+        loop_cells{
+            
+            _C.x[i_cell] = (double*)malloc( 3 * sizeof(double));
+        }
+        
+        _C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+        
+        _C.average_velocity =    (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
+        _C.crossing_time =       (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
+        
+        loop_phases{
+            
+            _C.average_velocity[i_phase] =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));            
+            _C.crossing_time[i_phase] =      (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+        }
+
+        _C.hit_by_other_cell =   (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
+
+        _C.island_id =           (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
+        
+        _C.weight_after_shift =  (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+        _C.weight_after_swap =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+
+        _C.vof = (double***)malloc(Solver_Dict.number_of_frames * sizeof(double**));
+        
+        loop_frames{
+            
+            _C.vof[i_frame] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+            
+            loop_cells{
+                
+                _C.vof[i_frame][i_cell] = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+            }
+        }
+
+        _C.data =        (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+        _C.data_shift =  (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+        _C.data_swap =   (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+        
+        loop_phases{
+            
+            _C.data[i_phase] =       (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+            _C.data_shift[i_phase] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+            _C.data_swap[i_phase] =  (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+            
+            loop_cells{
+                
+                _C.data[i_phase][i_cell] =       (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                _C.data_shift[i_phase][i_cell] = (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                _C.data_swap[i_phase][i_cell] =  (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+            }
+        }       
+        
+        if(Solver_Dict.data_drifting_on){
+            
+            _C.drift_exchange = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+        }
+        else{
+            
+            _C.drift_exchange = NULL;
+        }       
+        
+        if(_Cell_Dict.number_of_user_vars > 0){
+            
+            _C.user = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+            
+            loop_cells{
+                
+                _C.user[i_cell] = (double*)malloc(_Cell_Dict.number_of_user_vars * sizeof(double));
+            }
+        }
+        else{
+            
+            _C.user = NULL;
+        }                        
+
+        /* multi-layer vars */
+        
+        _C.marked =                 (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
+        
+        if((i_layer + 1) < Solver_Dict.number_of_layers){
+            
+            _C.parent_cell =        (int*)malloc(_Cell_Dict.number_of_cells * sizeof(int));
+        }
+        else{
+            
+            _C.parent_cell =        NULL;
+        }
+        
+        if(i_layer > 0){
+            
+            _C.number_of_children = (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));     
+            _C.child_index =           (int**) malloc(_Cell_Dict.number_of_cells * sizeof(int*));      /* child_index[i_cell] will be allocated later */
+        }
+        else{
+            
+            _C.number_of_children = NULL;       
+            _C.child_index =           NULL;
+        }
+    #endif  
+    }
  
     void rCFD_map_parent(const short i_layer)
     {
 #if RP_NODE     
-        short debug_this_code = 1;
+        short debug_this_code = 0;
         
         if(upper_layer >= Solver_Dict.number_of_layers){
             
@@ -90,7 +201,7 @@
     void rCFD_map_children(const short i_layer)
     {
 #if RP_NODE     
-        short debug_this_code = 1;
+        short debug_this_code = 0;
         
         if(i_layer < 1){
             
@@ -147,16 +258,16 @@
     {
 #if RP_NODE     
         
-        if(((to_layer + 1) >= Solver_Dict.number_of_layers) || (to_layer < 0)){
+        if((to_layer >= Solver_Dict.number_of_layers) || (to_layer < 0)){
             
-            Message("\nWARNING myid %d: Tried to map to non-existing layer %d", to_layer);
+            Message("\nWARNING myid %d: Tried to map to non-existing layer %d", myid, to_layer);
             
             return;
         }
 
-        if(((from_layer + 1) >= Solver_Dict.number_of_layers) || (from_layer < 0)){
+        if((from_layer >= Solver_Dict.number_of_layers) || (from_layer < 0)){
             
-            Message("\nWARNING myid %d: Unreasonable mapping layer %d", from_layer);
+            Message("\nWARNING myid %d: Unreasonable mapping layer %d", myid, from_layer);
             
             return;
         }

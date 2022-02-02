@@ -50,9 +50,9 @@
             free(Rec.jumps);
         }
     
-        if(Solver.timestep_width_per_layer != NULL){
+        if(Solver.timestep_width != NULL){
             
-            free(Solver.timestep_width_per_layer);
+            free(Solver.timestep_width);
         }
         
 #if RP_NODE
@@ -63,197 +63,6 @@
         if(Tracer_Dict.random_walk != NULL){ 
         
             free(Tracer_Dict.random_walk);  
-        }
-        
-        i_layer = 0;    /* for the moment, we only consider the base grid */
-
-        if(C.x != NULL){
-            
-            loop_cells{
-                
-                if(C.x[i_cell] != NULL){
-                    
-                    free(C.x[i_cell]);
-                }
-            }
-                
-            free(C.x);
-        }
-        
-        if(C.volume != NULL){
-            
-            free(C.volume);
-        }
-        
-        if(C.average_velocity != NULL){
-            
-            loop_phases{
-                
-                if(C.average_velocity[i_phase] != NULL){
-                    
-                    free(C.average_velocity[i_phase]);
-                }
-            }
-            
-            free(C.average_velocity);
-        }   
-
-        if(C.crossing_time != NULL){
-            
-            loop_phases{
-                
-                if(C.crossing_time[i_phase] != NULL){
-                    
-                    free(C.crossing_time[i_phase]);
-                }
-            }
-            
-            free(C.crossing_time);
-        }   
-
-        if(C.hit_by_other_cell != NULL){ 
-        
-            free(C.hit_by_other_cell);  
-        }
-
-        if(C.island_id != NULL){ 
-        
-            free(C.island_id);  
-        }
-        
-        if(C.weight_after_shift != NULL){
-            
-            free(C.weight_after_shift);
-        }
-        
-        if(C.weight_after_swap != NULL){
-            
-            free(C.weight_after_swap);
-        }
-        
-        if(C.vof != NULL){
-            
-            loop_frames{
-                
-                if(C.vof[i_frame] != NULL){
-                    
-                    loop_cells{
-                        
-                        if(C.vof[i_frame][i_cell] != NULL){
-                            
-                            free(C.vof[i_frame][i_cell]);
-                        }
-                    }
-                    
-                    free(C.vof[i_frame]);
-                }
-            }
-            
-            free(C.vof);
-        }
-        
-        if(C.data != NULL){
-            
-            loop_phases{
-                
-                if(C.data[i_phase] != NULL){
-                
-                    loop_cells{
-                        
-                        if(C.data[i_phase][i_cell] != NULL){
-                            
-                            free(C.data[i_phase][i_cell]);
-                        }
-                    }
-                    
-                    free(C.data[i_phase]);
-                }
-            }
-            
-            free(C.data);
-        }
-
-        if(C.data_shift != NULL){
-            
-            loop_phases{
-                
-                if(C.data_shift[i_phase] != NULL){
-                
-                    loop_cells{
-                        
-                        if(C.data_shift[i_phase][i_cell] != NULL){
-                            
-                            free(C.data_shift[i_phase][i_cell]);
-                        }
-                    }
-                    
-                    free(C.data_shift[i_phase]);
-                }
-            }
-            
-            free(C.data_shift);
-        }
-        
-        if(C.data_swap != NULL){
-            
-            loop_phases{
-                
-                if(C.data_swap[i_phase] != NULL){
-                
-                    loop_cells{
-                        
-                        if(C.data_swap[i_phase][i_cell] != NULL){
-                            
-                            free(C.data_swap[i_phase][i_cell]);
-                        }
-                    }
-                    
-                    free(C.data_swap[i_phase]);
-                }
-            }
-            
-            free(C.data_swap);
-        }
-
-        if(C.drift_exchange != NULL){
-            
-            free(C.drift_exchange);
-        }
-        
-        if(C.user != NULL){
-            
-            loop_cells{
-                
-                if(C.user[i_cell] !=  NULL){
-                    
-                    free(C.user[i_cell]);
-                }
-            }
-            
-            free(C.user);
-        }
-
-        if(F.c0 != NULL){
-            
-            free(F.c0);
-        }
-        
-        if(F.c1 != NULL){
-            
-            free(F.c1);
-        }
-        
-        if(F.area != NULL){
-            
-            loop_faces{
-                
-                if(F.area[i_face] != NULL){
-                    
-                    free(F.area[i_face]);
-                }
-            }
-            
-            free(F.area);
         }
         
         if(Topo.Cell != NULL){
@@ -488,9 +297,7 @@
             
             free(Topo.Face);
         }
-        
-        /* free Topo_Dict after Topo */
-        
+                
         if(Topo_Dict.Cell_Dict != NULL){
             
             free(Topo_Dict.Cell_Dict);
@@ -541,28 +348,83 @@
                             
                             loop_frames{
                                     
+                                if(C2Cs[_i_C2C].number_of_shifts != NULL){
+                                    
+                                    free(C2Cs[_i_C2C].number_of_shifts);
+                                }
+                                
+                                if(C2Cs[_i_C2C].number_of_shifts_in != NULL){
+                                    
+                                    free(C2Cs[_i_C2C].number_of_shifts_in);
+                                }
+                                
+                                if(C2Cs[_i_C2C].number_of_shifts_out != NULL){
+                                    
+                                    free(C2Cs[_i_C2C].number_of_shifts_out);
+                                }
+
                                 if(C2Cs[_i_C2C].shifts != NULL){
+                                    
+                                    loop_layers{
+                                        
+                                        if(C2Cs[_i_C2C].shifts[i_layer] != NULL){
+                                            
+                                            free(C2Cs[_i_C2C].shifts[i_layer]);
+                                        }
+                                    }
                                     
                                     free(C2Cs[_i_C2C].shifts);
                                 }
                                 
                                 if(C2Cs[_i_C2C].shifts_in != NULL){
                                     
+                                    loop_layers{
+                                        
+                                        if(C2Cs[_i_C2C].shifts_in[i_layer] != NULL){
+                                            
+                                            free(C2Cs[_i_C2C].shifts_in[i_layer]);
+                                        }
+                                    }
+                                    
                                     free(C2Cs[_i_C2C].shifts_in);
                                 }
-                                
+
                                 if(C2Cs[_i_C2C].shifts_out != NULL){
+                                    
+                                    loop_layers{
+                                        
+                                        if(C2Cs[_i_C2C].shifts_out[i_layer] != NULL){
+                                            
+                                            free(C2Cs[_i_C2C].shifts_out[i_layer]);
+                                        }
+                                    }
                                     
                                     free(C2Cs[_i_C2C].shifts_out);
                                 }
                                 
                                 if(C2Cs[_i_C2C].island_offsets != NULL){
                                     
+                                    loop_layers{
+                                        
+                                        if(C2Cs[_i_C2C].island_offsets[i_layer] != NULL){
+                                            
+                                            free(C2Cs[_i_C2C].island_offsets[i_layer]);
+                                        }
+                                    }
+                                    
                                     free(C2Cs[_i_C2C].island_offsets);
                                 }
 
                                 if(C2Cs[_i_C2C].island_offsets_in != NULL){
                                     
+                                    loop_layers{
+                                        
+                                        if(C2Cs[_i_C2C].island_offsets_in[i_layer] != NULL){
+                                            
+                                            free(C2Cs[_i_C2C].island_offsets_in[i_layer]);
+                                        }
+                                    }
+
                                     free(C2Cs[_i_C2C].island_offsets_in);
                                 }
                                 
@@ -570,23 +432,47 @@
                                     
                                     if(C2Cs[_i_C2C].number_of_shifts_to_node_zero != NULL){
                                         
+                                        loop_layers{
+                                            
+                                            if(C2Cs[_i_C2C].number_of_shifts_to_node_zero[i_layer] != NULL){
+                                                
+                                                free(C2Cs[_i_C2C].number_of_shifts_to_node_zero[i_layer]);
+                                            }
+                                        }                                       
+
                                         free(C2Cs[_i_C2C].number_of_shifts_to_node_zero);
                                     }
 
                                     if(C2Cs[_i_C2C].number_of_shifts_from_node_zero != NULL){
+                                        
+                                        loop_layers{
+                                            
+                                            if(C2Cs[_i_C2C].number_of_shifts_from_node_zero[i_layer] != NULL){
+                                                
+                                                free(C2Cs[_i_C2C].number_of_shifts_from_node_zero[i_layer]);
+                                            }
+                                        }                                       
                                         
                                         free(C2Cs[_i_C2C].number_of_shifts_from_node_zero);
                                     }
                                     
                                     if(C2Cs[_i_C2C].in2out != NULL){
                                         
-                                        for(i_node = 0; i_node < (node_last + 1); i_node++){
+                                        loop_layers{
                                             
-                                            if(C2Cs[_i_C2C].in2out[i_node] != NULL){
-                                                
-                                                free(C2Cs[_i_C2C].in2out[i_node]);
+                                            if(C2Cs[_i_C2C].in2out[i_layer] != NULL){
+                                        
+                                                for(i_node = 0; i_node < (node_last + 1); i_node++){
+                                                    
+                                                    if(C2Cs[_i_C2C].in2out[i_layer][i_node] != NULL){
+                                                        
+                                                        free(C2Cs[_i_C2C].in2out[i_layer][i_node]);
+                                                    }
+                                                }
+
+                                                free(C2Cs[_i_C2C].in2out[i_layer]);
                                             }
-                                        }   
+                                        }                                           
                                         
                                         free(C2Cs[_i_C2C].in2out);
                                     }
@@ -610,7 +496,7 @@
             
             loop_shifts{
                 
-                free(C2Cs_MPI.shifts_in[_i_shift].data);
+                free(C2Cs_MPI.shifts_in[i_shift].data);
             }
             
             free(C2Cs_MPI.shifts_in);

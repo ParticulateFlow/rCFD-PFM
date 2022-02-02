@@ -5,6 +5,7 @@
 #include "rCFD_globals.h"
 #include "rCFD_defaults.h"
 #include "rCFD_macros.h"
+#include "rCFD_layer.h"
 
 /* (C)  2021 
     Stefan Pirker
@@ -51,13 +52,15 @@
     {
         Solver_Dict.number_of_phases =                     2;
         
+        Solver_Dict.number_of_layers =                     2;
+
         Solver_Dict.max_number_of_cells_per_time_step =    30;
 
         Solver_Dict.global_time_step =                     0.005;   
         
         Solver_Dict.time_steps_per_monitoring_interval =   10;
         
-        Solver_Dict.number_of_frames =                     300;         
+        Solver_Dict.number_of_frames =                     50;         
 
         Solver_Dict.number_of_runs =                       1; 
         
@@ -293,6 +296,12 @@
 
 #if 1
 
+    short rCFD_user_set_layer(const short i_layer)
+    {
+        
+        return 0;
+    }
+    
     void rCFD_user_access_data_before_shift(const short i_phase, const short i_layer)
     {
 #if RP_NODE
@@ -353,12 +362,12 @@
             
             if(volume_in > 0.0){
                 
-                Balance[gas][c_gas_B].mass_source += primary_inflow * Phase_Dict[gas].time_step * volume_in / volume_in_global;
+                Balance[gas][c_gas_B].mass_source += primary_inflow * Solver.timestep_width[i_layer] * volume_in / volume_in_global;
             }
             
             if(volume_in2 > 0.0){
                 
-                Balance[gas][c_gas_A].mass_source += secondary_inflow * Phase_Dict[gas].time_step * volume_in2 / volume_in2_global;
+                Balance[gas][c_gas_A].mass_source += secondary_inflow * Solver.timestep_width[i_layer] * volume_in2 / volume_in2_global;
             }
 
             if(volume_out > 0.0){
@@ -366,8 +375,8 @@
                 mean_value[c_gas_A] /= volume_out;
                 mean_value[c_gas_B] /= volume_out;
                             
-                Balance[gas][c_gas_A].mass_source -= mean_value[c_gas_A] * (primary_inflow + secondary_inflow) * Phase_Dict[gas].time_step * volume_out / volume_out_global;                
-                Balance[gas][c_gas_B].mass_source -= mean_value[c_gas_B] * (primary_inflow + secondary_inflow) * Phase_Dict[gas].time_step * volume_out / volume_out_global;
+                Balance[gas][c_gas_A].mass_source -= mean_value[c_gas_A] * (primary_inflow + secondary_inflow) * Solver.timestep_width[i_layer] * volume_out / volume_out_global;                
+                Balance[gas][c_gas_B].mass_source -= mean_value[c_gas_B] * (primary_inflow + secondary_inflow) * Solver.timestep_width[i_layer] * volume_out / volume_out_global;
             }
         }
 
@@ -383,13 +392,21 @@
 
     }
 
-    void rCFD_user_post(const short i_layer)
+    void rCFD_user_post()
     {
 #if RP_NODE
         Domain  *d=Get_Domain(1);
         Thread  *t;
 
-        int i_phase, i_cell, i_data, i_UDMI, i_frame;
+        int i_layer, i_phase, i_cell, i_data, i_UDMI, i_frame;
+        
+        i_layer = 0;
+        
+        if(Solver.current_layer > 0){
+            
+            rCFD_map_from_to_layer(Solver.current_layer, i_layer);
+        }
+        
         
         thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell, t){
             

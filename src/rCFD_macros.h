@@ -3,7 +3,7 @@
 
 #include "udf.h"
 
-/* (C)  2021 
+/* (C)  2021-22
     Stefan Pirker
     Particulate Flow Modelling
     Johannes Kepler University, Linz, Austria
@@ -75,7 +75,7 @@
     #define     _c0_data                        i_phase][c0][i_data
     #define     _c1_data                        i_phase][c1][i_data
     
-    #define     _i_shift                        i_shift         /* prep for i_layer][i_shift */
+    #define     _i_shift                        i_layer][i_shift
     
     #define     _i_vof                          i_frame][i_cell][i_phase
     
@@ -104,7 +104,7 @@
     #define     Tracer_Database_full                (Tracer.frame_counter >= Solver_Dict.number_of_frames)
     #define     Tracer_Database_not_full            !(Tracer_Database_full)
     #define     kill_Tracer_by_coarse_graining      (rand_real > (1./(double)Tracer_Dict.coarse_graining))
-    #define     excess_Tracer_cell_crossing_time    (C.crossing_time[i_phase][i_cell] > (2. * Solver_Dict.global_time_step))
+    #define     excess_Tracer_cell_crossing_time    (_C.crossing_time[i_phase][i_cell] > (2. * Solver_Dict.global_time_step))
     #define     Tracer_has_crossed_cell_border      ((int)p->user[p_c_old] != i_cell)
     #define     Tracer_from_slow_cell               (p->user[p_time_ratio] > 1.0)
     #define     Tracer_not_stored_yet               (p->user[p_just_killed] < 1.0)

@@ -18,7 +18,7 @@
 */  
 
     #define     Global_Version_Year     2022
-    #define     Global_Version_Month    01
+    #define     Global_Version_Month    2
     
     #define     Global_Verbal           1
     
@@ -56,7 +56,7 @@
         Solver_Dict.min_number_of_cells_per_layer =     100;
         Solver_Dict.max_number_of_faces_per_cell =      100;
         Solver_Dict.max_number_of_children =            100;
-        Solver_Dict.number_redist_loops_per_layer =     20;
+        Solver_Dict.number_redist_loops_per_layer =     5;
         
         Solver_Dict.C2C_loading_reduction =    1;
         
@@ -135,7 +135,7 @@
                                             
             Phase_Dict[i_phase].number_of_data = 1;
 
-            Phase_Dict[i_phase].time_step = 1.0;
+            Phase_Dict[i_phase].time_step = Solver_Dict.global_time_step;
 
             Phase_Dict[i_phase].shift_probability = 1.0;
             
@@ -366,15 +366,17 @@
     {   
         Solver.current_state = 0;
         
+        Solver.current_layer = 0;
+        
         Solver.global_run_counter = 0;
         
-        Solver.timestep_width_per_layer = (double*)malloc(Solver_Dict.number_of_layers * sizeof(double));
+        Solver.timestep_width = (double*)malloc(Solver_Dict.number_of_layers * sizeof(double));
         
         int i_layer;
         
         loop_layers{
             
-            Solver.timestep_width_per_layer[i_layer] = Solver_Dict.global_time_step * pow(2.0, (double) i_layer);
+            Solver.timestep_width[i_layer] = Solver_Dict.global_time_step * pow(2.0, (double) i_layer);
         }
         
         Solver.global_time = 0.0;
@@ -436,22 +438,26 @@
             FILE    *f_in = NULL;
             char    file_name[80];
             
-            int     i_state = 0, i_tmp;
-                                
-            loop_phases{
+            int     i_state, i_tmp;
+
+            if(Solver_Dict.number_of_phases == 1){
                 
-                if(Solver_Dict.number_of_phases == 1){
+                i_phase = 0;
+                    
+                loop_frames{
+                    
+                    loop_cells{
                         
-                    loop_frames{
-                        
-                        loop_int_cells{
-                            
-                            _C.vof[i_frame][i_cell][i_phase] = 1.0;
-                        }
+                        _C.vof[_i_vof] = 1.0;
                     }
                 }
-                else{
+            }
+            else{
                 
+                i_state = 0;
+            
+                loop_phases{
+                    
                     sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
                 
                     f_in = fopen(file_name, "r");
@@ -460,20 +466,20 @@
 
                         loop_frames{
                             
-                            loop_int_cells{
+                            loop_cells{
                                 
                                 if(i_phase == 0){
                                     
-                                    _C.vof[i_frame][i_cell][i_phase] = 1.0;
+                                    _C.vof[_i_vof] = 1.0;
                                 }
                                 else{
                                     
-                                    _C.vof[i_frame][i_cell][i_phase] = 0.0;
+                                    _C.vof[_i_vof] = 0.0;
                                 }
                             }
                         }
                         
-                        Message0("\nWARNING: rCFD_default_Cell: _C.vof: f_in == NULL for i_phase %d ...\n", i_phase);
+                        Message("\nWARNING myid %d: rCFD_default_Cell: _C.vof: f_in == NULL for i_phase %d ...\n", myid, i_phase);
                     }
                     else{
 
@@ -481,14 +487,14 @@
                         
                             fscanf(f_in,"%d\n", &i_tmp);
                             
-                            if(i_tmp != _Cell_Dict.number_of_int_cells){
+                            if(i_tmp != _Cell_Dict.number_of_cells){
                                 
-                                Message("\nERROR: rCFD_default_Cell: _C.vof: i_tmp != _Cell_Dict.number_of_int_cells ...\n");
+                                Message("\nERROR: rCFD_default_Cell: _C.vof: i_tmp != _Cell_Dict.number_of_cells ...\n");
                                 
                                 return;
                             }
                                 
-                            loop_int_cells{
+                            loop_cells{
                             
                                 fscanf(f_in,"%le\n", &_C.vof[_i_vof]);
                                 
@@ -541,7 +547,8 @@
 
 #endif    
     }
-    
+
+#if 0    
     void rCFD_default_Cell(const short i_layer)
     {
 #if RP_NODE     
@@ -694,7 +701,7 @@
         }
 #endif    
     }
-    
+#endif    
     void rCFD_default_Face_L0(void)
     {
 #if RP_NODE
@@ -761,7 +768,8 @@
         }}  
 #endif    
     }
-    
+
+#if 0    
     void rCFD_default_Face(const short i_layer)
     {
 #if RP_NODE
@@ -829,7 +837,7 @@
         }
 #endif    
     }
-    
+#endif    
     void rCFD_default_Tracer(void)
     {
 #if RP_NODE

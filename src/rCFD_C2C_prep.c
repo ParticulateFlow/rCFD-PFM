@@ -66,12 +66,13 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
     Thread      *t, *t_phase;
     cell_t      c;
   
-    int         i_phase, i_cell;
+    int         i_layer = 0, i_phase, i_cell;
     
     int         time_steps_per_monitoring_interval;        
 
     double      v_mag, w0, L;
     double      *dt_cross_min, *dt_cross_max, dt_cross_min_global;
+
     
     dt_cross_min = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
     dt_cross_max = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
@@ -107,27 +108,27 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
             
             w0 = (double)Solver_Dict.analyse_CFD_count;
         
-            C.average_velocity[i_phase][i_cell] = (w0 * C.average_velocity[i_phase][i_cell] + v_mag) / (w0 + 1.0);
+            _C.average_velocity[i_phase][i_cell] = (w0 * _C.average_velocity[i_phase][i_cell] + v_mag) / (w0 + 1.0);
                                
             L = pow(C_VOLUME(c,t),1./3.);
         
-            if(C.average_velocity[i_phase][i_cell] > 0.0){
+            if(_C.average_velocity[i_phase][i_cell] > 0.0){
             
-                C.crossing_time[i_phase][i_cell] = L/C.average_velocity[i_phase][i_cell];   
+                _C.crossing_time[i_phase][i_cell] = L/_C.average_velocity[i_phase][i_cell];   
             }
             else{
             
-                C.crossing_time[i_phase][i_cell] = 1.e10; /* something large */
+                _C.crossing_time[i_phase][i_cell] = 1.e10; /* something large */
             }
             
-            if((dt_cross_max[i_phase] < C.crossing_time[i_phase][i_cell]) && (C.crossing_time[i_phase][i_cell] < 1.e10)){ 
+            if((dt_cross_max[i_phase] < _C.crossing_time[i_phase][i_cell]) && (_C.crossing_time[i_phase][i_cell] < 1.e10)){ 
             
-                dt_cross_max[i_phase] = C.crossing_time[i_phase][i_cell];
+                dt_cross_max[i_phase] = _C.crossing_time[i_phase][i_cell];
             }
             
-            if(dt_cross_min[i_phase] > C.crossing_time[i_phase][i_cell]){ 
+            if(dt_cross_min[i_phase] > _C.crossing_time[i_phase][i_cell]){ 
             
-                dt_cross_min[i_phase] = C.crossing_time[i_phase][i_cell];
+                dt_cross_min[i_phase] = _C.crossing_time[i_phase][i_cell];
             }
         }
 
@@ -171,7 +172,7 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
     
     Solver_Dict.analyse_CFD_count++;
     
-    rCFD_user_pre_proc(&Solver_Dict, Phase_Dict, &Topo_Dict, &C);
+    rCFD_user_pre_proc();
 #endif
 }
 
@@ -457,7 +458,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 #if RP_NODE
     double  rand_real=0., time_ratio, random_walk_velocity;
     
-    int     i_phase, i_tracer;
+    int     i_phase, i_tracer, i_layer = 0;
     
     Thread  *t_phase = NULL;
     
@@ -502,7 +503,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             /* tracer_splitting in slow cells */
             if(excess_Tracer_cell_crossing_time){
        
-                time_ratio = C.crossing_time[i_phase][i_cell] / (2. * Phase_Dict[i_phase].time_step);  /* (time_ratio > 1.) */
+                time_ratio = _C.crossing_time[i_phase][i_cell] / (2. * Phase_Dict[i_phase].time_step);  /* (time_ratio > 1.) */
                 
                 p->user[p_time_ratio] = time_ratio;
                 
@@ -550,7 +551,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             
             if(Tracer_Dict.random_walk[i_phase]){
         
-                random_walk_velocity = rCFD_user_set_random_walk_velocity(&Solver_Dict, t, i_cell);
+                random_walk_velocity = rCFD_user_set_random_walk_velocity();
                 
                 rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);               
                 p->user[p_u_rwm] =  rand_real * random_walk_velocity;
@@ -587,7 +588,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
     
         if(Tracer_Dict.random_walk[i_phase]){
     
-            random_walk_velocity = rCFD_user_set_random_walk_velocity(&Solver_Dict, t, i_cell);
+            random_walk_velocity = rCFD_user_set_random_walk_velocity();
  
             p->user[p_u_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
             p->user[p_v_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
@@ -703,7 +704,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
         
     if((Tracer.ready2write == 1) && (Tracer_Database_not_full)){
 
-        int     i_phase;
+        int     i_phase, i_layer = 0;
 
         loop_phases{
             
@@ -744,7 +745,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                         
                             begin_c_loop(i_cell,t){
                                 
-                                C.hit_by_other_cell[i_cell] = 0;
+                                _C.hit_by_other_cell[i_cell] = 0;
                                 
                             }end_c_loop(i_cell,t);
                         }}
@@ -758,7 +759,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                             
                             if((c0 != c1) || (node0 != node1)){
                                 
-                                C.hit_by_other_cell[c1] += 1;                       
+                                _C.hit_by_other_cell[c1] += 1;                       
                             }
                         }
                         
@@ -770,7 +771,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                             
                             c1 = Tracer.shifts[i_phase][i_tracer].c1;
                             
-                            if(C.hit_by_other_cell[c1] == 0){
+                            if(_C.hit_by_other_cell[c1] == 0){
                                 
                                 number_of_lock_cells++;
                             }
@@ -785,7 +786,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                         
                         c1 = Tracer.shifts[i_phase][i_tracer].c1;
                         
-                        if(C.hit_by_other_cell[c1] > 0){
+                        if(_C.hit_by_other_cell[c1] > 0){
                             
                             fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c0);
                             fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node0);
@@ -826,7 +827,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
     Domain  *d=Get_Domain(1);
     Thread  *t, *t_mix, *t_phase;
     
-    int     i_state, i_norm, i_phase, i_cell, i_layer;
+    int     i_state, i_norm, i_phase, i_cell, i_layer = 0;
  
     if ((Tracer.monitoring_started) && (Norms_write_interval) && (Norm_Database_not_full)){
         
@@ -863,7 +864,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
             }
             else{
                 
-                rCFD_user_set_Norm(&Solver_Dict, &Norms);
+                rCFD_user_set_Norm();
             }
         }
         
@@ -911,9 +912,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
             char    file_name[80];
             
             i_state = Solver.current_state;
-            
-            i_layer = 0;
-            
+             
             loop_phases{
                 
                 sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
@@ -934,7 +933,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
                     return;
                 }
 
-                fprintf(f_out,"%d \n", _Cell_Dict.number_of_int_cells);
+                fprintf(f_out,"%d \n", _Cell_Dict.number_of_cells);
 
                 t_phase = THREAD_SUB_THREAD(t_mix, i_phase);
                 
@@ -947,7 +946,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
                     return;
                 }
                     
-                loop_int_cells{
+                loop_cells{
          
                     fprintf(f_out,"%e \n", C_VOF(i_cell, t_phase));
                 }
@@ -975,7 +974,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
 
     double  **Norm_Database;
     
-    int     i_state, i_norm, i_cell, i_tmp;
+    int     i_state, i_norm, i_cell, i_tmp, i_layer = 0;
         
     FILE    *f_in = NULL;
     
@@ -1067,7 +1066,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                         
                         i_cell = i_norm * Norm_Dict.coarse_graining;
                         
-                        if( C.island_id[i_cell] == i_island){
+                        if( _C.island_id[i_cell] == i_island){
                         
                             diff = fabs(Norm_Database[i_frame][i_norm] - Norm_Database[i_frame2][i_norm]);
                             

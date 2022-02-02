@@ -5,7 +5,7 @@
 ;;  www.particulate-flow.at 
 
 
-(define rCFD_src_dir  "../../src")
+(define rCFD_src_dir  "../2021_rCFD_CORE")
 (define rCFD_user_src_dir  "./user_src")
 (define ANSYS_Fluent_case_dir "./ansys_fluent")
 (define ANSYS_Fluent_case_file  "tundish_1.2M_t=1.95s")
@@ -15,7 +15,7 @@
 (define ANSYS_Fluent_simulation_timestep 0.001)
 (define ANSYS_Fluent_number_of_simulation_timesteps 250)
 
-(define number_of_rCFD_episodes 100)
+(define number_of_rCFD_episodes 60)
 
 (define i 0)
 

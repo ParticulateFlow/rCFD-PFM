@@ -14,11 +14,11 @@
 
 #if 1 /* macros */
 
-	
-	#define		_MPI_Cell				MPI_Topo.MPI_Cell[i_layer]
-	#define		_MPI_Face				MPI_Topo.MPI_Face[i_layer]
+    
+    #define     _MPI_Cell               MPI_Topo.MPI_Cell[i_layer]
+    #define     _MPI_Face               MPI_Topo.MPI_Face[i_layer]
 
-	#define 	valid_parallel_face     _MPI_Face.principal_face[i_face]
+    #define     valid_parallel_face     _MPI_Face.principal_face[i_face]
 
 #endif
 
@@ -81,7 +81,6 @@
               
      } C2C_MPI_type;
 
-    
 #endif
 #endif
     
@@ -433,35 +432,35 @@
             }
             
         }
-		
-		/* P.4 set pointers of upper grid layers to NULL */
-		if(Solver_Dict.number_of_layers > 1){
-			
-			loop_layers_but_L0{
-				
-				_MPI_Cell.number_of_ext_cells_per_node = 	NULL;
-				_MPI_Cell.number_of_host_cells_per_node = 	NULL;
-				_MPI_Cell.host_of_cell = 					NULL;
-				_MPI_Cell.host_of_ext_cells =				NULL;
-				_MPI_Cell.hosting_cell_index =				NULL;
-				_MPI_Cell.host2ext_index =					NULL;
-				_MPI_Cell.data = 							NULL;
-			
-				_MPI_Face.principal_face = NULL;
-			}
-		}
-		
+        
+        /* P.4 set pointers of upper grid layers to NULL */
+        if(Solver_Dict.number_of_layers > 1){
+            
+            loop_layers_but_L0{
+                
+                _MPI_Cell.number_of_ext_cells_per_node =    NULL;
+                _MPI_Cell.number_of_host_cells_per_node =   NULL;
+                _MPI_Cell.host_of_cell =                    NULL;
+                _MPI_Cell.host_of_ext_cells =               NULL;
+                _MPI_Cell.hosting_cell_index =              NULL;
+                _MPI_Cell.host2ext_index =                  NULL;
+                _MPI_Cell.data =                            NULL;
+            
+                _MPI_Face.principal_face =                  NULL;
+            }
+        }
+        
     }
     
-    void init_parallel_C2Cs(void)   /* to be adapted for i_layer */
+    void init_parallel_C2Cs(void)
     {
 
-        int                 i_state, i_phase, i_frame, i_out, i_node, i_shift;
+        int                 i_state, i_phase, i_frame, i_layer, i_out, i_node, i_shift;
         int                 number_of_shifts, max_number_of_shifts, index_in_total_list;
         int                 *list_of_int = NULL;
         double              *list_of_double = NULL;
         
-        C2C_type            tmp_C2Cs;
+        tmp_C2C_type        tmp_C2Cs;
         
         /* A. allocate C2C_MPI.shifts (shifts.data is allocated later) */
         {
@@ -474,11 +473,14 @@
                     
                     loop_frames{
                         
-                        number_of_shifts = PRF_GISUM1(C2Cs[_i_C2C].number_of_shifts_in);
+                        loop_layers{
                         
-                        if(number_of_shifts > max_number_of_shifts){
+                            number_of_shifts = PRF_GISUM1(C2Cs[_i_C2C].number_of_shifts_in[i_layer]);
                             
-                            max_number_of_shifts = number_of_shifts;
+                            if(number_of_shifts > max_number_of_shifts){
+                                
+                                max_number_of_shifts = number_of_shifts;
+                            }
                         }
                     }
                 }
@@ -505,363 +507,368 @@
                 loop_phases{
             
                     loop_frames{
-                    
-                        /* B.1: send local rCFD_C2C_incoming entries to Node-0,      */
-                        /*      which collects them into rCFD_C2C_MPI_buffer         */
-                        {
                         
-                            if (myid > 0){
+                        C2Cs[_i_C2C].number_of_shifts_to_node_zero =    (int**)malloc(Solver_Dict.number_of_layers * sizeof(int*));
+                        C2Cs[_i_C2C].number_of_shifts_from_node_zero =  (int**)malloc(Solver_Dict.number_of_layers * sizeof(int*));
+                        C2Cs[_i_C2C].in2out =                           (int***)malloc(Solver_Dict.number_of_layers * sizeof(int**));
+                        
+                        loop_layers{
                     
-                                number_of_shifts = C2Cs[_i_C2C].number_of_shifts_in;
-                                
-                                PRF_CSEND_INT(node_zero, &number_of_shifts, 1, myid);
+                            /* B.1: send local rCFD_C2C_incoming entries to Node-0,      */
+                            /*      which collects them into rCFD_C2C_MPI_buffer         */
+                            {
+                            
+                                if (myid > 0){
+                        
+                                    number_of_shifts = C2Cs[_i_C2C].number_of_shifts_in[i_layer];
+                                    
+                                    PRF_CSEND_INT(node_zero, &number_of_shifts, 1, myid);
 
-                                if(number_of_shifts > 0){
-                                    
-                                    list_of_int=(int*)malloc(number_of_shifts * sizeof(int));
-                                    list_of_double=(double*)malloc(number_of_shifts * sizeof(double));
-                                    
-                                    loop_shifts{ 
-                                    
-                                        list_of_int[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].c0;
-                                    }
-                                    
-                                    PRF_CSEND_INT(node_zero, list_of_int, number_of_shifts, myid);
-                                    
-                                    loop_shifts{ 
-                                    
-                                        list_of_int[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].node0;
-                                    }
-                                    
-                                    PRF_CSEND_INT(node_zero, list_of_int, number_of_shifts, myid);
-                                    
-                                    loop_shifts{ 
-                                    
-                                        list_of_int[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].c1;
-                                    }
-                                    
-                                    PRF_CSEND_INT(node_zero, list_of_int, number_of_shifts, myid);
-                                    
-                                    loop_shifts{ 
-                                    
-                                        list_of_int[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].node1;
-                                    }
-                                    
-                                    PRF_CSEND_INT(node_zero, list_of_int, number_of_shifts, myid);
-                                    
-                                    loop_shifts{ 
-                                    
-                                        list_of_double[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].w0;
-                                    }
-                                    
-                                    PRF_CSEND_REAL(node_zero, list_of_double, number_of_shifts, myid);
-                                    
-                                    free(list_of_int);
-                                    free(list_of_double);
-                                }
-                            }
-                  
-                            if (myid == 0){
-                    
-                                /* initiate for each frame */
-                                for(i_shift = 0; i_shift < C2Cs[_i_C2C].number_of_shifts_in; i_shift++){
-                            
-                                    C2Cs_MPI.shifts_in[_i_shift].c0=    C2Cs[_i_C2C].shifts_in[_i_shift].c0;
-                                    C2Cs_MPI.shifts_in[_i_shift].node0= C2Cs[_i_C2C].shifts_in[_i_shift].node0;
-                                    C2Cs_MPI.shifts_in[_i_shift].c1=    C2Cs[_i_C2C].shifts_in[_i_shift].c1;
-                                    C2Cs_MPI.shifts_in[_i_shift].node1= C2Cs[_i_C2C].shifts_in[_i_shift].node1;
-                                    C2Cs_MPI.shifts_in[_i_shift].w0=    C2Cs[_i_C2C].shifts_in[_i_shift].w0;
-                                }
-                      
-                                index_in_total_list = C2Cs[_i_C2C].number_of_shifts_in;    /* first index from Node-0 */
-                                
-                                C2Cs[_i_C2C].number_of_shifts_to_node_zero = (int*)malloc((node_last + 1) * sizeof(int));
-                                
-                                C2Cs[_i_C2C].number_of_shifts_to_node_zero[0] = C2Cs[_i_C2C].number_of_shifts_in;
-                                
-                                for(i_node = 1; i_node < (node_last+1); i_node++){
-                                    
-                                    PRF_CRECV_INT(i_node, &number_of_shifts, 1, i_node);
-                            
                                     if(number_of_shifts > 0){
-                          
+                                        
                                         list_of_int=(int*)malloc(number_of_shifts * sizeof(int));
-                                        list_of_double=(double*)malloc(number_of_shifts * sizeof(real));
-                                
-                                        PRF_CRECV_INT(i_node, list_of_int, number_of_shifts, i_node); 
+                                        list_of_double=(double*)malloc(number_of_shifts * sizeof(double));
                                         
                                         loop_shifts{ 
                                         
-                                            C2Cs_MPI.shifts_in[index_in_total_list + i_shift].c0 = list_of_int[i_shift]; 
+                                            list_of_int[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].c0;
                                         }
-                                
-                                        PRF_CRECV_INT(i_node, list_of_int, number_of_shifts, i_node); 
+                                        
+                                        PRF_CSEND_INT(node_zero, list_of_int, number_of_shifts, myid);
                                         
                                         loop_shifts{ 
                                         
-                                            C2Cs_MPI.shifts_in[index_in_total_list + i_shift].node0 = list_of_int[i_shift]; 
+                                            list_of_int[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].node0;
                                         }
-                                
-                                        PRF_CRECV_INT(i_node, list_of_int, number_of_shifts, i_node); 
+                                        
+                                        PRF_CSEND_INT(node_zero, list_of_int, number_of_shifts, myid);
                                         
                                         loop_shifts{ 
                                         
-                                            C2Cs_MPI.shifts_in[index_in_total_list + i_shift].c1 = list_of_int[i_shift]; 
+                                            list_of_int[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].c1;
                                         }
-                                
-                                        PRF_CRECV_INT(i_node, list_of_int, number_of_shifts, i_node); 
+                                        
+                                        PRF_CSEND_INT(node_zero, list_of_int, number_of_shifts, myid);
                                         
                                         loop_shifts{ 
                                         
-                                            C2Cs_MPI.shifts_in[index_in_total_list + i_shift].node1 = list_of_int[i_shift]; 
+                                            list_of_int[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].node1;
                                         }
-                                
-                                        PRF_CRECV_REAL(i_node, list_of_double, number_of_shifts, i_node); 
+                                        
+                                        PRF_CSEND_INT(node_zero, list_of_int, number_of_shifts, myid);
                                         
                                         loop_shifts{ 
                                         
-                                            C2Cs_MPI.shifts_in[index_in_total_list + i_shift].w0 = list_of_double[i_shift]; 
+                                            list_of_double[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].w0;
                                         }
+                                        
+                                        PRF_CSEND_REAL(node_zero, list_of_double, number_of_shifts, myid);
                                         
                                         free(list_of_int);
                                         free(list_of_double);
                                     }
-                                    
-                                    C2Cs[_i_C2C].number_of_shifts_to_node_zero[i_node] = number_of_shifts;
-
-                                    index_in_total_list += number_of_shifts;
                                 }
+                      
+                                if (myid == 0){
+                        
+                                    /* initiate for each frame */
+                                    for(i_shift = 0; i_shift < C2Cs[_i_C2C].number_of_shifts_in[i_layer]; i_shift++){
                                 
-                                C2Cs_MPI.number_of_shifts_in = index_in_total_list;
-                                
-                                C2Cs[_i_C2C].number_of_MPI_shifts = index_in_total_list;
-                            }
-                        }       
-                                    
-                        /* B.2: Node-0 defines and sends C2Cs.shifts_out for each Node */
-                        {
-
-                            if (myid == 0){
-                            
-                                i_out = 0;          
-                            
-                                for(i_shift = 0; i_shift < C2Cs_MPI.number_of_shifts_in; i_shift++){
-                                        
-                                    if(C2Cs_MPI.shifts_in[_i_shift].node0 == node_zero){
-                                
-                                        i_out++;
+                                        C2Cs_MPI.shifts_in[i_shift].c0=    C2Cs[_i_C2C].shifts_in[_i_shift].c0;
+                                        C2Cs_MPI.shifts_in[i_shift].node0= C2Cs[_i_C2C].shifts_in[_i_shift].node0;
+                                        C2Cs_MPI.shifts_in[i_shift].c1=    C2Cs[_i_C2C].shifts_in[_i_shift].c1;
+                                        C2Cs_MPI.shifts_in[i_shift].node1= C2Cs[_i_C2C].shifts_in[_i_shift].node1;
+                                        C2Cs_MPI.shifts_in[i_shift].w0=    C2Cs[_i_C2C].shifts_in[_i_shift].w0;
                                     }
-                                }
-                                
-                                C2Cs[_i_C2C].number_of_shifts_out = i_out;
-                                
-                                C2Cs[_i_C2C].shifts_out = (C2C_shift_type*)malloc(i_out * sizeof(C2C_shift_type));
-                                
-                                C2Cs[_i_C2C].number_of_shifts_from_node_zero = (int*)malloc((node_last + 1) * sizeof(int));
-                                
-                                C2Cs[_i_C2C].number_of_shifts_from_node_zero[0] = i_out;
-
-                                
-                                i_out = 0;
-                                
-                                /* fill C2C.shifts_out */
-                                for(i_shift = 0; i_shift < C2Cs_MPI.number_of_shifts_in; i_shift++){
-                                        
-                                    if(C2Cs_MPI.shifts_in[_i_shift].node0 == node_zero){
-                                
-                                        C2Cs[_i_C2C].shifts_out[i_out].c0 =    C2Cs_MPI.shifts_in[_i_shift].c0;
-                                        C2Cs[_i_C2C].shifts_out[i_out].node0 = C2Cs_MPI.shifts_in[_i_shift].node0;
-                                        C2Cs[_i_C2C].shifts_out[i_out].c1 =    C2Cs_MPI.shifts_in[_i_shift].c1;
-                                        C2Cs[_i_C2C].shifts_out[i_out].node1 = C2Cs_MPI.shifts_in[_i_shift].node1;
-                                        C2Cs[_i_C2C].shifts_out[i_out].w0 =    C2Cs_MPI.shifts_in[_i_shift].w0;
-                                        
-                                        i_out++;
-                                    }
-                                }
-            
-                                /* loop other nodes */
-                                for(i_node = 1; i_node < (node_last+1); i_node++){
-                                
-                                    i_out = 0;
+                          
+                                    index_in_total_list = C2Cs[_i_C2C].number_of_shifts_in[i_layer];    /* first index from Node-0 */
                                     
-                                    /* get number of outgoing tracers */                            
+                                    C2Cs[_i_C2C].number_of_shifts_to_node_zero[i_layer] = (int*)malloc((node_last + 1) * sizeof(int));
+                                    
+                                    C2Cs[_i_C2C].number_of_shifts_to_node_zero[i_layer][0] = C2Cs[_i_C2C].number_of_shifts_in[i_layer];
+                                    
+                                    for(i_node = 1; i_node < (node_last+1); i_node++){
+                                        
+                                        PRF_CRECV_INT(i_node, &number_of_shifts, 1, i_node);
+                                
+                                        if(number_of_shifts > 0){
+                              
+                                            list_of_int=(int*)malloc(number_of_shifts * sizeof(int));
+                                            list_of_double=(double*)malloc(number_of_shifts * sizeof(real));
+                                    
+                                            PRF_CRECV_INT(i_node, list_of_int, number_of_shifts, i_node); 
+                                            
+                                            loop_shifts{ 
+                                            
+                                                C2Cs_MPI.shifts_in[index_in_total_list + i_shift].c0 = list_of_int[i_shift]; 
+                                            }
+                                    
+                                            PRF_CRECV_INT(i_node, list_of_int, number_of_shifts, i_node); 
+                                            
+                                            loop_shifts{ 
+                                            
+                                                C2Cs_MPI.shifts_in[index_in_total_list + i_shift].node0 = list_of_int[i_shift]; 
+                                            }
+                                    
+                                            PRF_CRECV_INT(i_node, list_of_int, number_of_shifts, i_node); 
+                                            
+                                            loop_shifts{ 
+                                            
+                                                C2Cs_MPI.shifts_in[index_in_total_list + i_shift].c1 = list_of_int[i_shift]; 
+                                            }
+                                    
+                                            PRF_CRECV_INT(i_node, list_of_int, number_of_shifts, i_node); 
+                                            
+                                            loop_shifts{ 
+                                            
+                                                C2Cs_MPI.shifts_in[index_in_total_list + i_shift].node1 = list_of_int[i_shift]; 
+                                            }
+                                    
+                                            PRF_CRECV_REAL(i_node, list_of_double, number_of_shifts, i_node); 
+                                            
+                                            loop_shifts{ 
+                                            
+                                                C2Cs_MPI.shifts_in[index_in_total_list + i_shift].w0 = list_of_double[i_shift]; 
+                                            }
+                                            
+                                            free(list_of_int);
+                                            free(list_of_double);
+                                        }
+                                        
+                                        C2Cs[_i_C2C].number_of_shifts_to_node_zero[i_layer][i_node] = number_of_shifts;
+
+                                        index_in_total_list += number_of_shifts;
+                                    }
+                                    
+                                    C2Cs_MPI.number_of_shifts_in = index_in_total_list;
+                                }
+                            }       
+                                        
+                            /* B.2: Node-0 defines and sends C2Cs.shifts_out for each Node */
+                            {
+
+                                if (myid == 0){
+                                
+                                    i_out = 0;          
+                                
                                     for(i_shift = 0; i_shift < C2Cs_MPI.number_of_shifts_in; i_shift++){
-                            
-                                        if(C2Cs_MPI.shifts_in[_i_shift].node0 == i_node){
-                                
+                                            
+                                        if(C2Cs_MPI.shifts_in[i_shift].node0 == node_zero){
+                                    
                                             i_out++;
                                         }
                                     }
                                     
-                                    C2Cs[_i_C2C].number_of_shifts_from_node_zero[i_node] = i_out;
-                            
-                                    /* wrong !! C2Cs[_i_C2C].number_of_shifts_out = i_out;*/
+                                    C2Cs[_i_C2C].number_of_shifts_out[i_layer] = i_out;
                                     
-                                    number_of_shifts = i_out;
+                                    C2Cs[_i_C2C].shifts_out[i_layer] = (C2C_shift_type*)malloc(i_out * sizeof(C2C_shift_type));
                                     
-                                    /* send outgoing tracers to individual nodes */ 
-                                    PRF_CSEND_INT(i_node, &number_of_shifts, 1, node_zero);
+                                    C2Cs[_i_C2C].number_of_shifts_from_node_zero[i_layer] = (int*)malloc((node_last + 1) * sizeof(int));
                                     
-                                    if (number_of_shifts > 0){
-                                
-                                        /* allocate tmp storage for outgoing tracers */
-                                        tmp_C2Cs.shifts_out = (C2C_shift_type*)malloc(number_of_shifts * sizeof(C2C_shift_type));
+                                    C2Cs[_i_C2C].number_of_shifts_from_node_zero[i_layer][0] = i_out;
+
                                     
-                                        /* fill tmp storage for outgoing tracers */
+                                    i_out = 0;
+                                    
+                                    /* fill C2C.shifts_out */
+                                    for(i_shift = 0; i_shift < C2Cs_MPI.number_of_shifts_in; i_shift++){
+                                            
+                                        if(C2Cs_MPI.shifts_in[i_shift].node0 == node_zero){
+                                    
+                                            C2Cs[_i_C2C].shifts_out[i_layer][i_out].c0 =    C2Cs_MPI.shifts_in[i_shift].c0;
+                                            C2Cs[_i_C2C].shifts_out[i_layer][i_out].node0 = C2Cs_MPI.shifts_in[i_shift].node0;
+                                            C2Cs[_i_C2C].shifts_out[i_layer][i_out].c1 =    C2Cs_MPI.shifts_in[i_shift].c1;
+                                            C2Cs[_i_C2C].shifts_out[i_layer][i_out].node1 = C2Cs_MPI.shifts_in[i_shift].node1;
+                                            C2Cs[_i_C2C].shifts_out[i_layer][i_out].w0 =    C2Cs_MPI.shifts_in[i_shift].w0;
+                                            
+                                            i_out++;
+                                        }
+                                    }
+                
+                                    /* loop other nodes */
+                                    for(i_node = 1; i_node < (node_last+1); i_node++){
+                                    
                                         i_out = 0;
                                         
+                                        /* get number of outgoing tracers */                            
                                         for(i_shift = 0; i_shift < C2Cs_MPI.number_of_shifts_in; i_shift++){
                                 
-                                            if(C2Cs_MPI.shifts_in[_i_shift].node0 == i_node){
-                                
-                                                tmp_C2Cs.shifts_out[i_out].c0 =    C2Cs_MPI.shifts_in[_i_shift].c0;
-                                                tmp_C2Cs.shifts_out[i_out].node0 = C2Cs_MPI.shifts_in[_i_shift].node0;
-                                                tmp_C2Cs.shifts_out[i_out].c1 =    C2Cs_MPI.shifts_in[_i_shift].c1;
-                                                tmp_C2Cs.shifts_out[i_out].node1 = C2Cs_MPI.shifts_in[_i_shift].node1;
-                                                tmp_C2Cs.shifts_out[i_out].w0 =    C2Cs_MPI.shifts_in[_i_shift].w0;
-
+                                            if(C2Cs_MPI.shifts_in[i_shift].node0 == i_node){
+                                    
                                                 i_out++;
                                             }
                                         }
+                                        
+                                        C2Cs[_i_C2C].number_of_shifts_from_node_zero[i_layer][i_node] = i_out;
+                                
+                                        /* wrong !! C2Cs[_i_C2C].number_of_shifts_out = i_out;*/
+                                        
+                                        number_of_shifts = i_out;
+                                        
+                                        /* send outgoing tracers to individual nodes */ 
+                                        PRF_CSEND_INT(i_node, &number_of_shifts, 1, node_zero);
+                                        
+                                        if (number_of_shifts > 0){
+                                    
+                                            /* allocate tmp storage for outgoing tracers */
+                                            tmp_C2Cs.shifts_out = (C2C_shift_type*)malloc(number_of_shifts * sizeof(C2C_shift_type));
+                                        
+                                            /* fill tmp storage for outgoing tracers */
+                                            i_out = 0;
+                                            
+                                            for(i_shift = 0; i_shift < C2Cs_MPI.number_of_shifts_in; i_shift++){
+                                    
+                                                if(C2Cs_MPI.shifts_in[i_shift].node0 == i_node){
+                                    
+                                                    tmp_C2Cs.shifts_out[i_out].c0 =    C2Cs_MPI.shifts_in[i_shift].c0;
+                                                    tmp_C2Cs.shifts_out[i_out].node0 = C2Cs_MPI.shifts_in[i_shift].node0;
+                                                    tmp_C2Cs.shifts_out[i_out].c1 =    C2Cs_MPI.shifts_in[i_shift].c1;
+                                                    tmp_C2Cs.shifts_out[i_out].node1 = C2Cs_MPI.shifts_in[i_shift].node1;
+                                                    tmp_C2Cs.shifts_out[i_out].w0 =    C2Cs_MPI.shifts_in[i_shift].w0;
+
+                                                    i_out++;
+                                                }
+                                            }
+                                    
+                                            list_of_int=(int*)malloc(number_of_shifts * sizeof(int));
+                                            list_of_double=(double*)malloc(number_of_shifts * sizeof(real));
+                                    
+                                            loop_shifts{ 
+                                            
+                                                list_of_int[i_shift] = tmp_C2Cs.shifts_out[i_shift].c0;
+                                            }
+                                            
+                                            PRF_CSEND_INT(i_node, list_of_int, number_of_shifts, node_zero);
+                                    
+                                            loop_shifts{ 
+                                            
+                                                list_of_int[i_shift] = tmp_C2Cs.shifts_out[i_shift].node0;
+                                            }
+                                            
+                                            PRF_CSEND_INT(i_node, list_of_int, number_of_shifts, node_zero);
+                                    
+                                            loop_shifts{ 
+                                            
+                                                list_of_int[i_shift] = tmp_C2Cs.shifts_out[i_shift].c1;
+                                            }
+                                            
+                                            PRF_CSEND_INT(i_node, list_of_int, number_of_shifts, node_zero);
+                                    
+                                            loop_shifts{ 
+                                            
+                                                list_of_int[i_shift] = tmp_C2Cs.shifts_out[i_shift].node1;
+                                            }
+                                    
+                                            PRF_CSEND_INT(i_node, list_of_int, number_of_shifts, node_zero);
+                                    
+                                            loop_shifts{
+                                                
+                                                list_of_double[i_shift] = tmp_C2Cs.shifts_out[i_shift].w0;
+                                            }
+                                            
+                                            PRF_CSEND_REAL(i_node, list_of_double, number_of_shifts, node_zero);
+
+                                            free(list_of_int); 
+                                            free(list_of_double);
+                                        
+                                            free(tmp_C2Cs.shifts_out);  
+                                        }
+                                                
+                                    } /* loop other nodes */
+                            
+                                } /* node == 0 */
+                            
+                                if (myid > 0){
+
+                                    /* receive rCFD_Tracer_outgoing from Node-0 */
+                     
+                                    PRF_CRECV_INT(node_zero, &number_of_shifts, 1, node_zero);
+                                    
+                                    C2Cs[_i_C2C].number_of_shifts_out[i_layer] = number_of_shifts;
+                                    
+                                    if(number_of_shifts > 0){
+                                
+                                        C2Cs[_i_C2C].shifts_out[i_layer] = (C2C_shift_type*)malloc(number_of_shifts * sizeof(C2C_shift_type));
                                 
                                         list_of_int=(int*)malloc(number_of_shifts * sizeof(int));
                                         list_of_double=(double*)malloc(number_of_shifts * sizeof(real));
-                                
-                                        loop_shifts{ 
                                         
-                                            list_of_int[i_shift] = tmp_C2Cs.shifts_out[_i_shift].c0;
-                                        }
-                                        
-                                        PRF_CSEND_INT(i_node, list_of_int, number_of_shifts, node_zero);
-                                
-                                        loop_shifts{ 
-                                        
-                                            list_of_int[i_shift] = tmp_C2Cs.shifts_out[_i_shift].node0;
-                                        }
-                                        
-                                        PRF_CSEND_INT(i_node, list_of_int, number_of_shifts, node_zero);
-                                
-                                        loop_shifts{ 
-                                        
-                                            list_of_int[i_shift] = tmp_C2Cs.shifts_out[_i_shift].c1;
-                                        }
-                                        
-                                        PRF_CSEND_INT(i_node, list_of_int, number_of_shifts, node_zero);
-                                
-                                        loop_shifts{ 
-                                        
-                                            list_of_int[i_shift] = tmp_C2Cs.shifts_out[_i_shift].node1;
-                                        }
-                                
-                                        PRF_CSEND_INT(i_node, list_of_int, number_of_shifts, node_zero);
-                                
+                                        PRF_CRECV_INT(node_zero, list_of_int, number_of_shifts, node_zero);
+
                                         loop_shifts{
                                             
-                                            list_of_double[i_shift] = tmp_C2Cs.shifts_out[_i_shift].w0;
+                                            C2Cs[_i_C2C].shifts_out[_i_shift].c0 = list_of_int[i_shift];
+                                        }
+                                
+                                        PRF_CRECV_INT(node_zero, list_of_int, number_of_shifts, node_zero);
+
+                                        loop_shifts{
+                                            
+                                            C2Cs[_i_C2C].shifts_out[_i_shift].node0 = list_of_int[i_shift];
+                                        }
+                                
+                                        PRF_CRECV_INT(node_zero, list_of_int, number_of_shifts, node_zero);
+
+                                        loop_shifts{
+                                            
+                                            C2Cs[_i_C2C].shifts_out[_i_shift].c1=list_of_int[i_shift];
+                                        }
+                                
+                                        PRF_CRECV_INT(node_zero, list_of_int, number_of_shifts, node_zero);
+
+                                        loop_shifts{
+                                            
+                                            C2Cs[_i_C2C].shifts_out[_i_shift].node1=list_of_int[i_shift];
+                                        }
+                                
+                                        PRF_CRECV_REAL(node_zero, list_of_double, number_of_shifts, node_zero);
+
+                                        loop_shifts{
+                                            
+                                            C2Cs[_i_C2C].shifts_out[_i_shift].w0=list_of_double[i_shift];
                                         }
                                         
-                                        PRF_CSEND_REAL(i_node, list_of_double, number_of_shifts, node_zero);
-
-                                        free(list_of_int); 
-                                        free(list_of_double);
+                                        free(list_of_int);
+                                        free(list_of_double); 
+                                        
+                                    } 
                                     
-                                        free(tmp_C2Cs.shifts_out);  
+                                } /* node > 0 */
+
+                            }
+
+                            /* B.3: Node-0 link outgoing data to list of incoming data */
+                            {
+                                
+                                if(myid == 0){
+                                    
+                                    C2Cs[_i_C2C].in2out[i_layer] = (int**)malloc((node_last+1) * sizeof(int*));
+                                    
+                                    for(i_node = 0; i_node < (node_last+1); i_node++){
+                                        
+                                        C2Cs[_i_C2C].in2out[i_layer][i_node] = (int*)malloc(C2Cs[_i_C2C].number_of_shifts_from_node_zero[i_layer][i_node] * sizeof(int));
                                     }
-                                            
-                                } /* loop other nodes */
+                                    
+                                
+                                    for(i_node = 0; i_node < (node_last+1); i_node++){
                         
-                            } /* node == 0 */
-                        
-                            if (myid > 0){
-
-                                /* receive rCFD_Tracer_outgoing from Node-0 */
-                 
-                                PRF_CRECV_INT(node_zero, &number_of_shifts, 1, node_zero);
-                                
-                                C2Cs[_i_C2C].number_of_shifts_out = number_of_shifts;
-                                
-                                if(number_of_shifts > 0){
-                            
-                                    C2Cs[_i_C2C].shifts_out = (C2C_shift_type*)malloc(number_of_shifts * sizeof(C2C_shift_type));
-                            
-                                    list_of_int=(int*)malloc(number_of_shifts * sizeof(int));
-                                    list_of_double=(double*)malloc(number_of_shifts * sizeof(real));
+                                        i_out = 0;
                                     
-                                    PRF_CRECV_INT(node_zero, list_of_int, number_of_shifts, node_zero);
-
-                                    loop_shifts{
+                                        for(i_shift = 0; i_shift < C2Cs_MPI.number_of_shifts_in; i_shift++){
                                         
-                                        C2Cs[_i_C2C].shifts_out[_i_shift].c0=list_of_int[i_shift];
-                                    }
-                            
-                                    PRF_CRECV_INT(node_zero, list_of_int, number_of_shifts, node_zero);
-
-                                    loop_shifts{
-                                        
-                                        C2Cs[_i_C2C].shifts_out[_i_shift].node0=list_of_int[i_shift];
-                                    }
-                            
-                                    PRF_CRECV_INT(node_zero, list_of_int, number_of_shifts, node_zero);
-
-                                    loop_shifts{
-                                        
-                                        C2Cs[_i_C2C].shifts_out[_i_shift].c1=list_of_int[i_shift];
-                                    }
-                            
-                                    PRF_CRECV_INT(node_zero, list_of_int, number_of_shifts, node_zero);
-
-                                    loop_shifts{
-                                        
-                                        C2Cs[_i_C2C].shifts_out[_i_shift].node1=list_of_int[i_shift];
-                                    }
-                            
-                                    PRF_CRECV_REAL(node_zero, list_of_double, number_of_shifts, node_zero);
-
-                                    loop_shifts{
-                                        
-                                        C2Cs[_i_C2C].shifts_out[_i_shift].w0=list_of_double[i_shift];
-                                    }
+                                            if(C2Cs_MPI.shifts_in[i_shift].node0 == i_node){
+                                                            
+                                                C2Cs[_i_C2C].in2out[i_layer][i_node][i_out] = i_shift;
                                     
-                                    free(list_of_int);
-                                    free(list_of_double); 
-                                    
-                                } 
-                                
-                            } /* node > 0 */
-
-                        }
-
-                        /* B.3: Node-0 link outgoing data to list of incoming data */
-                        /***********************************************************/
-                        {
-                            
-                            if(myid == 0){
-                                
-                                C2Cs[_i_C2C].in2out = (int**)malloc((node_last+1) * sizeof(int*));
-                                
-                                for(i_node = 0; i_node < (node_last+1); i_node++){
-                                    
-                                    C2Cs[_i_C2C].in2out[i_node] = (int*)malloc(C2Cs[_i_C2C].number_of_shifts_from_node_zero[i_node] * sizeof(int));
-                                }
-                                
-                            
-                                for(i_node = 0; i_node < (node_last+1); i_node++){
-                    
-                                    i_out = 0;
-                                
-                                    for(i_shift = 0; i_shift < C2Cs_MPI.number_of_shifts_in; i_shift++){
-                                    
-                                        if(C2Cs_MPI.shifts_in[_i_shift].node0 == i_node){
-                                                        
-                                            C2Cs[_i_C2C].in2out[i_node][i_out] = i_shift;
-                                
-                                            i_out++;
+                                                i_out++;
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        
+
+                        } /* loop_layers */                     
+                    
                     } /* loop frames */
 
                 } /* loop phases */
@@ -888,13 +895,291 @@
                 
                 loop_shifts{
                     
-                    C2Cs_MPI.shifts_in[_i_shift].data = (double*)malloc(max_number_of_data * sizeof(double));
+                    C2Cs_MPI.shifts_in[i_shift].data = (double*)malloc(max_number_of_data * sizeof(double));
                 }
             } 
         }   
 
     }
 
+    void init_upper_layer_parallel_C2Cs(void)
+    {
+        short   debug_this_code = 0;
+        
+        if(Solver_Dict.number_of_layers > 1){
+        
+#if 1       /* local vars */
+
+            int     i_state, i_phase, i_frame, i_layer, i_node, i_cell, i_shift, i_tmp;
+            
+            int     number_of_node_cells, number_of_shifts, number_of_shifts_in_upper_layer, number_of_shifts_from_node;
+
+            int     node0, c0, c1, upper_c0, upper_c1;
+            
+            int     **tmp_parent_ids = NULL, *list_of_c0, *list_of_node0, *list_of_upper_c0;
+            
+            double  w0;
+#endif
+
+            i_layer = 0;
+            
+            i_tmp = 0;
+            
+            while(upper_layer < Solver_Dict.number_of_layers){
+
+                /* E.1 Node-0 collects parent_id's */
+                {
+                    if(myid == 0){
+                        
+                        tmp_parent_ids = (int**)malloc((node_last+1) * sizeof(int*));
+                        
+                        tmp_parent_ids[0] = (int*)malloc(_Cell_Dict.number_of_cells * sizeof(int));
+                        
+                        loop_cells{
+                            
+                            tmp_parent_ids[0][i_cell] = _C.parent_cell[i_cell];
+                        }
+                        
+                        for(i_node = 1; i_node < (node_last + 1); i_node++){
+                            
+                            PRF_CRECV_INT(i_node, &number_of_node_cells, 1, i_node);
+                            
+                            tmp_parent_ids[i_node] = (int*)malloc(number_of_node_cells * sizeof(int));
+                            
+                            list_of_upper_c0 = (int*)malloc(number_of_node_cells * sizeof(int));
+                            
+                            PRF_CRECV_INT(i_node, list_of_upper_c0, number_of_node_cells, i_node);
+                            
+                            for(i_cell = 0; i_cell < number_of_node_cells; i_cell++){
+                                
+                                tmp_parent_ids[i_node][i_cell] = list_of_upper_c0[i_cell];
+                            }
+                            
+                            free(list_of_upper_c0);
+                        }
+                    }
+                    
+                    if(myid > 0){
+
+                        PRF_CSEND_INT(node_zero, &_Cell_Dict.number_of_cells, 1, myid);
+                        
+                        PRF_CSEND_INT(node_zero, _C.parent_cell, _Cell_Dict.number_of_cells, myid);                             
+                    }
+                    
+                    if(debug_this_code){
+                        
+                        Message("\nE.1 myid %d:", myid);
+                    }   
+                }
+
+                /* E.2 set upper_layer C2Cs */
+                /* TODO remove doublets */          
+                loop_states{
+                    
+                    loop_phases{
+                        
+                        loop_frames{
+                                                            
+                            number_of_shifts = C2Cs[_i_C2C].number_of_shifts_in[i_layer];
+                            
+                            number_of_shifts_in_upper_layer = number_of_shifts;
+                            
+                            C2Cs[_i_C2C].number_of_shifts_in[upper_layer] = number_of_shifts;
+                            
+                            /* TODO: account for multiple islands */
+                            C2Cs[_i_C2C].island_offsets_in[upper_layer][0] = 0;
+                            C2Cs[_i_C2C].island_offsets_in[upper_layer][1] = number_of_shifts;                              
+
+                            C2Cs[_i_C2C].shifts_in[upper_layer] = (C2C_shift_type*)malloc(number_of_shifts_in_upper_layer * sizeof(C2C_shift_type));
+                            
+                            if(myid == 0){
+                                
+                                /* set upper_layer shifts_in for node-0 */
+                                loop_shifts{
+                                    
+                                    node0 = C2Cs[_i_C2C].shifts_in[_i_shift].node0;
+                                    
+                                    c0 = C2Cs[_i_C2C].shifts_in[_i_shift].c0;
+                                    
+                                    upper_c0 = tmp_parent_ids[node0][c0];
+
+                                    c1 =    C2Cs[_i_C2C].shifts_in[_i_shift].c1;
+                                    
+                                    upper_c1 = _C.parent_cell[c1];
+                                    
+                                    w0 = C2Cs[_i_C2C].shifts_in[_i_shift].w0;
+                                    
+                                    if(w0 == 0.0){
+                                        
+                                        i_tmp++;
+                                    }
+                                    
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].node0 = node0;
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].c0 =    upper_c0;
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].node1 = myid;
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].c1 =    upper_c1;
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].w0 =    w0;
+                                }
+                                
+                                /* send list_of_upper_c0 to nodes */
+                                for(i_node = 1; i_node < (node_last + 1); i_node++){
+                                    
+                                    PRF_CRECV_INT(i_node, &number_of_shifts_from_node, 1, i_node);
+                                    
+                                    list_of_node0 = (int*)malloc(number_of_shifts_from_node * sizeof(int));
+                                    
+                                    list_of_c0 = (int*)malloc(number_of_shifts_from_node * sizeof(int));
+                                    
+                                    PRF_CRECV_INT(i_node, list_of_node0, number_of_shifts_from_node, i_node);
+
+                                    PRF_CRECV_INT(i_node, list_of_c0, number_of_shifts_from_node, i_node);
+                                    
+                                    list_of_upper_c0 = (int*)malloc(number_of_shifts_from_node * sizeof(int));
+                                    
+                                    for(i_shift = 0; i_shift < number_of_shifts_from_node; i_shift++){
+                                        
+                                        node0 = list_of_node0[i_shift];
+                                    
+                                        c0 = list_of_c0[i_shift];
+                                    
+                                        list_of_upper_c0[i_shift] = tmp_parent_ids[node0][c0];
+                                    }
+                                    
+                                    PRF_CSEND_INT(i_node, list_of_upper_c0, number_of_shifts_from_node, node_zero);                             
+                                    
+                                    free(list_of_node0);
+                                    
+                                    free(list_of_c0);
+                                    
+                                    free(list_of_upper_c0);
+                                }
+                            }
+                            
+                            if(myid>0){
+                                
+                                PRF_CSEND_INT(node_zero, &number_of_shifts, 1, myid);
+                                
+                                list_of_node0 = (int*)malloc(number_of_shifts * sizeof(int));
+                                
+                                list_of_c0 = (int*)malloc(number_of_shifts * sizeof(int));
+                                
+                                loop_shifts{
+                                    
+                                    list_of_node0[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].node0;
+                                    
+                                    list_of_c0[i_shift] = C2Cs[_i_C2C].shifts_in[_i_shift].c0;
+                                }
+                                
+                                PRF_CSEND_INT(node_zero, list_of_node0, number_of_shifts, myid);
+                                
+                                PRF_CSEND_INT(node_zero, list_of_c0, number_of_shifts, myid);
+                                
+                                free(list_of_node0);
+                                
+                                free(list_of_c0);
+
+                                list_of_upper_c0 = (int*)malloc(number_of_shifts * sizeof(int));                                
+                                
+                                PRF_CRECV_INT(node_zero, list_of_upper_c0, number_of_shifts, node_zero);
+
+                                loop_shifts{
+                                    
+                                    node0 = C2Cs[_i_C2C].shifts_in[_i_shift].node0;
+                                    
+                                    upper_c0 = list_of_upper_c0[i_shift];
+
+                                    c1 =    C2Cs[_i_C2C].shifts_in[_i_shift].c1;
+                                    
+                                    upper_c1 = _C.parent_cell[c1];
+                                    
+                                    w0 = C2Cs[_i_C2C].shifts_in[_i_shift].w0;
+                                    
+                                    if(w0 == 0.0){
+                                        
+                                        i_tmp++;
+                                    }
+                                    
+                                    
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].node0 = node0;
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].c0 =    upper_c0;
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].node1 = myid;
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].c1 =    upper_c1;
+                                    C2Cs[_i_C2C].shifts_in[upper_layer][i_shift].w0 =    w0;
+                                }
+                                
+                                free(list_of_upper_c0);
+                            }
+
+                            if((debug_this_code)&&(i_frame == 0)){
+                                
+                                Message("\nE.2 myid %d: i_layer %d, number_of_shifts %d/%d w0==0 %d", myid, i_layer, number_of_shifts, number_of_shifts_in_upper_layer, i_tmp);
+                                
+                                
+                            }
+                        }
+                    }
+                }
+                                
+                /* E.3 free tmp_parent_ids */
+                {                           
+                    if(tmp_parent_ids != NULL){
+                        
+                        for(i_node = 0; i_node < (node_last + 1); i_node++){
+                            
+                            if(tmp_parent_ids[i_node] != NULL){
+                                
+                                free(tmp_parent_ids[i_node]);
+                            }
+                        }
+                        
+                        free(tmp_parent_ids);
+                    }
+                    
+                    if(debug_this_code){
+                        
+                        Message("\nE.3 myid %d:", myid);
+                    }
+                }
+
+                i_layer++;
+            }
+
+            if(debug_this_code){
+                
+                char    filename[40];
+                FILE    *fi = NULL; 
+
+                sprintf(filename,"%s_%d", "tmp_parallel_L1_shifts", myid);
+
+                fi = fopen(filename,"w");
+
+                i_layer = 1; 
+                
+                loop_states{
+                    
+                    loop_phases{
+                        
+                        loop_frames{
+                            
+                            number_of_shifts = C2Cs[_i_C2C].number_of_shifts_in[i_layer];
+                            
+                            fprintf(fi, "%d\n", number_of_shifts);
+                            
+                            loop_shifts{
+                                
+                                fprintf(fi, "%d %d %d %d %e\n", C2Cs[_i_C2C].shifts_in[_i_shift].node0, C2Cs[_i_C2C].shifts_in[_i_shift].c0, 
+                                
+                                    C2Cs[_i_C2C].shifts_in[_i_shift].node1, C2Cs[_i_C2C].shifts_in[_i_shift].c1, C2Cs[_i_C2C].shifts_in[_i_shift].w0);
+                            }
+                        }
+                    }
+                }
+                
+                fclose(fi);
+            }
+                            
+        }   
+    }
 #endif
 #endif
 
@@ -1142,7 +1427,7 @@
         {
             if (myid > 0){
 
-                number_of_shifts = C2Cs[_i_C2C].number_of_shifts_out;
+                number_of_shifts = C2Cs[_i_C2C].number_of_shifts_out[i_layer];
                 
                 PRF_CSEND_INT(node_zero, &number_of_shifts, 1, myid);
           
@@ -1190,17 +1475,17 @@
         
             if (myid == 0){
         
-                number_of_shifts = C2Cs[_i_C2C].number_of_shifts_out;
+                number_of_shifts = C2Cs[_i_C2C].number_of_shifts_out[i_layer];
 
                 loop_shifts{
                     
                     c0 = C2Cs[_i_C2C].shifts_out[_i_shift].c0;
                     
-                    MPI_index = C2Cs[_i_C2C].in2out[node_zero][_i_shift];
+                    MPI_index = C2Cs[_i_C2C].in2out[i_layer][node_zero][i_shift];
                     
                     loop_data{
                
-                        C2Cs_MPI.shifts_in[MPI_index].data[i_data] = _C.data[i_phase][c0][i_data];
+                        C2Cs_MPI.shifts_in[MPI_index].data[i_data] = _C.data[_c0_data];
                         
                         if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
                         
@@ -1234,7 +1519,7 @@
                     
                         loop_shifts{
                        
-                            MPI_index = C2Cs[_i_C2C].in2out[i_node][_i_shift];
+                            MPI_index = C2Cs[_i_C2C].in2out[i_layer][i_node][i_shift];
                             
                             for(i_data = 0; i_data < Phase_Dict[i_phase].number_of_data; i_data++){
                                 
@@ -1254,13 +1539,13 @@
         {
             if (myid == 0){
                 
-                number_of_shifts = C2Cs[_i_C2C].number_of_shifts_in;
+                number_of_shifts = C2Cs[_i_C2C].number_of_shifts_in[i_layer];
                 
                 index_in_total_list = number_of_shifts;             
 
                 for(i_node = 1; i_node < (node_last+1); i_node++){
                 
-                    number_of_shifts = C2Cs[_i_C2C].number_of_shifts_to_node_zero[i_node]; 
+                    number_of_shifts = C2Cs[_i_C2C].number_of_shifts_to_node_zero[i_layer][i_node]; 
                     
                     PRF_CSEND_INT(i_node, &number_of_shifts, 1, node_zero);
                     
@@ -1290,8 +1575,8 @@
                     
                 } 
             
-                loop_offset_in0 = C2Cs[_i_C2C].island_offsets_in[i_island];
-                loop_offset_in1 = C2Cs[_i_C2C].island_offsets_in[(i_island + 1)];
+                loop_offset_in0 = C2Cs[_i_C2C].island_offsets_in[i_layer][i_island];
+                loop_offset_in1 = C2Cs[_i_C2C].island_offsets_in[i_layer][(i_island + 1)];
 
                 for(i_shift = loop_offset_in0; i_shift < loop_offset_in1; i_shift++){
                                                 
@@ -1303,7 +1588,7 @@
                     
                         loop_data{
              
-                            data0 = C2Cs_MPI.shifts_in[_i_shift].data[i_data];
+                            data0 = C2Cs_MPI.shifts_in[i_shift].data[i_data];
                                             
                             _C.data_shift[i_phase][c1][i_data] =  
                             
@@ -1338,8 +1623,8 @@
                     
                     PRF_CRECV_REAL(node_zero, list_of_double, MPI_number_of_shifts, node_zero); 
                     
-                    loop_offset_in0 = C2Cs[_i_C2C].island_offsets_in[i_island];
-                    loop_offset_in1 = C2Cs[_i_C2C].island_offsets_in[(i_island + 1)];
+                    loop_offset_in0 = C2Cs[_i_C2C].island_offsets_in[i_layer][i_island];
+                    loop_offset_in1 = C2Cs[_i_C2C].island_offsets_in[i_layer][(i_island + 1)];
 
                     for(i_shift = loop_offset_in0; i_shift < loop_offset_in1; i_shift++){
                                                     

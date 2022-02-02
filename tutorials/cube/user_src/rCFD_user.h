@@ -5,8 +5,9 @@
 #include "rCFD_globals.h"
 #include "rCFD_defaults.h"
 #include "rCFD_macros.h"
+#include "rCFD_layer.h"
 
-/* (C)  2021 
+/* (C)  2021-22 
     Stefan Pirker
     Particulate Flow Modelling
     Johannes Kepler University, Linz, Austria
@@ -52,7 +53,9 @@
         
         Solver_Dict.time_steps_per_monitoring_interval =   25;
         
-        Solver_Dict.number_of_frames =                     10;         
+        Solver_Dict.number_of_frames =                     10;
+
+        Solver_Dict.number_of_layers =                     2;
 
         Solver_Dict.number_of_runs =                       1; 
         
@@ -241,6 +244,12 @@
 
 #if 1
     
+    short rCFD_user_set_layer(const short i_layer)
+    {
+        
+        return 1;
+    }
+    
     void rCFD_user_access_data_before_shift(const short i_phase, const short i_layer)
     {
 #if RP_NODE
@@ -290,11 +299,11 @@
                         
                         _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * Phase_Dict[i_phase].density +
                         
-                            _C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step) /
+                            _C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Solver.timestep_width[i_layer]) /
                             
                             (_C.volume[i_cell] * Phase_Dict[i_phase].density);  /* (.) */
 
-                        Balance[i_phase][i_data].mass_source +=  _C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                        Balance[i_phase][i_data].mass_source +=  _C.volume[i_cell]/V_in_global * tracer_gas_flowrate * Solver.timestep_width[i_layer];  /* (kg) */
                     }
                 }   
             }
@@ -320,13 +329,20 @@
 
     }
 
-    void rCFD_user_post(const short i_layer)
+    void rCFD_user_post()
     {
 #if RP_NODE     
         Domain  *d=Get_Domain(1);
         Thread  *t;
 
-        int i_phase, i_cell, i_data, i_UDMI;
+        int i_layer, i_phase, i_cell, i_data, i_UDMI;
+
+        i_layer = 0;
+        
+        if(Solver.current_layer > 0){
+            
+            rCFD_map_from_to_layer(Solver.current_layer, i_layer);
+        }
         
         thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell, t){
             

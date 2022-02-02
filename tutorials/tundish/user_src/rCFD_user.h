@@ -5,6 +5,7 @@
 #include "rCFD_globals.h"
 #include "rCFD_defaults.h"
 #include "rCFD_macros.h"
+#include "rCFD_layer.h"
 
 /* (C)  2021 
     Stefan Pirker
@@ -51,7 +52,9 @@
         
         Solver_Dict.number_of_frames =                     10;         
 
-        Solver_Dict.number_of_runs =                       50;
+        Solver_Dict.number_of_runs =                       25;
+        
+        Solver_Dict.number_of_layers =                     2;
         
         Solver_Dict.data_drifting_on =                     1;   
 
@@ -318,6 +321,10 @@
     /*************************************************************************************/
 
 #if 1
+    short rCFD_user_set_layer(const short current_layer)
+    {
+        return 0;
+    }
     
     void rCFD_user_access_data_before_shift(const short i_phase, const short i_layer)
     {
@@ -441,14 +448,14 @@
                         
                         Balance[_i_balance].mass_source += V_in/V_in_global * mean_value_in[i_data] * 
                         
-                            flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                            flowrate * Solver.timestep_width[i_layer];  /* (kg) */
                     }
                     
                     if(i_data == c_steel_temp){
                         
                         Balance[_i_balance].mass_source += V_in/V_in_global * mean_value_in[i_data] * 
                         
-                            flowrate * Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
+                            flowrate * Phase_Dict[i_phase].heat_capacity * Solver.timestep_width[i_layer];  /* (J) */
                     }
                 }
             }           
@@ -461,14 +468,14 @@
                         
                         Balance[_i_balance].mass_source -= V_out/V_out_global * mean_value_out[i_data] * 
                         
-                            flowrate * Phase_Dict[i_phase].time_step;  /* (kg) */
+                            flowrate * Solver.timestep_width[i_layer];  /* (kg) */
                     }
                     
                     if(i_data == c_steel_temp){
                         
                         Balance[_i_balance].mass_source -= V_out/V_out_global * mean_value_out[i_data] * 
                         
-                            flowrate * Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].time_step;  /* (J) */
+                            flowrate * Phase_Dict[i_phase].heat_capacity * Solver.timestep_width[i_layer];  /* (J) */
                     }
                 }
             }       
@@ -481,14 +488,22 @@
 
     }
 
-    void rCFD_user_post(const short i_layer)
+    void rCFD_user_post(void)
     {
 #if RP_NODE     
         Domain  *d=Get_Domain(1);
         Thread  *t;
 
-        int i_phase, i_cell, i_data, i_UDMI;
+        int i_layer, i_phase, i_cell, i_data, i_UDMI;
         
+        i_layer = 0;
+        
+        if(Solver.current_layer > 0){
+            
+            rCFD_map_from_to_layer(Solver.current_layer, i_layer);
+        }
+        
+        /* this loop only works for i_layer == 0 */
         thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell, t){
             
             i_UDMI = 0;     /* start index */

@@ -6,11 +6,12 @@
 #include "rCFD_defaults.h"
 #include "rCFD_macros.h"
 #include "rCFD_init.h"
+#include "rCFD_layer.h"
 #include "rCFD_free.h"
 
 #include "rCFD_user.h"
 
-/* (C)  2021 
+/* (C)  2021-22 
     Stefan Pirker
     Particulate Flow Modelling
     Johannes Kepler University, Linz, Austria
@@ -42,7 +43,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 /*************************************************************************************/
 {
 #if RP_NODE 
-    int     i_state, i_phase, i_frame, i_shift, i_read, i_read_int, i_read_incoming, i_island;
+    int     i_state, i_phase, i_frame, i_shift, i_read, i_read_int, i_read_incoming, i_island, i_layer;
     
     int     C2C_index;
     
@@ -50,8 +51,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 
     int     total_number_of_C2Cs_read = 0;
 
-    C2C_type    tmp_C2Cs;
-    
+    tmp_C2C_type    tmp_C2Cs;  
 #endif  
 
     Solver.clock = clock();
@@ -77,27 +77,49 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                         /* init C2Cs structs */
                         C2Cs[_i_C2C].format = c0_n0_c1_n1_w0;
                         
-                        C2Cs[_i_C2C].number_of_shifts =        0;
-                        C2Cs[_i_C2C].number_of_shifts_in =     0;
-                        C2Cs[_i_C2C].number_of_shifts_out =    0;
+                        C2Cs[_i_C2C].number_of_shifts =        (int*)malloc(Solver_Dict.number_of_layers * sizeof(int));
+                        C2Cs[_i_C2C].number_of_shifts_in =     (int*)malloc(Solver_Dict.number_of_layers * sizeof(int));
+                        C2Cs[_i_C2C].number_of_shifts_out =    (int*)malloc(Solver_Dict.number_of_layers * sizeof(int));
                         
-                        C2Cs[_i_C2C].shifts = NULL;
-                        C2Cs[_i_C2C].shifts_in = NULL;
-                        C2Cs[_i_C2C].shifts_out = NULL;
-                        
-                        C2Cs[_i_C2C].island_offsets =      (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
-                        C2Cs[_i_C2C].island_offsets_in =   (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
+                        loop_layers{
 
-                        loop_islands{
-                            
-                            C2Cs[_i_C2C].island_offsets[i_island] =        0;
-                            C2Cs[_i_C2C].island_offsets_in[i_island] =     0;
+                            C2Cs[_i_C2C].number_of_shifts[i_layer] =        0;
+                            C2Cs[_i_C2C].number_of_shifts_in[i_layer] =     0;
+                            C2Cs[_i_C2C].number_of_shifts_out[i_layer] =    0;
                         }
                         
-                        C2Cs[_i_C2C].island_offsets[(i_island + 1)] =      0;
-                        C2Cs[_i_C2C].island_offsets_in[(i_island + 1)] =   0;
+                        C2Cs[_i_C2C].shifts =       (C2C_shift_type**)malloc(Solver_Dict.number_of_layers * sizeof(C2C_shift_type*));
+                        C2Cs[_i_C2C].shifts_in =    (C2C_shift_type**)malloc(Solver_Dict.number_of_layers * sizeof(C2C_shift_type*));
+                        C2Cs[_i_C2C].shifts_out =   (C2C_shift_type**)malloc(Solver_Dict.number_of_layers * sizeof(C2C_shift_type*));
                         
-                        C2Cs[_i_C2C].number_of_MPI_shifts = 0;
+                        loop_layers{
+
+                            C2Cs[_i_C2C].shifts[i_layer] =      NULL;
+                            C2Cs[_i_C2C].shifts_in[i_layer] =   NULL;
+                            C2Cs[_i_C2C].shifts_out[i_layer] =  NULL;
+                        }
+                        
+                        C2Cs[_i_C2C].island_offsets =    (int**)malloc(Solver_Dict.number_of_layers * sizeof(int*));
+                        C2Cs[_i_C2C].island_offsets_in = (int**)malloc(Solver_Dict.number_of_layers * sizeof(int*));
+                        
+                        loop_layers{
+                            
+                            C2Cs[_i_C2C].island_offsets[i_layer] =      (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
+                            C2Cs[_i_C2C].island_offsets_in[i_layer] =   (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
+
+                            loop_islands{
+                                
+                                C2Cs[_i_C2C].island_offsets[i_layer][i_island] =        0;
+                                C2Cs[_i_C2C].island_offsets_in[i_layer][i_island] =     0;
+                            }
+                        
+                            C2Cs[_i_C2C].island_offsets[i_layer][(i_island + 1)] =      0;
+                            C2Cs[_i_C2C].island_offsets_in[i_layer][(i_island + 1)] =   0;
+                        }
+                        
+                        
+                        /* following vars will be allocated in rCFD_parallel.h */
+                        
                         C2Cs[_i_C2C].number_of_shifts_to_node_zero = NULL;
                         C2Cs[_i_C2C].number_of_shifts_from_node_zero = NULL;
                         C2Cs[_i_C2C].in2out = NULL;                        
@@ -252,56 +274,58 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                             
                             /* B.4.2. C2C.numbers, allocate and init C2Cs.shifts/shifts_in */
                             {
-                                C2Cs[_i_C2C].number_of_shifts = i_read_int;
+                                C2Cs[_i_C2C].number_of_shifts[0] = i_read_int;
                                 
-                                C2Cs[_i_C2C].shifts = (C2C_shift_type*)malloc(i_read_int * sizeof(C2C_shift_type));
+                                C2Cs[_i_C2C].shifts[0] = (C2C_shift_type*)malloc(i_read_int * sizeof(C2C_shift_type));
                                 
-                                for(i_shift = 0; i_shift < C2Cs[_i_C2C].number_of_shifts; i_shift++){
+                                for(i_shift = 0; i_shift < C2Cs[_i_C2C].number_of_shifts[0]; i_shift++){
                                     
-                                    C2Cs[_i_C2C].shifts[_i_shift].c0 =        -1;
-                                    C2Cs[_i_C2C].shifts[_i_shift].node0 =     -1;
-                                    C2Cs[_i_C2C].shifts[_i_shift].c1 =        -1;
-                                    C2Cs[_i_C2C].shifts[_i_shift].node1 =     -1;
-                                    C2Cs[_i_C2C].shifts[_i_shift].w0 =        0.0;
+                                    C2Cs[_i_C2C].shifts[0][i_shift].c0 =        -1;
+                                    C2Cs[_i_C2C].shifts[0][i_shift].node0 =     -1;
+                                    C2Cs[_i_C2C].shifts[0][i_shift].c1 =        -1;
+                                    C2Cs[_i_C2C].shifts[0][i_shift].node1 =     -1;
+                                    C2Cs[_i_C2C].shifts[0][i_shift].w0 =        0.0;
                                 }
 
-                                C2Cs[_i_C2C].number_of_shifts_in = i_read_incoming;
+                                C2Cs[_i_C2C].number_of_shifts_in[0] = i_read_incoming;
 
-                                C2Cs[_i_C2C].shifts_in = (C2C_shift_type*)malloc(i_read_incoming * sizeof(C2C_shift_type));
+                                C2Cs[_i_C2C].shifts_in[0] = (C2C_shift_type*)malloc(i_read_incoming * sizeof(C2C_shift_type));
 
-                                for(i_shift=0; i_shift < C2Cs[_i_C2C].number_of_shifts_in; i_shift++){
+                                for(i_shift = 0; i_shift < C2Cs[_i_C2C].number_of_shifts_in[0]; i_shift++){
                                     
-                                    C2Cs[_i_C2C].shifts_in[_i_shift].c0 =     -1;
-                                    C2Cs[_i_C2C].shifts_in[_i_shift].node0 =  -1;
-                                    C2Cs[_i_C2C].shifts_in[_i_shift].c1 =     -1;
-                                    C2Cs[_i_C2C].shifts_in[_i_shift].node1 =  -1;
-                                    C2Cs[_i_C2C].shifts_in[_i_shift].w0 =     0.0;
+                                    C2Cs[_i_C2C].shifts_in[0][i_shift].c0 =     -1;
+                                    C2Cs[_i_C2C].shifts_in[0][i_shift].node0 =  -1;
+                                    C2Cs[_i_C2C].shifts_in[0][i_shift].c1 =     -1;
+                                    C2Cs[_i_C2C].shifts_in[0][i_shift].node1 =  -1;
+                                    C2Cs[_i_C2C].shifts_in[0][i_shift].w0 =     0.0;
                                 }
                                 
                                 total_number_of_C2Cs_read += 
                                 
-                                    C2Cs[_i_C2C].number_of_shifts + C2Cs[_i_C2C].number_of_shifts_in;
+                                    C2Cs[_i_C2C].number_of_shifts[0] + C2Cs[_i_C2C].number_of_shifts_in[0];
                             }
 
                             /* B.4.3. fill C2Cs.shifts/shifts_in by tmp_C2Cs*/
                             {
                                 for(i_shift = 0; i_shift < tmp_C2Cs.number_of_shifts; i_shift++){ 
  
-                                    my_island_id = _C.island_id[tmp_C2Cs.shifts[i_shift].c1];
+                                    c1 = tmp_C2Cs.shifts[i_shift].c1;
+                                    
+                                    my_island_id = _C.island_id[c1];
                                     
                                     node0 = tmp_C2Cs.shifts[i_shift].node0;
                                     node1 = tmp_C2Cs.shifts[i_shift].node1;
                                     
-                            
+
                                     if(node0 == node1){ 
                                     
                                         C2C_index = tmp_C2Cs.island_offsets[my_island_id] + i_island_int[my_island_id];
                                         
-                                        C2Cs[_i_C2C].shifts[C2C_index].c0 =    tmp_C2Cs.shifts[i_shift].c0;
-                                        C2Cs[_i_C2C].shifts[C2C_index].node0 = tmp_C2Cs.shifts[i_shift].node0;
-                                        C2Cs[_i_C2C].shifts[C2C_index].c1 =    tmp_C2Cs.shifts[i_shift].c1;
-                                        C2Cs[_i_C2C].shifts[C2C_index].node1 = tmp_C2Cs.shifts[i_shift].node1;
-                                        C2Cs[_i_C2C].shifts[C2C_index].w0 =    tmp_C2Cs.shifts[i_shift].w0;
+                                        C2Cs[_i_C2C].shifts[0][C2C_index].c0 =    tmp_C2Cs.shifts[i_shift].c0;
+                                        C2Cs[_i_C2C].shifts[0][C2C_index].node0 = tmp_C2Cs.shifts[i_shift].node0;
+                                        C2Cs[_i_C2C].shifts[0][C2C_index].c1 =    tmp_C2Cs.shifts[i_shift].c1;
+                                        C2Cs[_i_C2C].shifts[0][C2C_index].node1 = tmp_C2Cs.shifts[i_shift].node1;
+                                        C2Cs[_i_C2C].shifts[0][C2C_index].w0 =    tmp_C2Cs.shifts[i_shift].w0;
                                     
                                         i_island_int[my_island_id]++;                       
                                     }
@@ -309,23 +333,23 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                                 
                                         C2C_index = tmp_C2Cs.island_offsets_in[my_island_id] + i_island_incoming[my_island_id];
                                     
-                                        C2Cs[_i_C2C].shifts_in[C2C_index].c0 =     tmp_C2Cs.shifts[i_shift].c0;
-                                        C2Cs[_i_C2C].shifts_in[C2C_index].node0 =  tmp_C2Cs.shifts[i_shift].node0;
-                                        C2Cs[_i_C2C].shifts_in[C2C_index].c1 =     tmp_C2Cs.shifts[i_shift].c1;
-                                        C2Cs[_i_C2C].shifts_in[C2C_index].node1 =  tmp_C2Cs.shifts[i_shift].node1;
-                                        C2Cs[_i_C2C].shifts_in[C2C_index].w0 =     tmp_C2Cs.shifts[i_shift].w0;
+                                        C2Cs[_i_C2C].shifts_in[0][C2C_index].c0 =     tmp_C2Cs.shifts[i_shift].c0;
+                                        C2Cs[_i_C2C].shifts_in[0][C2C_index].node0 =  tmp_C2Cs.shifts[i_shift].node0;
+                                        C2Cs[_i_C2C].shifts_in[0][C2C_index].c1 =     tmp_C2Cs.shifts[i_shift].c1;
+                                        C2Cs[_i_C2C].shifts_in[0][C2C_index].node1 =  tmp_C2Cs.shifts[i_shift].node1;
+                                        C2Cs[_i_C2C].shifts_in[0][C2C_index].w0 =     tmp_C2Cs.shifts[i_shift].w0;
                                         
                                         i_island_incoming[my_island_id]++;
-                                    }                               
+                                    }                                   
                                 }
-                                
-                                C2Cs[_i_C2C].island_offsets[0] = 0;
-                                C2Cs[_i_C2C].island_offsets_in[0] = 0;
+                              
+                                C2Cs[_i_C2C].island_offsets[0][0] = 0;
+                                C2Cs[_i_C2C].island_offsets_in[0][0] = 0;
                                 
                                 loop_islands{
                                 
-                                    C2Cs[_i_C2C].island_offsets[(i_island + 1)] = tmp_C2Cs.island_offsets[(i_island + 1)];
-                                    C2Cs[_i_C2C].island_offsets_in[(i_island + 1)] = tmp_C2Cs.island_offsets_in[(i_island + 1)];
+                                    C2Cs[_i_C2C].island_offsets[0][(i_island + 1)] = tmp_C2Cs.island_offsets[(i_island + 1)];
+                                    C2Cs[_i_C2C].island_offsets_in[0][(i_island + 1)] = tmp_C2Cs.island_offsets_in[(i_island + 1)];
                                 }
                             }
                         }
@@ -350,20 +374,120 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
     /* C. Free locally allocated memory */
     {
 #if RP_NODE
-        free(i_island_int); 
-        
+        free(i_island_int);         
         free(i_island_incoming);        
 #endif
     }
 
-    /* D. set up parallel C2C communication */
+    /* D. Set-up C2Cs for upper layers */
+    {
+#if RP_NODE
+
+        short   debug_this_code = 0;
+        
+        if(Solver_Dict.number_of_layers > 1){
+        
+#if 1       /* local vars */
+
+            int     i_layer, i_upper_shift;
+            
+            int     number_of_shifts, number_of_shifts_in_upper_layer, c0, c1, upper_c0, upper_c1;
+            
+            double  w0;
+#endif
+            
+            loop_states{
+                
+                loop_phases{
+                    
+                    loop_frames{
+                        
+                        i_layer = 0;
+                        
+                        while(upper_layer < Solver_Dict.number_of_layers){
+                            
+                            /* D.1 fill shifts of upper_layer */
+                            {
+                                /* TODO remove doublets */
+                                
+                                number_of_shifts = C2Cs[_i_C2C].number_of_shifts[i_layer];
+                                
+                                number_of_shifts_in_upper_layer = 0;
+                                
+                                loop_shifts{
+
+                                    c0 = C2Cs[_i_C2C].shifts[_i_shift].c0;
+                                    c1 = C2Cs[_i_C2C].shifts[_i_shift].c1;
+                                    
+                                    upper_c0 = _C.parent_cell[c0];
+                                    upper_c1 = _C.parent_cell[c1];
+                                    
+                                    if(upper_c0 != upper_c1){
+                                        
+                                        number_of_shifts_in_upper_layer++;
+                                    }
+                                }
+
+                                C2Cs[_i_C2C].number_of_shifts[upper_layer] = number_of_shifts_in_upper_layer;
+                                
+                                /* TODO account for multiple islands */
+                                C2Cs[_i_C2C].island_offsets[upper_layer][0] = 0;
+                                C2Cs[_i_C2C].island_offsets[upper_layer][1] = number_of_shifts_in_upper_layer;
+                                                            
+                                C2Cs[_i_C2C].shifts[upper_layer] = (C2C_shift_type*)malloc(number_of_shifts_in_upper_layer * sizeof(C2C_shift_type));
+                                
+                                i_upper_shift = 0;
+                                
+                                loop_shifts{
+                                    
+                                    c0 = C2Cs[_i_C2C].shifts[_i_shift].c0;
+                                    c1 = C2Cs[_i_C2C].shifts[_i_shift].c1;
+                                    
+                                    upper_c0 = _C.parent_cell[c0];
+                                    upper_c1 = _C.parent_cell[c1];
+                                    
+                                    w0 = C2Cs[_i_C2C].shifts[_i_shift].w0;
+                                    
+                                    if(upper_c0 != upper_c1){
+                                        
+                                        C2Cs[_i_C2C].shifts[upper_layer][i_upper_shift].node0 = myid;
+                                        C2Cs[_i_C2C].shifts[upper_layer][i_upper_shift].c0 =    upper_c0;
+                                        C2Cs[_i_C2C].shifts[upper_layer][i_upper_shift].node1 = myid;
+                                        C2Cs[_i_C2C].shifts[upper_layer][i_upper_shift].c1 =    upper_c1;
+                                        C2Cs[_i_C2C].shifts[upper_layer][i_upper_shift].w0 =    w0;
+
+                                        i_upper_shift++;
+                                    }
+                                }
+
+                                if((debug_this_code)&&(i_frame == 0)){
+                                    
+                                    Message("\nD.2 myid %d: i_layer %d, number_of_shifts %d/%d", myid, i_layer, number_of_shifts, number_of_shifts_in_upper_layer);
+                                }
+                            }
+                            
+                            i_layer++;
+                        }
+                    }
+                }
+            }
+        }
+#endif
+    }
+    
+    /* E. set up parallel C2C communication */
     {
 #if RP_NODE     
+        if(Solver_Dict.number_of_layers > 1){
+        
+            init_upper_layer_parallel_C2Cs();
+        }
+
         init_parallel_C2Cs();
 #endif
     }
     
-    /* E. Message & Transcript */
+    /* F. Message & Transcript */
     {
 #if RP_NODE
     
@@ -436,9 +560,9 @@ DEFINE_ON_DEMAND(rCFD_run)
 
 #if 1   /* global in function definitions */
     
-    int         i_run, i_island, i_phase, i_layer, i_state, i_state2;
+    int         i_run, i_island, i_phase, i_layer, i_state, i_state2, i_rec;
     
-    double      rand_per_phase_loop;
+    int         prev_layer, i_rec_max;
     
 #if RP_NODE 
     int         i_frame, i_data, i_shift, i_node, i_node2, i_cell, i_face, i_drift, i_dim, i_while;
@@ -471,49 +595,72 @@ DEFINE_ON_DEMAND(rCFD_run)
         /* S: select state and layer for all phases */
         {   
             i_state = 0, i_state2 = 0;
-
-            i_layer = 0;
+            
+            /* set layer */
+            {
+                prev_layer = Solver.current_layer;
+                
+                i_layer = rCFD_user_set_layer(Solver.current_layer);
+                
+                if(i_layer != prev_layer){
+                    
+                    rCFD_map_from_to_layer(prev_layer, i_layer);
+                    
+                    Solver.current_layer = i_layer;
+                }
+            }
         }   
         
         /* N+1: Get next frames[islands] for all phases */
         {
             
             if(Solver_Dict.recurrence_process_on){
-            
-                if(Rec.frame_in_sequence < Rec.sequence_length){ 
                 
-                    Rec.frame_in_sequence++;
+                i_rec_max = 1;
+                
+                for(i_rec = 0; i_rec < i_layer; i_rec++){
+                    
+                    i_rec_max *= 2;
                 }
-                else{
+                
+                for(i_rec = 0; i_rec < i_rec_max; i_rec++){
                     
-                    /* new rCFD_seq */
+                    if(Rec.frame_in_sequence < Rec.sequence_length){ 
                     
-                    Rec.frame_in_sequence = 0; 
-        
-#if RP_HOST
-                    rand_real = (double)rand()/(double)RAND_MAX; 
-                    
-                    Rec.sequence_length = Rec_Dict.min_seq_length + (int)(rand_real*(double)(Rec_Dict.max_seq_length - Rec_Dict.min_seq_length));
-#endif    
-                    host_to_node_int_1(Rec.sequence_length);
-
-                    loop_islands{
-                        
-                        Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][Rec.global_frame[i_island]];
+                        Rec.frame_in_sequence++;
                     }
-                }
-          
-                /* set next frame */
-                loop_islands{
+                    else{
+                        
+                        /* new rCFD_seq */
+                        
+                        Rec.frame_in_sequence = 0; 
             
-                    if(Rec.global_frame[i_island] < (Solver_Dict.number_of_frames - 1)){
+#if RP_HOST
+                        rand_real = (double)rand()/(double)RAND_MAX; 
                         
-                        Rec.global_frame[i_island]++;
+                        Rec.sequence_length = Rec_Dict.min_seq_length + (int)(rand_real*(double)(Rec_Dict.max_seq_length - Rec_Dict.min_seq_length));
+#endif    
+                        host_to_node_int_1(Rec.sequence_length);
+
+                        loop_islands{
+                            
+                            Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][Rec.global_frame[i_island]];
+                        }
                     }
-                    else{ 
-                        
-                        Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][(Solver_Dict.number_of_frames-1)];
+              
+                    /* set next frame */
+                    loop_islands{
+                
+                        if(Rec.global_frame[i_island] < (Solver_Dict.number_of_frames - 1)){
+                            
+                            Rec.global_frame[i_island]++;
+                        }
+                        else{ 
+                            
+                            Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][(Solver_Dict.number_of_frames-1)];
+                        }
                     }
+                
                 }
             }
             else{
@@ -534,22 +681,19 @@ DEFINE_ON_DEMAND(rCFD_run)
         
             /* I: Initialization (weights, data_shift, data_swap, mass_drift) */
             {
-#if RP_HOST
-                rand_per_phase_loop = (double)rand()/(double)RAND_MAX;  /* [0..1] */
-#endif
-                host_to_node_real_1(rand_per_phase_loop);
 #if RP_NODE
-
                 loop_cells{
                     
                     _C.weight_after_shift[i_cell] =  0.0;
                     _C.weight_after_swap[i_cell] =   0.0;
-                    
+
+                   
                     loop_data{
                         
-                        _C.data_shift[i_phase][i_cell][i_data] = 0.0;
-                        _C.data_swap[i_phase][i_cell][i_data] =  0.0;
+                        _C.data_shift[_i_data] = 0.0;
+                        _C.data_swap[_i_data] =  0.0;
                     }
+                
                 }
                 
                 /* init Balance.node2node_flux */
@@ -567,7 +711,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                         }
                     }
                 }
-
+                
                 if(Solver_Dict.verbal){
                     
                     Message0("\n\nInit: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
@@ -587,133 +731,130 @@ DEFINE_ON_DEMAND(rCFD_run)
 #if RP_NODE         
                 if(Solver_Dict.data_convection_on){
                     
-                    if(rand_per_phase_loop <= Phase_Dict[i_phase].shift_probability){
-                    
-                        /* C1,2 C2C shifts (local, cross-partitions) */
-                        loop_islands{
+                    /* C1,2 C2C shifts (local, cross-partitions) */
+                    loop_islands{
+                        
+                        i_frame = Rec.global_frame[i_island];
+                        
+                        /* C1: local shifts */
+                        {
+                            loop_offset0    = C2Cs[_i_C2C].island_offsets[i_layer][i_island];
+                            loop_offset1    = C2Cs[_i_C2C].island_offsets[i_layer][(i_island + 1)];
                             
-                            i_frame = Rec.global_frame[i_island];
-                            
-                            /* C1: local shifts */
-                            {
-                                loop_offset0    = C2Cs[_i_C2C].island_offsets[i_island];
-                                loop_offset1    = C2Cs[_i_C2C].island_offsets[(i_island + 1)];
-                                
-                                /*Message0("\n\n loop_offset0 %d, loop_offset1 %d\\", loop_offset0, loop_offset1);*/
+                            /*Message0("\n\n loop_offset0 %d, loop_offset1 %d\\", loop_offset0, loop_offset1);*/
 
-                                i_tmp = 0;
+                            i_tmp = 0;
+                            
+                            for(i_shift = loop_offset0; i_shift < loop_offset1; i_shift++){
                                 
-                                for(i_shift = loop_offset0; i_shift < loop_offset1; i_shift++){
+                                c0 = C2Cs[_i_C2C].shifts[_i_shift].c0;
+                                c1 = C2Cs[_i_C2C].shifts[_i_shift].c1;
+                                w0 = C2Cs[_i_C2C].shifts[_i_shift].w0;
+                            
+                                if(w0 > 0.0){
+                         
+                                    i_tmp++;
                                     
-                                    c0 = C2Cs[_i_C2C].shifts[_i_shift].c0;
-                                    c1 = C2Cs[_i_C2C].shifts[_i_shift].c1;
-                                    w0 = C2Cs[_i_C2C].shifts[_i_shift].w0;
-                                
-                                    if(w0 > 0.0){
+                                    loop_data{
                              
-                                        i_tmp++;
-                                        
-                                        loop_data{
-                                 
-                                            data0 = _C.data[i_phase][c0][i_data];
+                                        data0 = _C.data[i_phase][c0][i_data];
 
-                                            _C.data_shift[i_phase][c1][i_data] =
+                                        _C.data_shift[i_phase][c1][i_data] =
+                                        
+                                            (w0 * data0 + _C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data])/
                                             
-                                                (w0 * data0 + _C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data])/
-                                                
-                                                (w0 +  _C.weight_after_shift[c1]);                                       
-                                        }
-                             
-                                        _C.weight_after_shift[c1] += w0;
+                                            (w0 +  _C.weight_after_shift[c1]);                                       
                                     }
+                         
+                                    _C.weight_after_shift[c1] += w0;
                                 }
-                                
-                                /*Message0("\n\n i_tmp = %d\n\n", i_tmp);*/
                             }
-                        
-                            /* C2: cross-partition shifts */
-                            {
-                                shift_parallel_C2C_data(i_state, i_phase, i_frame, i_island, i_layer);
-                            }
-                        
-                        } /* loop_islands */
-                        
-                        /* C3: fill holes */
-                        {   
-                            /*Message("\nmyid %d, number_of_cells %d, number_of_faces %d", myid, _Cell_Dict.number_of_cells, _Face_Dict.number_of_faces);*/
                             
-                            number_of_unhit_cells = 1;
-                            
-                            number_of_fill_loops = 0;
-                                                    
-                            while((number_of_unhit_cells > 0) && (number_of_fill_loops < Solver_Dict.max_fill_loops)){
-                                
-                                number_of_fill_loops++;
-
-                                /* fill holes by face swaps */
-                                loop_faces{
-
-                                    c0 = _F.c0[i_face];
-                                    c1 = _F.c1[i_face];
-                                
-                                    if((_C.weight_after_shift[c0] > 0.)&&(_C.weight_after_shift[c1] == 0.0)){
-                                        
-                                        c = c0; c0 = c1; c1 = c;
-                                    }
-                                  
-                                    if((_C.weight_after_shift[c1] > 0.)&&(_C.weight_after_shift[c0] == 0.0)){
-                                  
-                                        loop_data{
-                                            
-                                            _C.data_swap[i_phase][c0][i_data] = 
-                                            
-                                                (_C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data] + 
-                                                
-                                                 _C.weight_after_swap[c0] * _C.data_swap[i_phase][c0][i_data]) / 
-                                                
-                                                (_C.weight_after_shift[c1] + _C.weight_after_swap[c0]);
-                                        }
-                                                                  
-                                        _C.weight_after_swap[c0] += _C.weight_after_shift[c1];
-                                    }                       
-                                }
-                        
-                                number_of_unhit_cells = 0;
-                                
-                                loop_cells{
-                               
-                                    if(_C.weight_after_swap[i_cell] > 0.0){
-                                        
-                                        loop_data{
-                                            
-                                            _C.data_shift[i_phase][i_cell][i_data] = _C.data_swap[i_phase][i_cell][i_data];
-                                        }
-
-                                        _C.weight_after_shift[i_cell] = _C.weight_after_swap[i_cell];
-                                        
-                                        _C.weight_after_swap[i_cell] = 0.0;
-                                    }
-                                    
-                                    if(_C.weight_after_shift[i_cell] == 0.0){
-                                        
-                                        number_of_unhit_cells++;
-                                    }
-                                     
-                                }
-
-                                number_of_unhit_cells = PRF_GISUM1(number_of_unhit_cells);
-                            }
-
-                            /* data = data_update */
-                            loop_cells{
-                            
-                                loop_data{
-                                    
-                                    _C.data[i_phase][i_cell][i_data] = _C.data_shift[i_phase][i_cell][i_data];
-                                }   
-                            }   
+                            /*Message0("\n\n i_tmp = %d\n\n", i_tmp);*/
                         }
-                    }
+                    
+                        /* C2: cross-partition shifts */
+                        {
+                            shift_parallel_C2C_data(i_state, i_phase, i_frame, i_island, i_layer);
+                        }
+                    
+                    } /* loop_islands */
+                    
+                    /* C3: fill holes */
+                    {   
+                        /*Message("\nmyid %d, number_of_cells %d, number_of_faces %d", myid, _Cell_Dict.number_of_cells, _Face_Dict.number_of_faces);*/
+                        
+                        number_of_unhit_cells = 1;
+                        
+                        number_of_fill_loops = 0;
+                                               
+                        while((number_of_unhit_cells > 0) && (number_of_fill_loops < Solver_Dict.max_fill_loops)){
+                            
+                            number_of_fill_loops++;
+
+                            /* fill holes by face swaps */
+                            loop_faces{
+
+                                c0 = _F.c0[i_face];
+                                c1 = _F.c1[i_face];
+                            
+                                if((_C.weight_after_shift[c0] > 0.)&&(_C.weight_after_shift[c1] == 0.0)){
+                                    
+                                    c = c0; c0 = c1; c1 = c;
+                                }
+                              
+                                if((_C.weight_after_shift[c1] > 0.)&&(_C.weight_after_shift[c0] == 0.0)){
+                              
+                                    loop_data{
+                                        
+                                        _C.data_swap[i_phase][c0][i_data] = 
+                                        
+                                            (_C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data] + 
+                                            
+                                             _C.weight_after_swap[c0] * _C.data_swap[i_phase][c0][i_data]) / 
+                                            
+                                            (_C.weight_after_shift[c1] + _C.weight_after_swap[c0]);
+                                    }
+                                                              
+                                    _C.weight_after_swap[c0] += _C.weight_after_shift[c1];
+                                }                       
+                            }
+                    
+                            number_of_unhit_cells = 0;
+                            
+                            loop_cells{
+                           
+                                if(_C.weight_after_swap[i_cell] > 0.0){
+                                    
+                                    loop_data{
+                                        
+                                        _C.data_shift[i_phase][i_cell][i_data] = _C.data_swap[i_phase][i_cell][i_data];
+                                    }
+
+                                    _C.weight_after_shift[i_cell] = _C.weight_after_swap[i_cell];
+                                    
+                                    _C.weight_after_swap[i_cell] = 0.0;
+                                }
+                                
+                                if(_C.weight_after_shift[i_cell] == 0.0){
+                                    
+                                    number_of_unhit_cells++;
+                                }
+                                 
+                            }
+
+                            number_of_unhit_cells = PRF_GISUM1(number_of_unhit_cells);
+                        }
+
+                        /* data = data_update */
+                        loop_cells{
+                        
+                            loop_data{
+                                
+                                _C.data[i_phase][i_cell][i_data] = _C.data_shift[i_phase][i_cell][i_data];
+                            }   
+                        }   
+                    }               
                 }
 
                 if(Solver_Dict.verbal){
@@ -726,13 +867,15 @@ DEFINE_ON_DEMAND(rCFD_run)
             /* D: Diffusion, face swaps */
             {               
                 /* D.1 Drifting */
-                if(Solver_Dict.data_drifting_on){
+                if((Solver_Dict.data_drifting_on) && (Solver.current_layer == 0)){
                     
                     /* Existing Limitations (11/21)
                     
-                        L1: drifting of concentration might lead to conc > 1. 
+                        L1: drifting of concentration might lead to conc. > 1. 
                         
                         L2: drifting of tmperature_data not yet implemented
+                        
+                        L3: drifting only implemented for i_layer == 0
                     */
 #if RP_NODE
                     loop_data{
@@ -773,7 +916,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                     
                                                     loop_dim{
                                                         
-                                                        drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * _F.area[i_face][i_dim] * Phase_Dict[i_phase].time_step / 
+                                                        drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * _F.area[i_face][i_dim] * Solver.timestep_width[i_layer] / 
                                                     
                                                             (double)Solver_Dict.number_of_drift_loops;
                                                     }
@@ -848,7 +991,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                         
                                                         drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * _F.area[i_face][i_dim] * 
                                                         
-                                                            Phase_Dict[i_phase].time_step / (double)Solver_Dict.number_of_drift_loops;
+                                                            Solver.timestep_width[i_layer] / (double)Solver_Dict.number_of_drift_loops;
                                                     }
                                                     
                                                     /* flip cells, such that flux is from c0 to c1 */
@@ -1075,7 +1218,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                         Balance[_i_balance].mass_integral += _C.data[_i_data] * 
                                         
                                             _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity;
-                                        
+                                            
                                         break;
                                         
                                     case concentration_data:
@@ -1193,7 +1336,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                     }
 
                 }
-                
+               
                 /* Balance correction by face swaps */
                 if(Solver_Dict.balance_correction_on){
                     
@@ -1652,7 +1795,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                     }
 #endif
                 }
-                
+               
                 /* Adjust conc. data, such that sum(conc) = 1 */
                 if(Solver_Dict.control_conc_sum_on){
                     
@@ -1698,12 +1841,13 @@ DEFINE_ON_DEMAND(rCFD_run)
         
         Solver.global_run_counter++;
 
-        Solver.global_time += Solver.timestep_width_per_layer[i_layer];
+        Solver.global_time += Solver.timestep_width[i_layer];
         
         /* Post processing */
         {
 #if RP_NODE                                             
-            rCFD_user_post(i_layer);
+            
+            rCFD_user_post();
 #endif  
         }
         

@@ -15,119 +15,8 @@
     www.particulate-flow.at
 */  
 
-void rCFD_allocate_grid_vars(const short i_layer)
-{
-#if RP_NODE
-
-    int i_cell, i_phase, i_frame;
-
-    _C.x = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-    
-    loop_cells{
-        
-        _C.x[i_cell] = (double*)malloc( 3 * sizeof(double));
-    }
-    
-    _C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-    
-    _C.average_velocity =    (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
-    _C.crossing_time =       (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
-    
-    loop_phases{
-        
-        _C.average_velocity[i_phase] =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));            
-        _C.crossing_time[i_phase] =      (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-    }
-
-    _C.hit_by_other_cell =   (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
-
-    _C.island_id =           (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
-    
-    _C.weight_after_shift =  (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-    _C.weight_after_swap =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-
-    _C.vof = (double***)malloc(Solver_Dict.number_of_frames * sizeof(double**));
-    
-    loop_frames{
-        
-        _C.vof[i_frame] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-        
-        loop_cells{
-            
-            _C.vof[i_frame][i_cell] = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
-        }
-    }
-
-    _C.data =        (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-    _C.data_shift =  (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-    _C.data_swap =   (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
-    
-    loop_phases{
-        
-        _C.data[i_phase] =       (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-        _C.data_shift[i_phase] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-        _C.data_swap[i_phase] =  (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-        
-        loop_cells{
-            
-            _C.data[i_phase][i_cell] =       (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-            _C.data_shift[i_phase][i_cell] = (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-            _C.data_swap[i_phase][i_cell] =  (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
-        }
-    }       
-    
-    if(Solver_Dict.data_drifting_on){
-        
-        _C.drift_exchange = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
-    }
-    else{
-        
-        _C.drift_exchange = NULL;
-    }       
-    
-    if(_Cell_Dict.number_of_user_vars > 0){
-        
-        _C.user = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
-        
-        loop_cells{
-            
-            _C.user[i_cell] = (double*)malloc(_Cell_Dict.number_of_user_vars * sizeof(double));
-        }
-    }
-    else{
-        
-        _C.user = NULL;
-    }                        
-
-    /* multi-layer vars */
-    
-    _C.marked =                 (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));
-    
-    if((i_layer + 1) < Solver_Dict.number_of_layers){
-        
-        _C.parent_cell =        (int*)malloc(_Cell_Dict.number_of_cells * sizeof(int));
-    }
-    else{
-        
-        _C.parent_cell =        NULL;
-    }
-    
-    if(i_layer > 0){
-        
-        _C.number_of_children = (short*)malloc(_Cell_Dict.number_of_cells * sizeof(short));     
-        _C.child_index =           (int**) malloc(_Cell_Dict.number_of_cells * sizeof(int*));      /* child_index[i_cell] will be allocated later */
-    }
-    else{
-        
-        _C.number_of_children = NULL;       
-        _C.child_index =           NULL;
-    }
-#endif  
-}
-
 void init_all(void)
 {
-
     /* D1. Solver_Dict & Solver */
     {
         rCFD_default_Solver_Dict();
@@ -250,7 +139,7 @@ void init_all(void)
                 
         /* T.1. allocate cells for L0 */
         {
-            rCFD_allocate_grid_vars(i_layer);  
+            rCFD_allocate_layer(i_layer);  
         }
         
         /* T.2. set cell default values for L0 */
@@ -511,7 +400,7 @@ void init_all(void)
             }
         }
         
-        rCFD_user_post(i_layer);   /* post-process initialization */
+        rCFD_user_post();   /* post-process initialization */
 #endif
     }       
 
@@ -529,9 +418,9 @@ void init_all(void)
 
 #if 1   /* local vars */
         
-        short   debug_this_code = 1;       
+        short   debug_this_code = 0;       
    
-        int     i_layer, i_cell, i_face, i_cell_face, i_face2, i_cell_face2, i_child, i_dim, i_tmp, i_tmp2, i_parent_face, i_redist;
+        int     i_layer, i_cell, i_face, i_cell_face, i_face2, i_cell_face2, i_child, i_dim, i_tmp, i_tmp2, i_parent_face, i_redist, i_phase, i_frame;
         
         int     cell_index_in_upper_layer, number_of_cells_in_upper_layer, upper_cell, c0, c1, c1_c0, c1_c1;
 
@@ -724,6 +613,9 @@ void init_all(void)
                 number_of_cells_in_upper_layer = cell_index_in_upper_layer;
                 
                 Topo_Dict.Cell_Dict[upper_layer].number_of_cells = number_of_cells_in_upper_layer;
+                
+                Topo_Dict.Cell_Dict[upper_layer].number_of_int_cells = number_of_cells_in_upper_layer;
+                Topo_Dict.Cell_Dict[upper_layer].number_of_ext_cells = 0;
 
                 if(debug_this_code){
                                         
@@ -745,7 +637,7 @@ void init_all(void)
 
             /* L.3 allocate and initialize upper layer grid vars */
             {           
-                rCFD_allocate_grid_vars(upper_layer);
+                rCFD_allocate_layer(upper_layer);
                 
                 /* initialize multi-layer vars */
                 loop_cells_of_upper_layer{
@@ -758,6 +650,20 @@ void init_all(void)
                     Topo.Cell[upper_layer].volume[i_cell] = 0.0;
                     
                     Topo.Cell[upper_layer].number_of_children[i_cell] = 0;
+                    
+                    /* TODO account for multiple islands */
+                    Topo.Cell[upper_layer].island_id[i_cell] = 0;
+                }
+                
+                loop_frames{
+                    
+                    loop_cells_of_upper_layer{                  
+                        
+                        loop_phases{
+                        
+                            Topo.Cell[upper_layer].vof[_i_vof] = 1.0;
+                        }
+                    }
                 }
 
                 if(debug_this_code){
@@ -797,7 +703,7 @@ void init_all(void)
                         }
                     }
                 }
-                
+
                 /* average coordinates */
                 loop_cells_of_upper_layer{
                     
@@ -809,7 +715,7 @@ void init_all(void)
                         }
                     }
                 }
-
+                        
                 if(debug_this_code){
                                         
                     Message("\nDEBUG L.4 myid %d i_layer %d, max/min_number_of_children %d/%d", myid, i_layer, max_number_of_children, min_number_of_children);
@@ -920,6 +826,59 @@ void init_all(void)
                     Message("\nDEBUG L.5 myid %d i_layer %d, added cells %d unassigned cells %d max_number_of_children %d", myid, i_layer, i_tmp2, i_tmp, max_number_of_children);
                 }
                 
+            }
+            
+            /* L.5.a fill upper layer vof (TODO island id)*/
+            {
+                /* init vof(upper_layer) */
+                loop_frames{
+                    
+                    loop_cells{
+                        
+                        if(_C.parent_cell[i_cell] > -1){
+                            
+                            upper_cell = _C.parent_cell[i_cell];
+                            
+                            loop_phases{
+                            
+                                Topo.Cell[upper_layer].vof[i_frame][upper_cell][i_phase] = 0.0;
+                            }
+                        }
+                    }
+                }                           
+                
+                /* accu. map vof(upper_layer) */
+                loop_frames{
+                    
+                    loop_cells{
+                        
+                        if(_C.parent_cell[i_cell] > -1){
+                            
+                            upper_cell = _C.parent_cell[i_cell];
+                            
+                            loop_phases{
+                            
+                                Topo.Cell[upper_layer].vof[i_frame][upper_cell][i_phase] += _C.vof[_i_vof] * _C.volume[i_cell];
+                            }
+                        }
+                    }
+                }                           
+
+                /* average vof(upper_layer) */
+                loop_frames{
+                    
+                    loop_cells_of_upper_layer{
+                            
+                        if(Topo.Cell[upper_layer].volume[i_cell] > 0){
+
+                            loop_phases{
+                            
+                                Topo.Cell[upper_layer].vof[i_frame][i_cell][i_phase] /= Topo.Cell[upper_layer].volume[i_cell];
+                            }
+                        }                       
+                    }
+                }
+            
             }
             
             /* L.6 fill upper layer list of child_index */
@@ -1306,6 +1265,10 @@ void init_all(void)
                 
                 Topo_Dict.Face_Dict[upper_layer].number_of_faces = parent_face_count;
                 
+                /* TODO account for upper-layer parallel grid communication */
+                Topo_Dict.Face_Dict[upper_layer].number_of_int_faces = parent_face_count;
+                Topo_Dict.Face_Dict[upper_layer].number_of_ext_faces = 0;
+                
                 if(debug_this_code){
                     
                     Message("\nDEBUG L.8 myid %d, upper_layer %d, number of faces in upper layer %d", myid, upper_layer, parent_face_count);
@@ -1396,7 +1359,7 @@ void init_all(void)
                     
                     free(tmp_faces_of_cell);
                 }
-                
+              
                 if(tmp_parent_face_index != NULL){
                     
                     free(tmp_parent_face_index);
@@ -1449,7 +1412,7 @@ void init_all(void)
         }
 
         /* Test mapping */
-        {
+        if(0==1){
             i_layer = 0;
             
             rCFD_map_parent(i_layer);
@@ -1482,11 +1445,11 @@ void init_all(void)
             
             i_layer = 0;
             
-            rCFD_user_post(i_layer);
+            rCFD_user_post();
             /* data[0] should visualize clusters */
         }
 #endif      
     }
-}
 
+}
 #endif

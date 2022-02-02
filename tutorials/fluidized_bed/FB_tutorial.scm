@@ -5,7 +5,7 @@
 ;;  www.particulate-flow.at 
 
 
-(define rCFD_src_dir  "../../src")
+(define rCFD_src_dir  "../../2021_rCFD_CORE")
 (define rCFD_user_src_dir  "./user_src")
 (define ANSYS_Fluent_case_dir "./ansys_fluent")
 (define ANSYS_Fluent_case_file  "LabScale_FB")
@@ -22,22 +22,6 @@
 (define img-1 "gas_phase_")
 (define img-2 "solid_phase_")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (Cube_prep)     ;; prep.2   compile everything needed for monitoring
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    (ti-menu-load-string (format  #f "!cp ~a/*.c ." rCFD_user_src_dir))
-
-    (ti-menu-load-string "!rm -r libudf_cube")
-
-    (ti-menu-load-string "/define/user-defined/compiled-functions compile 
-        libudf_cube 
-        yes
-        Cube_inflow.c
-        \"\"
-        \"\" ")
-
-)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (rCFD_P1)       ;; prep.1   load all you need in tutorial's main folder
@@ -70,6 +54,7 @@
         rCFD_defaults.h
         rCFD_macros.h
         rCFD_init.h
+        rCFD_layer.h
         rCFD_free.h
         \"\" ")
 )
@@ -231,22 +216,6 @@
     (rCFD_P11)      
 )
 
-(define (rcfd_test)
-
-    (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
-    (ti-menu-load-string (format  #f "!cp ~a/~a.dat.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
-    
-    (ti-menu-load-string (format  #f "!cp ~a/*.c ." rCFD_src_dir))
-    (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_src_dir))
-    (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_user_src_dir))
-
-    (ti-menu-load-string "!rm -r libudf_rcfd_prep")
-
-    (rCFD_P2)
-    (rCFD_P3)
-    (rCFD_P9)
-    (rCFD_P10)
-)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (rCFD_R1)       ;; run.1    clean-up folder and load source files
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -277,7 +246,7 @@
         rCFD_defaults.h
         rCFD_macros.h
         rCFD_init.h
-        rCFD_layer.h
+        rCFD_layer.h        
         rCFD_free.h
         \"\" ")
 )
@@ -303,7 +272,19 @@
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (rCFD_R5)       ;; run.5:   run simulation
+(define (rCFD_R5)       ;; run.5:   run simulation with post-processing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (do  ((i  0 (+ i  1)))
+        ((= i  number_of_rCFD_episodes))              
+
+        (ti-menu-load-string "/define/user-defined/execute-on-demand \"rCFD_run::libudf_rcfd_run\"")
+    )
+)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (rCFD_R5_post)       ;; run.5:   run simulation with post-processing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; set graphics setting 
@@ -426,6 +407,19 @@
     (rCFD_R3)
     (rCFD_R4)
     (rCFD_R5)
+    (rCFD_R6)
+    (rCFD_R7)   
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (rCFD_run_post)      ;; run.1-7 with post-processing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (rCFD_R1)
+    (rCFD_R2)
+    (rCFD_R3)
+    (rCFD_R4)
+    (rCFD_R5_post)
     (rCFD_R6)
     (rCFD_R7)   
 )

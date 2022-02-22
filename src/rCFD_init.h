@@ -1401,7 +1401,7 @@ void init_all(void)
             i_layer++;
         }
 
-        if(Solver_Dict.verbal){
+        if(Solver_Dict.verbose){
 
             Message("\nmulti-layer grid: myid %d\n", myid);
 

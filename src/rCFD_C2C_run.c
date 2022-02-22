@@ -493,7 +493,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 
         total_number_of_C2Cs_read = PRF_GISUM1(total_number_of_C2Cs_read);
 
-        if((myid == 0) && (Solver_Dict.verbal == 1)){
+        if((myid == 0) && (Solver_Dict.verbose == 1)){
 
             FILE    *f_out = fopen("./Run.trn", "a");
 
@@ -671,7 +671,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                 }
             }
 
-            if(Solver_Dict.verbal){
+            if(Solver_Dict.verbose){
 
                 Message0("\n\nNext Frame: i_run %d, i_frame[0] %d", i_run, Rec.global_frame[0]);
             }
@@ -712,7 +712,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                     }
                 }
 
-                if(Solver_Dict.verbal){
+                if(Solver_Dict.verbose){
 
                     Message0("\n\nInit: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
                 }
@@ -857,7 +857,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                     }
                 }
 
-                if(Solver_Dict.verbal){
+                if(Solver_Dict.verbose){
 
                     Message0("\n\nConvection: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
                 }
@@ -1180,7 +1180,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 #endif
                 }
 
-                if(Solver_Dict.verbal){
+                if(Solver_Dict.verbose){
 
                     Message0("\n\nDiffusion: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
                 }
@@ -1831,7 +1831,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 #endif
                 }
 
-                if(Solver_Dict.verbal){
+                if(Solver_Dict.verbose){
 
                     Message0("\n\nBalance: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
                 }
@@ -1856,7 +1856,7 @@ DEFINE_ON_DEMAND(rCFD_run)
     /* D. Message & Transcript */
     {
 #if RP_NODE
-        if((myid == 0) && (Solver_Dict.verbal == 1)){
+        if((myid == 0) && (Solver_Dict.verbose == 1)){
 
             FILE    *f_out = fopen("./Run.trn", "a");
 
@@ -1898,7 +1898,7 @@ DEFINE_ON_DEMAND(rCFD_free_all)
 #endif
 
 #if RP_NODE
-    if((myid == 0) && (Solver_Dict.verbal == 1)){
+    if((myid == 0) && (Solver_Dict.verbose == 1)){
 
         FILE    *f_out = fopen("./Run.trn", "a");
 

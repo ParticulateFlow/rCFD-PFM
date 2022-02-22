@@ -20,7 +20,7 @@
     #define     Global_Version_Year     2022
     #define     Global_Version_Month    2
 
-    #define     Global_Verbal           1
+    #define     Global_Verbose          1
 
     /* A. default Dicts */
 
@@ -29,7 +29,7 @@
         Solver_Dict.version_year =     Global_Version_Year;
         Solver_Dict.version_month =    Global_Version_Month;
 
-        Solver_Dict.verbal =           Global_Verbal;
+        Solver_Dict.verbose =          Global_Verbose;
 
         Solver_Dict.number_of_frames =     1;
         Solver_Dict.number_of_states =     1;

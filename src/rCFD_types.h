@@ -16,7 +16,7 @@
     {
         short   version_year, version_month;
 
-        short   verbal;
+        short   verbose;
 
         char    run_transcript_filename[80];
 

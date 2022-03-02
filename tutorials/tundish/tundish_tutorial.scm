@@ -5,7 +5,7 @@
 ;;  www.particulate-flow.at 
 
 
-(define rCFD_src_dir  "../2021_rCFD_CORE")
+(define rCFD_src_dir  "../../src")
 (define rCFD_user_src_dir  "./user_src")
 (define ANSYS_Fluent_case_dir "./ansys_fluent")
 (define ANSYS_Fluent_case_file  "tundish_1.2M_t=1.95s")

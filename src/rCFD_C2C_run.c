@@ -493,7 +493,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 
         total_number_of_C2Cs_read = PRF_GISUM1(total_number_of_C2Cs_read);
 
-        if((myid == 0) && (Solver_Dict.verbose == 1)){
+        if(Transcript){
 
             FILE    *f_out = fopen("./Run.trn", "a");
 
@@ -1856,7 +1856,7 @@ DEFINE_ON_DEMAND(rCFD_run)
     /* D. Message & Transcript */
     {
 #if RP_NODE
-        if((myid == 0) && (Solver_Dict.verbose == 1)){
+        if(Transcript){
 
             FILE    *f_out = fopen("./Run.trn", "a");
 
@@ -1898,7 +1898,7 @@ DEFINE_ON_DEMAND(rCFD_free_all)
 #endif
 
 #if RP_NODE
-    if((myid == 0) && (Solver_Dict.verbose == 1)){
+    if(Transcript){
 
         FILE    *f_out = fopen("./Run.trn", "a");
 

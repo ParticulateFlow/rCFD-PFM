@@ -380,7 +380,7 @@
             }
         }
 
-        if(Solver_Dict.verbal){
+        if(Solver_Dict.verbose){
 
             Message0("\n\nUser before Shift: i_phase %d, i_layer %d", i_phase, i_layer);
         }

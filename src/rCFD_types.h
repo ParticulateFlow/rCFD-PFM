@@ -3,402 +3,418 @@
 
 #include "udf.h"
 
-/* (C) 	2021 
-	Stefan Pirker
-	Particulate Flow Modelling
-	Johannes Kepler University, Linz, Austria
-	www.particulate-flow.at
-*/	
+/* (C)  2021
+    Stefan Pirker
+    Particulate Flow Modelling
+    Johannes Kepler University, Linz, Austria
+    www.particulate-flow.at
+*/
 
-	/* A. Global Dicts */
-	
-	typedef struct Solver_Dict_struct
-	{
-		short	version_year, version_month;
+    /* A. Global Dicts */
 
-		short	verbal;
-		
-		char	run_transcript_filename[80];
-		
-		/* main characteristics */
+    typedef struct Solver_Dict_struct
+    {
+        short   version_year, version_month;
 
-		short	number_of_frames;
-		short	number_of_states;	
-		short 	number_of_phases;
-		short 	number_of_islands;
-		short 	number_of_runs;
-		
-		/* sub-model flags */
+        short   verbose;
 
-		short 	recurrence_process_on;
-		short 	data_convection_on;
-		short	face_diffusion_on;
-		short	data_binarization_on;
-		short   data_drifting_on;
-		short 	balance_correction_on;
-		short	on_the_fly_post_on;
-		
-		/* sub-model params (order of occurrence) */
-		
-		int		analyse_CFD_count;
+        char    run_transcript_filename[80];
 
-		short	max_number_of_cells_per_time_step;
-		
-		int		time_steps_per_monitoring_interval;
-		double	start_time_for_monitoring;
-			
-		short	C2C_loading_reduction;
-		
-		double	global_time_step;
-			
-		short	max_fill_loops;
+        /* main characteristics */
 
-		short 	face_swap_max_per_loop;
-		short	face_swap_min;
-		short 	face_swap_max_loops;
+        short   number_of_frames;
+        short   number_of_states;
+        short   number_of_phases;
+        short   number_of_islands;
+        short   number_of_layers;
+        short   number_of_runs;
 
-		short	number_of_drift_loops;
-		
-		short	balance_correction_update;
-		
-	} Solver_Dict_type;
+        /* sub-model flags */
 
-	typedef struct File_Dict_struct
-	{
-		char 	*tracer_start_position_filename;
-		
-		char	*C2C_filename;
-		
-		char 	*Norm_filename;
-		
-		char	*Jump_filename;
-		
-		char	*Matrix_filename;
-		
-		char	*Balance_filename;
-		
-		char	*Dict_filename;
-		
-	} File_Dict_type;
+        short   recurrence_process_on;
+        short   data_convection_on;
+        short   face_diffusion_on;
+        short   data_binarization_on;
+        short   data_drifting_on;
+        short   balance_correction_on;
+        short   on_the_fly_post_on;
 
-	typedef struct Phase_Dict_struct
-	{
-		int			number_of_data;
-	
-		double		time_step;
-		
-		double		shift_probability;
-		
-		double 		density;
-		
-		double		heat_capacity;
+        /* sub-model params (order of occurrence) */
 
-		double		reference_temperature;
-		
-		int			number_of_user_vars;
-		
-		double		*user;
-		
-	} Phase_Dict_type;	
+        int     analyse_CFD_count;
 
-	typedef struct Tracer_Dict_struct
-	{
-		int 	number_of_Tracers_per_cell;
-		
-		short	region_of_interest_exists;
-		
-		double	ROI_x_min;
-		double	ROI_x_max;
-		double	ROI_y_min;
-		double	ROI_y_max;
-		double	ROI_z_min;
-		double	ROI_z_max;
-		
-		int		coarse_graining;		/* 1: take every Tracer, 2: take every second Tracer, .... */
-		
-		short	*random_walk;			/* [i_phase] */
+        short   max_number_of_cells_per_time_step;
 
-		short	C2C_format;		
-		
-	} Tracer_Dict_type;
-	
-	enum{ /* norm_types */
-		standard,
-		number_of_norm_type_names
-	};
+        int     time_steps_per_monitoring_interval;
+        double  start_time_for_monitoring;
 
-	typedef struct Norm_Dict_struct
-	{
-		short 	format;
+        int     min_number_of_cells_per_layer;
+        short   max_number_of_faces_per_cell;
+        short   max_number_of_children;
+        short   number_redist_loops_per_layer;
 
-		int		coarse_graining;		/* if ((i_cell % coarse_graining) == 0) */
-		
-	} Norm_Dict_type;
-	
-	enum{ /* rec methods */
-		quarter_jumps,
-		number_of_rec_methods
-	};
-	
-	typedef struct Rec_Dict_struct
-	{
-		short	method;
-		
-		short	min_seq_length;	
-		short	max_seq_length;
-		
-	} Rec_Dict_type;
-	
-	enum{ /* data_types */
-		generic_data,
-		concentration_data,
-		binary_data,
-		temperature_data,
-		number_of_data_type_names
-	};
+        short   C2C_loading_reduction;
 
-	typedef struct Data_Dict_struct
-	{
-		short		type;
-		
-		double		physical_diff;
-		
-		double 		binarization_art_diff;
-		
-		short		drifting_data;
-		
-		double*		drift_velocity;
-		
-		int			number_of_user_vars;
-		
-		double*		user;
-		
-	} Data_Dict_type;
+        double  global_time_step;
 
-	enum{ /* balancing_types */
-		no_balancing,
-		global_balancing,
-		per_node_balancing,
-		number_of_balancing_modes
-	};
-	
-	typedef struct Balance_Dict_struct
-	{		
-		
-		short		type;		
-		
-		short		write_balance_to_file;
-		
-		int			write_balance_to_file_interval;
-		
-	}Balance_Dict_type;		
-	
-	typedef struct Cell_Dict_struct
-	{
-		int 	number_of_cells;
-		
-		int		number_of_int_cells;
+        short   max_fill_loops;
 
-		int		number_of_ext_cells;
-		
-		int		number_of_user_vars;
-		
-	} Cell_Dict_type;	
+        double  face_swap_max_per_loop;
+        double  face_swap_min;
+        short   face_swap_max_loops;
 
-	typedef struct Face_Dict_struct
-	{		
-		int	number_of_faces;
-		
-	} Face_Dict_type;
-	
-	/* B. Global Vars */
-	
-	typedef struct Solver_struct
-	{
-		int			current_state;
-		
-		int			global_run_counter;
-		
-		clock_t 	clock;
+        short   number_of_drift_loops;
 
-	}Solver_type;
-	
-	typedef struct Cell_struct
-	{
-		double		**x;
-		double		*volume;
-		
-		double		**average_velocity;	/* [i_phase][i_cell] */
-		double		**crossing_time;
-		
-		short		*hit_by_other_cell;
-		short		*island_id;
-		
-		double		*weight_after_shift;
-		double		*weight_after_swap;
-		
-		double		***vof;				/* [i_frame][i_phase][i_cell] */
+        short   balance_correction_update;
+        short   control_conc_sum_on;
 
-		double		***data;			/* [i_phase][i_cell][i_data] */
-		double		***data_shift;
-		double		***data_swap;
-		
-		double		*drift_exchange;	/* [i_cell] */
-		
-		double		**user;				/* [i_cell][i_user] */
-		double		***rec_user;		/* [i_frame][i_cell][i_rec_user] */
-		
-	} Cell_type;
-	
-	typedef struct Face_struct
-	{
-		int		*c0, *c1;
-		
-		double	**area;
-		
-	} Face_type;
+    } Solver_Dict_type;
 
-	enum{	/* C2C shift formats */
-		
-		c0_n0_c1_n1_w0,
-		
-		number_of_C2C_formats
-	};
-	
-	typedef struct C2C_shift_struct
-	{
-	  int			c0,node0;
-	  int 			c1,node1;
-	  double		w0;
-	 
-	} C2C_shift_type;
-	 
-	typedef struct C2C_struct
-	{
-		short				format;
-	  
-		int					number_of_shifts;
-		int					number_of_shifts_in;
-		int					number_of_shifts_out;
+    typedef struct File_Dict_struct
+    {
+        char    *tracer_start_position_filename;
 
-		C2C_shift_type		*shifts;
-		C2C_shift_type		*shifts_in;
-		C2C_shift_type		*shifts_out;
-	  
-		int					*island_offsets;
-		int					*island_offsets_in;
-		
-		/* MPI variables, only used by Node-0 */
-		
-		int					number_of_MPI_shifts;
-		int					*number_of_shifts_to_node_zero;
-		int					*number_of_shifts_from_node_zero;
-		int					**in2out;
-	  
-	 } C2C_type;
+        char    *C2C_filename;
 
-	typedef struct C2C_MPI_shift_struct
-	{
-		int			c0,node0;
-		int 		c1,node1;
-		double		w0;
+        char    *Norm_filename;
 
-		double		*data;
-		
-	} C2C_MPI_shift_type;
-		
-	typedef struct C2C_MPI_struct
-	{
-		short				format;
+        char    *vof_filename;
 
-		int 				max_number_of_MPI_shifts;
-		
-		C2C_MPI_shift_type	*shifts_in;
-		
-		int					number_of_shifts_in; /* temporally use in C2Cs_prepare */
-			  
-	 } C2C_MPI_type;
-#if 0 /* MPI_types */
-	typedef struct MPI_cells_struct
-	{
-		int		number_of_ext_cells;
+        char    *Jump_filename;
 
-		int		*number_of_ext_cells_per_node;
+        char    *Matrix_filename;
 
-		int		*number_of_host_cells_per_node;
-							
-		int		*host_of_cell;				/* all nodes, list of host of all cells */
+        char    *Balance_filename;
 
-		int		*host_of_ext_cells;			/* node-0, list of all ext. cells */
-		
-		int		*hosting_cell_index;		/* all nodes, list of cells, which host ext. cells of other nodes */
+        char    *Dict_filename;
 
-		int		*host2ext_index;	
-		
-		double	*data;
-		
-	} MPI_cells_type;
-	
-	typedef struct MPI_faces_struct
-	{
-		int		*principal_face;
-		
-	} MPI_faces_type;
-#endif		
-	
-	typedef struct Balance_struct
-	{
-		double		mass_integral, mass_integral_target;
+    } File_Dict_type;
 
-		double		mass_integral_global, mass_integral_target_global;
+    typedef struct Phase_Dict_struct
+    {
+        int         number_of_data;
 
-		double 		mass_source;
-		
-		double 		**node2node_flux, **node2node_data_flux;
+        double      time_step;
 
-		double		mass_error, mass_error_prev;
-		
-		double 		face_swap;
-		
-		int			face_swap_loops;
-		
-	}Balance_type;
+        double      shift_probability;
 
-	typedef struct Tracer_struct
-	{
-		short	allocated;
-		short	initialized;
-		short  	ready2write;
-		short	monitoring_started;
-		
-		int		*monitor_counter;		/* Tracers per Frame [i_phase] */
-		
-		int 	frame_counter;	
-		
-		int		*number_of_shifts;		/* [i_phase] */
-		
-		C2C_shift_type	**shifts;
+        double      density;
 
-	} Tracer_type;
+        double      heat_capacity;
 
-	typedef struct Norm_struct
-	{
-		int 	number_of_norms;
-		
-		int 	frame_counter;
-		
-		double	*norm;
-		
-	} Norm_type;
-	
-	typedef struct Rec_struct
-	{
-		int 	*global_frame;				/* [i_island] */
-		int		frame_in_sequence;
-		int		sequence_length;
-		
-		int		****jumps;					/* [state, state2, island, frame] */
-		
-	} Rec_type;
+        double      reference_temperature;
+
+        int         number_of_user_vars;
+
+        double      *user;
+
+    } Phase_Dict_type;
+
+    typedef struct Tracer_Dict_struct
+    {
+        int     number_of_Tracers_per_cell;
+
+        short   region_of_interest_exists;
+
+        double  ROI_x_min;
+        double  ROI_x_max;
+        double  ROI_y_min;
+        double  ROI_y_max;
+        double  ROI_z_min;
+        double  ROI_z_max;
+
+        int     coarse_graining;        /* 1: take every Tracer, 2: take every second Tracer, .... */
+
+        short   *random_walk;           /* [i_phase] */
+
+        short   C2C_format;
+
+    } Tracer_Dict_type;
+
+    enum{ /* norm_types */
+        standard,
+        number_of_norm_type_names
+    };
+
+    typedef struct Norm_Dict_struct
+    {
+        short   format;
+
+        int     coarse_graining;        /* if ((i_cell % coarse_graining) == 0) */
+
+        short   larger_than_mean_norm_only;
+
+    } Norm_Dict_type;
+
+    enum{ /* rec methods */
+        quarter_jumps,
+        number_of_rec_methods
+    };
+
+    typedef struct Rec_Dict_struct
+    {
+        short   method;
+
+        short   min_seq_length;
+        short   max_seq_length;
+
+    } Rec_Dict_type;
+
+    enum{ /* data_types */
+        generic_data,
+        concentration_data,
+        binary_data,
+        temperature_data,
+        number_of_data_type_names
+    };
+
+    typedef struct Data_Dict_struct
+    {
+        short       type;
+
+        double      physical_diff;
+
+        double      binarization_art_diff;
+
+        short       drifting_data;
+
+        double*     drift_velocity;
+
+        int         number_of_user_vars;
+
+        double*     user;
+
+    } Data_Dict_type;
+
+    enum{ /* balancing_types */
+        no_balancing,
+        global_balancing,
+        per_node_balancing,
+        number_of_balancing_modes
+    };
+
+    typedef struct Balance_Dict_struct
+    {
+        short       type;
+
+        short       max_correction_loops;
+
+        double      accuracy_level;
+
+        short       write_balance_to_file;
+
+        int         write_balance_to_file_interval;
+
+    }Balance_Dict_type;
+
+    typedef struct Cell_Dict_struct
+    {
+        int     number_of_cells;
+
+        int     number_of_int_cells;
+
+        int     number_of_ext_cells;
+
+        int     number_of_user_vars;
+
+    } Cell_Dict_type;
+
+    typedef struct Face_Dict_struct
+    {
+        int     number_of_int_faces;
+
+        int     number_of_ext_faces;
+
+        int     number_of_faces;
+
+    } Face_Dict_type;
+
+    typedef struct Topo_Dict_struct
+    {
+        Cell_Dict_type  *Cell_Dict;
+
+        Face_Dict_type  *Face_Dict;
+
+    } Topo_Dict_type;
+
+    /* B. Global Vars */
+
+    typedef struct Solver_struct
+    {
+        int         current_state;
+
+        int         current_layer;
+
+        int         global_run_counter;
+
+        double      global_time;
+
+        double      *timestep_width;
+
+        clock_t     clock;
+
+    }Solver_type;
+
+    typedef struct Cell_struct
+    {
+        double      **x;
+        double      *volume;
+
+        double      **average_velocity; /* [i_phase][i_cell] */
+        double      **crossing_time;
+
+        short       *hit_by_other_cell;
+        short       *island_id;
+
+        double      *weight_after_shift;
+        double      *weight_after_swap;
+
+        double      ***vof;             /* [i_frame][i_cell][i_phase] */
+
+        double      ***data;            /* [i_phase][i_cell][i_data] */
+        double      ***data_shift;
+        double      ***data_swap;
+
+        double      *drift_exchange;    /* [i_cell] */
+
+        double      **user;             /* [i_cell][i_user] */
+        double      ***rec_user;        /* [i_frame][i_cell][i_rec_user] */
+
+        short       *marked;            /* [i_cell] */
+        int         *parent_cell;
+        short       *number_of_children;
+        int         **child_index;
+
+    } Cell_type;
+
+    typedef struct Face_struct
+    {
+        int     *c0, *c1;
+
+        double  **area;
+
+    } Face_type;
+
+    typedef struct Topo_struct
+    {
+        Cell_type   *Cell;
+
+        Face_type   *Face;
+
+    } Topo_type;
+
+    enum{   /* C2C shift formats */
+
+        c0_n0_c1_n1_w0,
+
+        number_of_C2C_formats
+    };
+
+    typedef struct C2C_shift_struct
+    {
+      int           c0,node0;
+      int           c1,node1;
+      double        w0;
+
+    } C2C_shift_type;
+
+    typedef struct C2C_struct
+    {
+        short               format;
+
+        int                 *number_of_shifts;      /* [i_layer] */
+        int                 *number_of_shifts_in;
+        int                 *number_of_shifts_out;
+
+        C2C_shift_type      **shifts;               /* [i_layer][i_shift] */
+        C2C_shift_type      **shifts_in;
+        C2C_shift_type      **shifts_out;
+
+        int                 **island_offsets;       /* [i_layer][i_island] */
+        int                 **island_offsets_in;
+
+        /* MPI variables, only used by Node-0 */
+
+        int                 **number_of_shifts_to_node_zero;        /* [i_layer][i_node] */
+        int                 **number_of_shifts_from_node_zero;
+        int                 ***in2out;                              /* [i_layer][i_node][i_node] */
+
+     } C2C_type;
+
+    typedef struct tmp_C2C_struct
+    {
+        /* same as C2C_type, but only for one layer */
+        short               format;
+
+        int                 number_of_shifts;
+        int                 number_of_shifts_in;
+        int                 number_of_shifts_out;
+
+        C2C_shift_type      *shifts;
+        C2C_shift_type      *shifts_in;
+        C2C_shift_type      *shifts_out;
+
+        int                 *island_offsets;
+        int                 *island_offsets_in;
+
+        /* MPI variables, only used by Node-0 */
+
+        int                 *number_of_shifts_to_node_zero;
+        int                 *number_of_shifts_from_node_zero;
+        int                 **in2out;
+
+    } tmp_C2C_type;
+
+
+    typedef struct Balance_struct
+    {
+        double      mass_integral, mass_integral_target;
+
+        double      mass_integral_global, mass_integral_target_global;
+
+        double      mass_source, mass_source_global;
+
+        double      **node2node_flux, **node2node_data_flux;
+
+        double      mass_error, mass_error_global;
+
+    }Balance_type;
+
+    typedef struct Tracer_struct
+    {
+        short   allocated;
+        short   initialized;
+        short   ready2write;
+        short   monitoring_started;
+
+        int     *monitor_counter;       /* Tracers per Frame [i_phase] */
+
+        int     frame_counter;
+
+        int     *number_of_shifts;      /* [i_phase] */
+
+        C2C_shift_type  **shifts;
+
+    } Tracer_type;
+
+    typedef struct Norm_struct
+    {
+        int     number_of_norms;
+
+        int     frame_counter;
+
+        double  *norm;
+
+    } Norm_type;
+
+    typedef struct Rec_struct
+    {
+        int     *global_frame;              /* [i_island] */
+        int     frame_in_sequence;
+        int     sequence_length;
+
+        int     ****jumps;                  /* [state, state2, island, frame] */
+
+    } Rec_type;
 
 #endif

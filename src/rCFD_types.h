@@ -16,7 +16,7 @@
     {
         short   version_year, version_month;
 
-        short   verbal;
+        short   verbose;
 
         char    run_transcript_filename[80];
 
@@ -47,7 +47,7 @@
 
         int     time_steps_per_monitoring_interval;
         double  start_time_for_monitoring;
-        
+
         int     min_number_of_cells_per_layer;
         short   max_number_of_faces_per_cell;
         short   max_number_of_children;
@@ -141,7 +141,7 @@
         short   format;
 
         int     coarse_graining;        /* if ((i_cell % coarse_graining) == 0) */
-        
+
         short   larger_than_mean_norm_only;
 
     } Norm_Dict_type;
@@ -196,9 +196,9 @@
     typedef struct Balance_Dict_struct
     {
         short       type;
-        
+
         short       max_correction_loops;
-        
+
         double      accuracy_level;
 
         short       write_balance_to_file;
@@ -242,13 +242,13 @@
     typedef struct Solver_struct
     {
         int         current_state;
-        
+
         int         current_layer;
 
         int         global_run_counter;
-        
+
         double      global_time;
-        
+
         double      *timestep_width;
 
         clock_t     clock;
@@ -279,7 +279,7 @@
 
         double      **user;             /* [i_cell][i_user] */
         double      ***rec_user;        /* [i_frame][i_cell][i_rec_user] */
-        
+
         short       *marked;            /* [i_cell] */
         int         *parent_cell;
         short       *number_of_children;
@@ -298,11 +298,11 @@
     typedef struct Topo_struct
     {
         Cell_type   *Cell;
-        
+
         Face_type   *Face;
-        
+
     } Topo_type;
-    
+
     enum{   /* C2C shift formats */
 
         c0_n0_c1_n1_w0,
@@ -346,25 +346,25 @@
         /* same as C2C_type, but only for one layer */
         short               format;
 
-        int                 number_of_shifts;       
+        int                 number_of_shifts;
         int                 number_of_shifts_in;
         int                 number_of_shifts_out;
 
-        C2C_shift_type      *shifts;                
+        C2C_shift_type      *shifts;
         C2C_shift_type      *shifts_in;
         C2C_shift_type      *shifts_out;
 
-        int                 *island_offsets;        
+        int                 *island_offsets;
         int                 *island_offsets_in;
 
         /* MPI variables, only used by Node-0 */
 
-        int                 *number_of_shifts_to_node_zero;     
+        int                 *number_of_shifts_to_node_zero;
         int                 *number_of_shifts_from_node_zero;
         int                 **in2out;
-        
+
     } tmp_C2C_type;
-    
+
 
     typedef struct Balance_struct
     {

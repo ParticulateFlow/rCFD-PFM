@@ -9,7 +9,7 @@
 ## Prepare full CFD
 
 - start Ansys/fluent by e.g. *fluent 3ddp -t12 &* from this folder
-- read tundish_tutorial.scm
+- from the file menu read the scheme cube_tutorial.scm
 - type into fluent console (cube_prep)
 
 - full CFD udf's will be built into /libudf_cube
@@ -19,7 +19,7 @@
 ## Prepare rCFD
 
 - start Ansys/fluent by e.g. *fluent 3ddp -t12 &* from this folder
-- read cube_tutorial.scm
+- from the file menu read the scheme cube_tutorial.scm
 - type into fluent console (rcfd_p1), followed by (rcfd_p1), ..., (rcfd_p11); or simply (rcfd_prep)
 
 - c2c patterns will be stored into ./data/c2c
@@ -29,8 +29,8 @@
 
 ## Run rCFD
 
-- start Ansys/fluent with the same number of threads from this folder.
-- read tundish_tutorial.scm
+- start Ansys/fluent with the same number of threads from this folder
+- from the file menu read the scheme cube_tutorial.scm
 - type into fluent console (rcfd_r1), followed by (rcfd_r1), ..., (rcfd_r7); or simply (rcfd_run)
 
 - balances will be stored into ./post

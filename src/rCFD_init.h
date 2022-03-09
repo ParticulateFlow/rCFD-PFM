@@ -153,12 +153,7 @@ void init_all(void)
 
             _F.c1 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
 
-            _F.area = (double**)malloc(_Face_Dict.number_of_faces * sizeof(double*));
-
-            loop_faces{
-
-                _F.area[i_face] = (double*)malloc( 3 * sizeof(double));
-            }
+            _F.area = malloc_r_2d(_Face_Dict.number_of_faces, 3);
         }
 
         /* T.4. set face default values for L0 */
@@ -262,22 +257,8 @@ void init_all(void)
             Rec.global_frame[i_island] = 0;
         }
 
-        Rec.jumps = (int****)malloc(Solver_Dict.number_of_states * sizeof(int***));
-
-        loop_states{
-
-            Rec.jumps[i_state] = (int***)malloc(Solver_Dict.number_of_states * sizeof(int**));
-
-            loop_states2{
-
-                Rec.jumps[i_state][i_state2] = (int**)malloc(Solver_Dict.number_of_islands * sizeof(int*));
-
-                loop_islands{
-
-                    Rec.jumps[i_state][i_state2][i_island] = (int*)malloc(Solver_Dict.number_of_frames * sizeof(int));
-                }
-            }
-        }
+        Rec.jumps = malloc_i_4d(Solver_Dict.number_of_states, Solver_Dict.number_of_states,
+                                Solver_Dict.number_of_islands, Solver_Dict.number_of_frames);
 
         rCFD_default_Rec();
     }
@@ -285,7 +266,7 @@ void init_all(void)
     /* G6. Balance (first initialization) */
     {
 #if RP_NODE
-        int i_phase, i_data, i_node, i_node2;
+        int i_phase, i_data;
 
         Balance = (Balance_type**)malloc(Solver_Dict.number_of_phases * sizeof(Balance_type*));
 
@@ -305,20 +286,13 @@ void init_all(void)
                 /* per node balancing */
                 else if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
 
-                    Balance[i_phase][i_data].node2node_flux = (double**)malloc((node_last + 1) * sizeof(double*));
-                    Balance[i_phase][i_data].node2node_data_flux = (double**)malloc((node_last + 1) * sizeof(double*));
+                    int nbytes = compute_node_count * compute_node_count * sizeof(double);
 
-                    for(i_node = 0; i_node < (node_last + 1); i_node++){
+                    Balance[i_phase][i_data].node2node_flux      = malloc_r_2d(compute_node_count, compute_node_count);
+                    Balance[i_phase][i_data].node2node_data_flux = malloc_r_2d(compute_node_count, compute_node_count);
 
-                        Balance[i_phase][i_data].node2node_flux[i_node] = (double*)malloc((node_last + 1) * sizeof(double));
-                        Balance[i_phase][i_data].node2node_data_flux[i_node] = (double*)malloc((node_last + 1) * sizeof(double));
-
-                        for(i_node2 = 0; i_node2 < (node_last + 1); i_node2++){
-
-                            Balance[i_phase][i_data].node2node_flux[i_node][i_node2] = 0.0;
-                            Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2] = 0.0;
-                        }
-                    }
+                    memset(Balance[i_phase][i_data].node2node_flux,      0, nbytes);
+                    memset(Balance[i_phase][i_data].node2node_data_flux, 0, nbytes);
                 }
 
                 Balance[i_phase][i_data].mass_integral = 0.0;
@@ -458,11 +432,9 @@ void init_all(void)
             /* L.1 create temporary faces_of_cell structure (tmp_faces_of_cell) */
             {
 
-                tmp_faces_of_cell = (int**)malloc(_Cell_Dict.number_of_cells * sizeof(int*));
+                tmp_faces_of_cell = malloc_i_2d(_Cell_Dict.number_of_cells, Solver_Dict.max_number_of_faces_per_cell);
 
                 loop_cells{
-
-                    tmp_faces_of_cell[i_cell] = (int*)malloc(Solver_Dict.max_number_of_faces_per_cell * sizeof(int));
 
                     for(i_cell_face = 0; i_cell_face < Solver_Dict.max_number_of_faces_per_cell; i_cell_face++){
 
@@ -1164,11 +1136,9 @@ void init_all(void)
                     tmp_parent_face_index[i_face] = -1;
                 }
 
-                tmp_parent_cell_cell_index = (int**)malloc(Topo_Dict.Cell_Dict[upper_layer].number_of_cells * sizeof(int*));
+                tmp_parent_cell_cell_index = malloc_i_2d(Topo_Dict.Cell_Dict[upper_layer].number_of_cells, Solver_Dict.max_number_of_faces_per_cell);
 
                 loop_cells_of_upper_layer{
-
-                    tmp_parent_cell_cell_index[i_cell] = (int*)malloc(Solver_Dict.max_number_of_faces_per_cell * sizeof(int));
 
                     for(i_cell_face = 0; i_cell_face < Solver_Dict.max_number_of_faces_per_cell; i_cell_face++){
 
@@ -1176,11 +1146,9 @@ void init_all(void)
                     }
                 }
 
-                tmp_parent_cell_face_index = (int**)malloc(Topo_Dict.Cell_Dict[upper_layer].number_of_cells * sizeof(int*));
+                tmp_parent_cell_face_index = malloc_i_2d(Topo_Dict.Cell_Dict[upper_layer].number_of_cells, Solver_Dict.max_number_of_faces_per_cell);
 
                 loop_cells_of_upper_layer{
-
-                    tmp_parent_cell_face_index[i_cell] = (int*)malloc(Solver_Dict.max_number_of_faces_per_cell * sizeof(int));
 
                     for(i_cell_face = 0; i_cell_face < Solver_Dict.max_number_of_faces_per_cell; i_cell_face++){
 
@@ -1280,12 +1248,7 @@ void init_all(void)
                 Topo.Face[upper_layer].c0 = (int*)malloc(Topo_Dict.Face_Dict[upper_layer].number_of_faces * sizeof(int));
                 Topo.Face[upper_layer].c1 = (int*)malloc(Topo_Dict.Face_Dict[upper_layer].number_of_faces * sizeof(int));
 
-                Topo.Face[upper_layer].area = (double**)malloc(Topo_Dict.Face_Dict[upper_layer].number_of_faces * sizeof(double*));
-
-                loop_faces_of_upper_layer{
-
-                    Topo.Face[upper_layer].area[i_face] = (double*)malloc (3 * sizeof(double));
-                }
+                Topo.Face[upper_layer].area = malloc_r_2d(Topo_Dict.Face_Dict[upper_layer].number_of_faces, 3);
 
                 loop_faces{
 
@@ -1347,49 +1310,14 @@ void init_all(void)
 
             /* L.11 free local vars */
             {
-                if(tmp_faces_of_cell != NULL){
+                free_i_2d(tmp_faces_of_cell);
 
-                    loop_cells{
+                free(tmp_parent_face_index);
 
-                        if(tmp_faces_of_cell[i_cell] != NULL){
+                free_i_2d(tmp_parent_cell_cell_index);
 
-                            free(tmp_faces_of_cell[i_cell]);
-                        }
-                    }
+                free_i_2d(tmp_parent_cell_face_index);
 
-                    free(tmp_faces_of_cell);
-                }
-
-                if(tmp_parent_face_index != NULL){
-
-                    free(tmp_parent_face_index);
-                }
-
-                if(tmp_parent_cell_cell_index != NULL){
-
-                    loop_cells_of_upper_layer{
-
-                        if(tmp_parent_cell_cell_index[i_cell] != NULL){
-
-                            free(tmp_parent_cell_cell_index[i_cell]);
-                        }
-                    }
-
-                    free(tmp_parent_cell_cell_index);
-                }
-
-                if(tmp_parent_cell_face_index != NULL){
-
-                    loop_cells_of_upper_layer{
-
-                        if(tmp_parent_cell_face_index[i_cell] != NULL){
-
-                            free(tmp_parent_cell_face_index[i_cell]);
-                        }
-                    }
-
-                    free(tmp_parent_cell_face_index);
-                }
 
                 if(debug_this_code){
 

@@ -14,41 +14,14 @@
 
     void free_all(void)
     {
-        int     i_state, i_state2, i_island;
+        int i_state;
 
         if(Rec.global_frame != NULL){
 
             free(Rec.global_frame);
         }
 
-        if(Rec.jumps != NULL){
-
-            loop_states{
-
-                if(Rec.jumps[i_state] != NULL){
-
-                    loop_states2{
-
-                        if(Rec.jumps[i_state][i_state2] != NULL){
-
-                            loop_islands{
-
-                                if(Rec.jumps[i_state][i_state2][i_island] != NULL){
-
-                                    free(Rec.jumps[i_state][i_state2][i_island]);
-                                }
-                            }
-
-                            free(Rec.jumps[i_state][i_state2]);
-                        }
-                    }
-
-                    free(Rec.jumps[i_state]);
-                }
-            }
-
-            free(Rec.jumps);
-        }
+        free_i_4d(Rec.jumps);
 
         if(Solver.timestep_width != NULL){
 
@@ -56,7 +29,7 @@
         }
 
 #if RP_NODE
-        int     i_phase, i_frame, i_data, i_shift, i_node, i_cell, i_face, i_layer;
+        int     i_phase, i_frame, i_data, i_shift, i_node, i_cell, i_layer;
 
         int     number_of_shifts;
 
@@ -69,49 +42,16 @@
 
             loop_layers{
 
-                if(_C.x != NULL){
-
-                    loop_cells{
-
-                        if(_C.x[i_cell] != NULL){
-
-                            free(_C.x[i_cell]);
-                        }
-                    }
-
-                    free(_C.x);
-                }
+                free_r_2d(_C.x);
 
                 if(_C.volume != NULL){
 
                     free(_C.volume);
                 }
 
-                if(_C.average_velocity != NULL){
+                free_r_2d(_C.average_velocity);
 
-                    loop_phases{
-
-                        if(_C.average_velocity[i_phase] != NULL){
-
-                            free(_C.average_velocity[i_phase]);
-                        }
-                    }
-
-                    free(_C.average_velocity);
-                }
-
-                if(_C.crossing_time != NULL){
-
-                    loop_phases{
-
-                        if(_C.crossing_time[i_phase] != NULL){
-
-                            free(_C.crossing_time[i_phase]);
-                        }
-                    }
-
-                    free(_C.crossing_time);
-                }
+                free_r_2d(_C.crossing_time);
 
                 if(_C.hit_by_other_cell != NULL){
 
@@ -133,107 +73,20 @@
                     free(_C.weight_after_swap);
                 }
 
-                if(_C.vof != NULL){
+                free_r_3d(_C.vof);
 
-                    loop_frames{
+                free_r_3d(_C.data);
 
-                        if(_C.vof[i_frame] != NULL){
+                free_r_3d(_C.data_shift);
 
-                            loop_cells{
-
-                                if(_C.vof[i_frame][i_cell] != NULL){
-
-                                    free(_C.vof[i_frame][i_cell]);
-                                }
-                            }
-
-                            free(_C.vof[i_frame]);
-                        }
-                    }
-
-                    free(_C.vof);
-                }
-
-                if(_C.data != NULL){
-
-                    loop_phases{
-
-                        if(_C.data[i_phase] != NULL){
-
-                            loop_cells{
-
-                                if(_C.data[i_phase][i_cell] != NULL){
-
-                                    free(_C.data[i_phase][i_cell]);
-                                }
-                            }
-
-                            free(_C.data[i_phase]);
-                        }
-                    }
-
-                    free(_C.data);
-                }
-
-                if(_C.data_shift != NULL){
-
-                    loop_phases{
-
-                        if(_C.data_shift[i_phase] != NULL){
-
-                            loop_cells{
-
-                                if(_C.data_shift[i_phase][i_cell] != NULL){
-
-                                    free(_C.data_shift[i_phase][i_cell]);
-                                }
-                            }
-
-                            free(_C.data_shift[i_phase]);
-                        }
-                    }
-
-                    free(_C.data_shift);
-                }
-
-                if(_C.data_swap != NULL){
-
-                    loop_phases{
-
-                        if(_C.data_swap[i_phase] != NULL){
-
-                            loop_cells{
-
-                                if(_C.data_swap[i_phase][i_cell] != NULL){
-
-                                    free(_C.data_swap[i_phase][i_cell]);
-                                }
-                            }
-
-                            free(_C.data_swap[i_phase]);
-                        }
-                    }
-
-                    free(_C.data_swap);
-                }
+                free_r_3d(_C.data_swap);
 
                 if(_C.drift_exchange != NULL){
 
                     free(_C.drift_exchange);
                 }
 
-                if(_C.user != NULL){
-
-                    loop_cells{
-
-                        if(_C.user[i_cell] !=  NULL){
-
-                            free(_C.user[i_cell]);
-                        }
-                    }
-
-                    free(_C.user);
-                }
+                free_r_2d(_C.user);
 
                 if(_C.marked != NULL){
 
@@ -281,18 +134,7 @@
                     free(_F.c1);
                 }
 
-                if(_F.area != NULL){
-
-                    loop_faces{
-
-                        if(_F.area[i_face] != NULL){
-
-                            free(_F.area[i_face]);
-                        }
-                    }
-
-                    free(_F.area);
-                }
+                free_r_2d(_F.area);
             }
 
             free(Topo.Face);
@@ -402,31 +244,9 @@
                                     free(C2Cs[_i_C2C].shifts_out);
                                 }
 
-                                if(C2Cs[_i_C2C].island_offsets != NULL){
+                                free_i_2d(C2Cs[_i_C2C].island_offsets);
 
-                                    loop_layers{
-
-                                        if(C2Cs[_i_C2C].island_offsets[i_layer] != NULL){
-
-                                            free(C2Cs[_i_C2C].island_offsets[i_layer]);
-                                        }
-                                    }
-
-                                    free(C2Cs[_i_C2C].island_offsets);
-                                }
-
-                                if(C2Cs[_i_C2C].island_offsets_in != NULL){
-
-                                    loop_layers{
-
-                                        if(C2Cs[_i_C2C].island_offsets_in[i_layer] != NULL){
-
-                                            free(C2Cs[_i_C2C].island_offsets_in[i_layer]);
-                                        }
-                                    }
-
-                                    free(C2Cs[_i_C2C].island_offsets_in);
-                                }
+                                free_i_2d(C2Cs[_i_C2C].island_offsets_in);
 
                                 if(myid == 0){
 
@@ -510,31 +330,9 @@
 
                     loop_data{
 
-                        if(Balance[i_phase][i_data].node2node_flux != NULL){
+                        free_r_2d(Balance[i_phase][i_data].node2node_flux);
 
-                            for(i_node = 0; i_node < (node_last + 1); i_node++){
-
-                                if(Balance[i_phase][i_data].node2node_flux[i_node] != NULL){
-
-                                    free(Balance[i_phase][i_data].node2node_flux[i_node]);
-                                }
-                            }
-
-                            free(Balance[i_phase][i_data].node2node_flux);
-                        }
-
-                        if(Balance[i_phase][i_data].node2node_data_flux != NULL){
-
-                            for(i_node = 0; i_node < (node_last + 1); i_node++){
-
-                                if(Balance[i_phase][i_data].node2node_data_flux[i_node] != NULL){
-
-                                    free(Balance[i_phase][i_data].node2node_data_flux[i_node]);
-                                }
-                            }
-
-                            free(Balance[i_phase][i_data].node2node_data_flux);
-                        }
+                        free_r_2d(Balance[i_phase][i_data].node2node_data_flux);
                     }
 
                     free(Balance[i_phase]);

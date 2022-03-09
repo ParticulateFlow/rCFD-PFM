@@ -35,10 +35,7 @@
 
                 free_r_2d(_C.x);
 
-                if(_C.volume != NULL){
-
-                    free(_C.volume);
-                }
+                free(_C.volume);
 
                 free_r_2d(_C.average_velocity);
 

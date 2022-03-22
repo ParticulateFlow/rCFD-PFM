@@ -21,11 +21,22 @@
 
 - start Ansys/fluent with the same number of threads from this folder.
 - read FB_tutorial.scm
-- type into fluent console (rcfd_r1), followed by (rcfd_r1), ..., (rcfd_r7); or simply (rcfd_run)
+- type into fluent console (rcfd_r1), followed by (rcfd_r2), ..., (rcfd_r7); or simply (rcfd_run)
 
 - balances will be stored into ./post
 - run transcript will be stored into ./post
 - animation snap-shots will be stored into ./post
+
+- close Ansys/fluent
+
+## Reference CFD simulation
+
+- start Ansys/fluent by e.g. *fluent 3ddp -t4 &* from this folder
+- read FB_tutorial.scm
+- type into fluent console (cfd_r1), followed by (cfd_r2), ..., (cfd_r6); or simply (cfd_ref)
+
+- monitors of *secondary gas mass* and *solid mixing index* will be stored into ./ref
+- animation snap-shots of secondary gas and solid species concentration will be stored into ./ref
 
 - close Ansys/fluent
 

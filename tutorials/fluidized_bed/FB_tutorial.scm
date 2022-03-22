@@ -1,11 +1,11 @@
-;; (C)  2021 
+;; (C)  2021-22 
 ;;  Stefan Pirker
 ;;  Particulate Flow Modelling
 ;;  Johannes Kepler University, Linz, Austria
 ;;  www.particulate-flow.at 
 
 
-(define rCFD_src_dir  "../../src")
+(define rCFD_src_dir  "../../2021_rCFD_CORE")
 (define rCFD_user_src_dir  "./user_src")
 (define ANSYS_Fluent_case_dir "./ansys_fluent")
 (define ANSYS_Fluent_case_file  "LabScale_FB")
@@ -17,10 +17,136 @@
 
 (define number_of_rCFD_episodes 100)
 
-(define i 0)
+(define number_of_cfd_episodes 1000)
+(define number_of_timesteps_for_CFD_episode 10)
 
+(define i 0) 
+
+(define img-ref "gas_solid_mixing_")
 (define img-1 "gas_phase_")
 (define img-2 "solid_phase_")
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (CFD_r1)       	;; ref.1   load all you need in tutorial's main folder, create /ref folder
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
+    (ti-menu-load-string (format  #f "!cp ~a/~a.dat.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
+    
+    (ti-menu-load-string (format  #f "!cp ~a/CFD_ref.c ." rCFD_user_src_dir))
+
+    (ti-menu-load-string "!rm -r libudf_ref")
+	
+	(ti-menu-load-string "!mkdir ref")
+)   
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (CFD_r2)       ;; ref.2   compile everything needed for CFD reference case
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (ti-menu-load-string "/define/user-defined/compiled-functions compile 
+        libudf_ref 
+        yes
+        CFD_ref.c
+        \"\"
+        \"\" ")
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (CFD_r3)       ;; ref.3:  load start file, allocate UDMI's and hook udf's for reference case
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (ti-menu-load-string (format #f "/file/read-case-data ./~a.cas.h5 OK" ANSYS_Fluent_case_file))
+    
+    (ti-menu-load-string "/define/user-defined/user-defined-memory 30 q" )
+    
+    (ti-menu-load-string "/define/user-defined/compiled-functions load \"libudf_ref\"")
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (CFD_r4)       ;; ref.4:  hook monitors
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+ 	(ti-menu-load-string "/define/user-defined/function-hooks/execute-at-end 
+		\"CFD_ref_monitors::libudf_ref\" 
+		\"\"")
+
+)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (CFD_r5)       ;; ref. 5:   run simulation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    ;; set graphics setting 
+    (ti-menu-load-string "/display/open-window 1")
+    (ti-menu-load-string "/display/set-window 1")
+    
+    (ti-menu-load-string "/display/set/picture/driver tiff")
+    (ti-menu-load-string "/display/set/picture/color-mode color")
+    (ti-menu-load-string "/display/set/picture/invert-background? no")
+    (ti-menu-load-string "/display/set/picture/invert-background? no")
+    (ti-menu-load-string "/display/set/picture/use-window-resolution? no")
+    (ti-menu-load-string "/display/set/picture/x-resolution 1189")
+    (ti-menu-load-string "/display/set/picture/y-resolution 642")
+    
+    (do  ((i  0 (+ i  1)))
+        ((= i  number_of_CFD_episodes))              
+
+		(ti-menu-load-string (format #f "/solve/set/time-step ~d" ANSYS_Fluent_simulation_timestep)) 
+		(ti-menu-load-string (format #f "/solve/dual-time-iterate ~d 30" number_of_timesteps_for_CFD_episode))
+
+        (ti-menu-load-string "/display/objects/display contour-2")  
+        (ti-menu-load-string "/display/set/overlays yes")
+        (ti-menu-load-string "/display/views/restore-view view_x=0")
+        (ti-menu-load-string "/display/set/lights/lights-on no")        
+        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-2-5 no no") 
+        (ti-menu-load-string "/display/update-scene/display yes no yes no no no no no no 0 0 0 0")  
+        (ti-menu-load-string "/display/update-scene/transform no yes 0 0.0 0 no no")    
+        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-2-5")    
+		
+        (ti-menu-load-string "/display/objects/display contour-3")  
+        (ti-menu-load-string "/display/set/overlays yes")
+        (ti-menu-load-string "/display/views/restore-view view_x=0")
+        (ti-menu-load-string "/display/set/lights/lights-on no")        
+        (ti-menu-load-string "/display/update-scene/select-geometry yes contour-3-5 no no") 
+        (ti-menu-load-string "/display/update-scene/display yes no yes no no no no no no 0 0 0 0")  
+        (ti-menu-load-string "/display/update-scene/transform no yes 0 0.2 0 no no")    
+        (ti-menu-load-string "/display/update-scene/select-geometry no yes contour-3-5")    
+
+        (ti-menu-load-string "!rm temp1.tif")
+        (ti-menu-load-string "display/hardcopy temp1.tif")
+        (ti-menu-load-string (format #f "! convert temp1.tif ~a~04d.jpg &" img-ref i))                
+		
+    )
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (CFD_r6)       ;; run.7: clean-up folder
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (ti-menu-load-string "!mv ./*.out ./ref")
+    (ti-menu-load-string "!mv ./*.jpg ./ref")	
+    
+    (ti-menu-load-string "!rm  ./*.c")
+    (ti-menu-load-string "!rm  ./*.h")
+    (ti-menu-load-string "!rm  ./*.h5") 
+    (ti-menu-load-string "!rm  ./*.tiff")
+    (ti-menu-load-string "!rm  ./*.tif")
+    (ti-menu-load-string "!rm  ./fluent*")
+    (ti-menu-load-string "!rm  ./log")
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (CFD_ref)       ;; ref   	set up and run reference cfd simulation for validation 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	
+	(CFD_1)
+	(CFD_2)
+	(CFD_3)
+	(CFD_4)
+	(CFD_5)
+	(CFD_6)
+)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

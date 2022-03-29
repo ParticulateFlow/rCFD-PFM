@@ -98,9 +98,9 @@ DEFINE_EXECUTE_AT_END(CFD_ref_monitors)
 				
 				begin_c_loop_int(c,t){
 				
-					mixing_nom = C_YI(c,t_solid, solid_A) * C_VOLUME(c,t) * C_VOF(c,t_solid) * C_R(c, t_solid);
+					mixing_nom += C_YI(c,t_solid, solid_A) * C_VOLUME(c,t) * C_VOF(c,t_solid) * C_R(c, t_solid);
 
-					mixing_denom = C_VOLUME(c,t) * C_VOF(c,t_solid) * C_R(c, t_solid);
+					mixing_denom += C_VOLUME(c,t) * C_VOF(c,t_solid) * C_R(c, t_solid);
 					
 			}end_c_loop_int(c,t)}			
 

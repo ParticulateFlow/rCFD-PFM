@@ -12,6 +12,8 @@ static short	ref_species_initiated = 0;
 
 static double	mean_solid_A_conc = 0.0;
 
+static double	start_time = 0.0;
+
 enum{	
 	gas_A,
 	gas_B
@@ -113,6 +115,11 @@ DEFINE_EXECUTE_AT_END(CFD_ref_monitors)
 				mean_solid_A_conc = mixing_nom / mixing_denom;
 			}
 		}
+	
+		/* R.1.4. initialize start time */
+		{
+			start_time = CURRENT_TIME;
+		}
 	}
 	
 	/* R.2. calc m_gas_B, mixing_solid */
@@ -169,10 +176,10 @@ DEFINE_EXECUTE_AT_END(CFD_ref_monitors)
 		
 		if(ref_species_initiated == 0){
 			
-			f_out = fopen("./monitor.out","w");
+			f_out = fopen("./monitor_CFD.out","w");
 		}
 		else{
-			f_out = fopen("./monitor.out","a");
+			f_out = fopen("./monitor_CFD.out","a");
 		}
 		
 		if(f_out == NULL){
@@ -182,7 +189,7 @@ DEFINE_EXECUTE_AT_END(CFD_ref_monitors)
 			return;
 		}
 		
-		fprintf(f_out, "%e %e %e\n", CURRENT_TIME, mass_gas_B, mixing_index);
+		fprintf(f_out, "%e %e %e\n", (CURRENT_TIME - start_time), mass_gas_B, mixing_index);
 		
 		fclose(f_out);
 	}

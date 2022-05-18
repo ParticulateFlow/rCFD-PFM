@@ -1570,9 +1570,12 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-                                            _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density + _C.data_swap[_i_data]) /
+                                            if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density) > 0.0){
+													
+												_C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density + _C.data_swap[_i_data]) /
 
-                                                (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density);
+													(_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density);
+											}
 
                                             Balance[_i_balance].mass_integral += _C.data[_i_data] *
 
@@ -1722,11 +1725,14 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-                                            _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase] *
+											if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity) > 0.0){
+											
+												_C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase] *
 
-                                                Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + _C.data_swap[_i_data]) /
+													Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + _C.data_swap[_i_data]) /
 
-                                                (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity);
+													(_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity);
+											}
 
                                             Balance[_i_balance].mass_integral += _C.data[_i_data] *
 

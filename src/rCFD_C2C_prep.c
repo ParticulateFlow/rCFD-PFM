@@ -489,6 +489,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             p->user[p_just_killed] = 1.;
             p->state.mass = 0.;
             p->type = 2;        /* kill tracer (evaporates particle) */
+			
+			MARK_TP(p, P_FL_REMOVED);			
         }
         else{
 
@@ -603,6 +605,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             p->state.mass = 0.;
             p->type = 2;
 
+			MARK_TP(p, P_FL_REMOVED);			
+			
             i_tracer = Tracer.monitor_counter[i_phase];
 
             if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
@@ -631,6 +635,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
         p->state.mass = 0.;
         p->type = 2;
 
+		MARK_TP(p, P_FL_REMOVED);		
+		
         i_tracer = Tracer.monitor_counter[i_phase];
 
         if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){

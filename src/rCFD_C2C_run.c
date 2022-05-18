@@ -1062,58 +1062,69 @@ DEFINE_ON_DEMAND(rCFD_run)
 #if RP_NODE
                     /* TODO: allow for more diff. loops, account for heterogeneous diffusion */
 
-                    /* Init data_swap */
-                    loop_cells{
+					loop_data{
+						
+						switch (Data_Dict[i_phase][i_data].type){
 
-                        loop_data{
+							case concentration_data:
+							{
+								/* Init data_swap */
+								loop_int_cells{
 
-                            _C.data_swap[i_phase][i_cell][i_data] = 0.0;
-                        }
-                    }
+									_C.data_swap[_i_data] = 0.0;
+								}
 
-                    /* define swap masses */
-                    loop_faces{
+								/* define swap masses */
+								loop_faces{
 
-                        c0 = _F.c0[i_face];
-                        c1 = _F.c1[i_face];
+									c0 = _F.c0[i_face];
+									c1 = _F.c1[i_face];
 
-                        loop_data{
+									if(_C.data[_c0_data] > _C.data[_c1_data]){
 
-                            if(_C.data[i_phase][c0][i_data] > _C.data[i_phase][c1][i_data]){
+										c = c0; c0 = c1; c1 = c;
+									}
 
-                                c = c0; c0 = c1; c1 = c;
-                            }
+									if(_C.data[_c1_data] > _C.data[_c0_data]){
 
-                            if(_C.data[i_phase][c1][i_data] > _C.data[i_phase][c0][i_data]){
+										i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+										i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
 
-                                if(_C.volume[c0] < _C.volume[c1]){
+										if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
 
-                                    vol_flip = _C.volume[c0] * Data_Dict[i_phase][i_data].physical_diff;
-                                }
-                                else{
-                                    vol_flip = _C.volume[c1] * Data_Dict[i_phase][i_data].physical_diff;
-                                }
+											vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
+										}
+										else{
+											vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
+										}
 
-                                _C.data_swap[i_phase][c1][i_data] -= vol_flip *
+										_C.data_swap[i_phase][c1][i_data] -= vol_flip *
 
-                                    (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
+											(_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
 
-                                _C.data_swap[i_phase][c0][i_data] += vol_flip *
+										_C.data_swap[i_phase][c0][i_data] += vol_flip *
 
-                                    (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
-                            }
-                        }
-                    }
+											(_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
+									}
+								}
 
-                    /* update data by data_swap */
-                    loop_cells{
+								/* update data by data_swap */
+								loop_int_cells{
 
-                        loop_data{
+									i_frame = Rec.global_frame[_C.island_id[i_cell]];
+									
+									if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
+										
+										_C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
+									}
 
-                            _C.data[i_phase][i_cell][i_data] += _C.data_swap[i_phase][i_cell][i_data] / _C.volume[i_cell];
+									_C.data_swap[_i_data] = 0.0;
+								}
 
-                            _C.data_swap[i_phase][i_cell][i_data] = 0.0;
-                        }
+								break;
+							}
+						
+						}
                     }
 #endif
                 }

@@ -110,9 +110,16 @@
 
     } Phase_Dict_type;
 
+	enum{ /* tracer guiding format */
+        guide_by_force_format,
+        guide_by_value_format
+    };
+
     typedef struct Tracer_Dict_struct
     {
-        int     number_of_Tracers_per_cell;
+        short	format;
+		
+		int     number_of_Tracers_per_cell;
 
         short   region_of_interest_exists;
 

@@ -671,33 +671,106 @@ DEFINE_DPM_DRAG(rcfd_no_standard_drag,p,i)
 DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
 /*************************************************************************************/
 {
-    Thread* t = P_CELL_THREAD(p);
-    cell_t  c = P_CELL(p);
+#if RP_NODE	
 
-    if(Solver_Dict.number_of_phases == 1){
+    /* in case particle is declared dead: V[i], f[i] = 0 */
+	if(p->user[p_just_killed] > 0){
+		
+		p->state.V[i] = 0.0;
+		
+		return 0.0;
+	}
+	
+	switch (Tracer_Dict.format){
+		
+		case guide_by_force_format:
+		{
+			Thread* t = P_CELL_THREAD(p);
+			cell_t  c = P_CELL(p);
+	
+			if(Solver_Dict.number_of_phases == 1){
 
-        if(i==0)    return p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]) - p->state.V[0];
+				if(i==0)    return p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]) - p->state.V[0];
 
-        if(i==1)    return p->user[p_time_ratio] * (C_V(c,t) + p->user[p_v_rwm]) - p->state.V[1];
+				if(i==1)    return p->user[p_time_ratio] * (C_V(c,t) + p->user[p_v_rwm]) - p->state.V[1];
 
-        if(i==2)    return p->user[p_time_ratio] * (C_W(c,t) + p->user[p_w_rwm]) - p->state.V[2];
-    }
-    else{
+				if(i==2)    return p->user[p_time_ratio] * (C_W(c,t) + p->user[p_w_rwm]) - p->state.V[2];
+			}
+			else{
 
-        Thread  *t_phase = NULL;
+				Thread  *t_phase = NULL;
 
-        int i_phase = (int)p->user[p_phase_id];
+				int i_phase = (int)p->user[p_phase_id];
 
-        t_phase = THREAD_SUB_THREAD(t, i_phase);
+				t_phase = THREAD_SUB_THREAD(t, i_phase);
 
-        if(i==0)    return p->user[p_time_ratio] * (C_U(c,t_phase) + p->user[p_u_rwm]) - p->state.V[0];
+				if(i==0)    return p->user[p_time_ratio] * (C_U(c,t_phase) + p->user[p_u_rwm]) - p->state.V[0];
 
-        if(i==1)    return p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]) - p->state.V[1];
+				if(i==1)    return p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]) - p->state.V[1];
 
-        if(i==2)    return p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]) - p->state.V[2];
-    }
+				if(i==2)    return p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]) - p->state.V[2];
+			}	
+			
+			break;
+		}
+		
+		case guide_by_value_format:
+		{
+			Thread* t = P_CELL_THREAD(p);
+			cell_t  c = P_CELL(p);
+				
+			if(Solver_Dict.number_of_phases == 1){
 
-    return 0.;
+				if(i==0){    
+				
+					p->state.V[i] = p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]);
+				}
+
+				if(i==1){    
+				
+					p->state.V[i] = p->user[p_time_ratio] * (C_V(c,t) + p->user[p_v_rwm]);
+				}
+
+				if(i==2){
+					
+					p->state.V[i] = p->user[p_time_ratio] * (C_W(c,t) + p->user[p_w_rwm]);
+				}
+				
+				return 0.0;
+			}
+			else{
+
+				Thread  *t_phase = NULL;
+
+				int i_phase = (int)p->user[p_phase_id];
+
+				t_phase = THREAD_SUB_THREAD(t, i_phase);
+
+				if(i==0){    
+				
+					p->state.V[i] = p->user[p_time_ratio] * (C_U(c,t_phase) + p->user[p_u_rwm]);
+				}
+
+				if(i==1){    
+				
+					p->state.V[i] = p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]);
+				}
+
+				if(i==2){    
+				
+					p->state.V[i] = p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]);
+				}
+				
+				return 0.0;
+			}			
+			
+			break;
+		}
+	}
+
+#endif
+
+    return 0.0;
 }
 
 /*************************************************************************************/

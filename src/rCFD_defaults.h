@@ -155,6 +155,9 @@
     void rCFD_default_Tracer_Dict(void)
     {
 #if RP_NODE
+
+		Tracer_Dict.format = guide_by_force_format;
+
         Tracer_Dict.number_of_Tracers_per_cell = 1;
 
         Tracer_Dict.region_of_interest_exists = 0;

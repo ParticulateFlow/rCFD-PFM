@@ -489,8 +489,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             p->user[p_just_killed] = 1.;
             p->state.mass = 0.;
             p->type = 2;        /* kill tracer (evaporates particle) */
-			
-			MARK_TP(p, P_FL_REMOVED);			
+
+            MARK_TP(p, P_FL_REMOVED);
         }
         else{
 
@@ -605,8 +605,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             p->state.mass = 0.;
             p->type = 2;
 
-			MARK_TP(p, P_FL_REMOVED);			
-			
+            MARK_TP(p, P_FL_REMOVED);
+
             i_tracer = Tracer.monitor_counter[i_phase];
 
             if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
@@ -635,8 +635,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
         p->state.mass = 0.;
         p->type = 2;
 
-		MARK_TP(p, P_FL_REMOVED);		
-		
+        MARK_TP(p, P_FL_REMOVED);
+
         i_tracer = Tracer.monitor_counter[i_phase];
 
         if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
@@ -671,102 +671,102 @@ DEFINE_DPM_DRAG(rcfd_no_standard_drag,p,i)
 DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
 /*************************************************************************************/
 {
-#if RP_NODE	
+#if RP_NODE
 
     /* in case particle is declared dead: V[i], f[i] = 0 */
-	if(p->user[p_just_killed] > 0){
-		
-		p->state.V[i] = 0.0;
-		
-		return 0.0;
-	}
-	
-	switch (Tracer_Dict.format){
-		
-		case guide_by_force_format:
-		{
-			Thread* t = P_CELL_THREAD(p);
-			cell_t  c = P_CELL(p);
-	
-			if(Solver_Dict.number_of_phases == 1){
+    if(p->user[p_just_killed] > 0){
 
-				if(i==0)    return p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]) - p->state.V[0];
+        p->state.V[i] = 0.0;
 
-				if(i==1)    return p->user[p_time_ratio] * (C_V(c,t) + p->user[p_v_rwm]) - p->state.V[1];
+        return 0.0;
+    }
 
-				if(i==2)    return p->user[p_time_ratio] * (C_W(c,t) + p->user[p_w_rwm]) - p->state.V[2];
-			}
-			else{
+    switch (Tracer_Dict.format){
 
-				Thread  *t_phase = NULL;
+        case guide_by_force_format:
+        {
+            Thread* t = P_CELL_THREAD(p);
+            cell_t  c = P_CELL(p);
 
-				int i_phase = (int)p->user[p_phase_id];
+            if(Solver_Dict.number_of_phases == 1){
 
-				t_phase = THREAD_SUB_THREAD(t, i_phase);
+                if(i==0)    return p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]) - p->state.V[0];
 
-				if(i==0)    return p->user[p_time_ratio] * (C_U(c,t_phase) + p->user[p_u_rwm]) - p->state.V[0];
+                if(i==1)    return p->user[p_time_ratio] * (C_V(c,t) + p->user[p_v_rwm]) - p->state.V[1];
 
-				if(i==1)    return p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]) - p->state.V[1];
+                if(i==2)    return p->user[p_time_ratio] * (C_W(c,t) + p->user[p_w_rwm]) - p->state.V[2];
+            }
+            else{
 
-				if(i==2)    return p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]) - p->state.V[2];
-			}	
-			
-			break;
-		}
-		
-		case guide_by_value_format:
-		{
-			Thread* t = P_CELL_THREAD(p);
-			cell_t  c = P_CELL(p);
-				
-			if(Solver_Dict.number_of_phases == 1){
+                Thread  *t_phase = NULL;
 
-				if(i==0){    
-				
-					p->state.V[i] = p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]);
-				}
+                int i_phase = (int)p->user[p_phase_id];
 
-				if(i==1){    
-				
-					p->state.V[i] = p->user[p_time_ratio] * (C_V(c,t) + p->user[p_v_rwm]);
-				}
+                t_phase = THREAD_SUB_THREAD(t, i_phase);
 
-				if(i==2){
-					
-					p->state.V[i] = p->user[p_time_ratio] * (C_W(c,t) + p->user[p_w_rwm]);
-				}
-				
-				return 0.0;
-			}
-			else{
+                if(i==0)    return p->user[p_time_ratio] * (C_U(c,t_phase) + p->user[p_u_rwm]) - p->state.V[0];
 
-				Thread  *t_phase = NULL;
+                if(i==1)    return p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]) - p->state.V[1];
 
-				int i_phase = (int)p->user[p_phase_id];
+                if(i==2)    return p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]) - p->state.V[2];
+            }
 
-				t_phase = THREAD_SUB_THREAD(t, i_phase);
+            break;
+        }
 
-				if(i==0){    
-				
-					p->state.V[i] = p->user[p_time_ratio] * (C_U(c,t_phase) + p->user[p_u_rwm]);
-				}
+        case guide_by_value_format:
+        {
+            Thread* t = P_CELL_THREAD(p);
+            cell_t  c = P_CELL(p);
 
-				if(i==1){    
-				
-					p->state.V[i] = p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]);
-				}
+            if(Solver_Dict.number_of_phases == 1){
 
-				if(i==2){    
-				
-					p->state.V[i] = p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]);
-				}
-				
-				return 0.0;
-			}			
-			
-			break;
-		}
-	}
+                if(i==0){
+
+                    p->state.V[i] = p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]);
+                }
+
+                if(i==1){
+
+                    p->state.V[i] = p->user[p_time_ratio] * (C_V(c,t) + p->user[p_v_rwm]);
+                }
+
+                if(i==2){
+
+                    p->state.V[i] = p->user[p_time_ratio] * (C_W(c,t) + p->user[p_w_rwm]);
+                }
+
+                return 0.0;
+            }
+            else{
+
+                Thread  *t_phase = NULL;
+
+                int i_phase = (int)p->user[p_phase_id];
+
+                t_phase = THREAD_SUB_THREAD(t, i_phase);
+
+                if(i==0){
+
+                    p->state.V[i] = p->user[p_time_ratio] * (C_U(c,t_phase) + p->user[p_u_rwm]);
+                }
+
+                if(i==1){
+
+                    p->state.V[i] = p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]);
+                }
+
+                if(i==2){
+
+                    p->state.V[i] = p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]);
+                }
+
+                return 0.0;
+            }
+
+            break;
+        }
+    }
 
 #endif
 

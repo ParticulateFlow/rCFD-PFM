@@ -1062,69 +1062,69 @@ DEFINE_ON_DEMAND(rCFD_run)
 #if RP_NODE
                     /* TODO: allow for more diff. loops, account for heterogeneous diffusion */
 
-					loop_data{
-						
-						switch (Data_Dict[i_phase][i_data].type){
+                    loop_data{
 
-							case concentration_data:
-							{
-								/* Init data_swap */
-								loop_int_cells{
+                        switch (Data_Dict[i_phase][i_data].type){
 
-									_C.data_swap[_i_data] = 0.0;
-								}
+                            case concentration_data:
+                            {
+                                /* Init data_swap */
+                                loop_int_cells{
 
-								/* define swap masses */
-								loop_faces{
+                                    _C.data_swap[_i_data] = 0.0;
+                                }
 
-									c0 = _F.c0[i_face];
-									c1 = _F.c1[i_face];
+                                /* define swap masses */
+                                loop_faces{
 
-									if(_C.data[_c0_data] > _C.data[_c1_data]){
+                                    c0 = _F.c0[i_face];
+                                    c1 = _F.c1[i_face];
 
-										c = c0; c0 = c1; c1 = c;
-									}
+                                    if(_C.data[_c0_data] > _C.data[_c1_data]){
 
-									if(_C.data[_c1_data] > _C.data[_c0_data]){
+                                        c = c0; c0 = c1; c1 = c;
+                                    }
 
-										i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
-										i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
+                                    if(_C.data[_c1_data] > _C.data[_c0_data]){
 
-										if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
+                                        i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                        i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
 
-											vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
-										}
-										else{
-											vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
-										}
+                                        if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
 
-										_C.data_swap[i_phase][c1][i_data] -= vol_flip *
+                                            vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
+                                        }
+                                        else{
+                                            vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
+                                        }
 
-											(_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
+                                        _C.data_swap[i_phase][c1][i_data] -= vol_flip *
 
-										_C.data_swap[i_phase][c0][i_data] += vol_flip *
+                                            (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
 
-											(_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
-									}
-								}
+                                        _C.data_swap[i_phase][c0][i_data] += vol_flip *
 
-								/* update data by data_swap */
-								loop_int_cells{
+                                            (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
+                                    }
+                                }
 
-									i_frame = Rec.global_frame[_C.island_id[i_cell]];
-									
-									if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
-										
-										_C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
-									}
+                                /* update data by data_swap */
+                                loop_int_cells{
 
-									_C.data_swap[_i_data] = 0.0;
-								}
+                                    i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-								break;
-							}
-						
-						}
+                                    if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
+
+                                        _C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
+                                    }
+
+                                    _C.data_swap[_i_data] = 0.0;
+                                }
+
+                                break;
+                            }
+
+                        }
                     }
 #endif
                 }
@@ -1582,11 +1582,11 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
                                             if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density) > 0.0){
-													
-												_C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density + _C.data_swap[_i_data]) /
 
-													(_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density);
-											}
+                                                _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density + _C.data_swap[_i_data]) /
+
+                                                    (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density);
+                                            }
 
                                             Balance[_i_balance].mass_integral += _C.data[_i_data] *
 
@@ -1736,14 +1736,14 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-											if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity) > 0.0){
-											
-												_C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase] *
+                                            if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity) > 0.0){
 
-													Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + _C.data_swap[_i_data]) /
+                                                _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase] *
 
-													(_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity);
-											}
+                                                    Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + _C.data_swap[_i_data]) /
+
+                                                    (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity);
+                                            }
 
                                             Balance[_i_balance].mass_integral += _C.data[_i_data] *
 

@@ -618,6 +618,13 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                 i_rec_max = 1;
 
+#if RP_HOST
+				if(Solver.global_run_counter == 0){
+					
+					srand(time(0));
+				}
+#endif				
+
                 for(i_rec = 0; i_rec < i_layer; i_rec++){
 
                     i_rec_max *= 2;

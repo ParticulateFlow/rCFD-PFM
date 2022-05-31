@@ -110,16 +110,16 @@
 
     } Phase_Dict_type;
 
-	enum{ /* tracer guiding format */
+    enum{ /* tracer guiding format */
         guide_by_force_format,
         guide_by_value_format
     };
 
     typedef struct Tracer_Dict_struct
     {
-        short	format;
-		
-		int     number_of_Tracers_per_cell;
+        short   format;
+        
+        int     number_of_Tracers_per_cell;
 
         short   region_of_interest_exists;
 
@@ -153,8 +153,9 @@
 
     } Norm_Dict_type;
 
-    enum{ /* rec methods */
-        quarter_jumps,
+    enum{ /* rec method */
+        quarter_jumps_method,
+        off_diagonal_band_method,
         number_of_rec_methods
     };
 
@@ -164,6 +165,8 @@
 
         short   min_seq_length;
         short   max_seq_length;
+        
+        short   off_diagonal_band_width;
 
     } Rec_Dict_type;
 

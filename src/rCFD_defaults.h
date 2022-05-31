@@ -156,7 +156,7 @@
     {
 #if RP_NODE
 
-		Tracer_Dict.format = guide_by_force_format;
+        Tracer_Dict.format = guide_by_force_format;
 
         Tracer_Dict.number_of_Tracers_per_cell = 1;
 
@@ -195,8 +195,8 @@
 
     void rCFD_default_Rec_Dict(void)
     {
-
-        Rec_Dict.method = quarter_jumps;
+        
+        Rec_Dict.method = quarter_jumps_method;
 
         Rec_Dict.min_seq_length = (int)((double)Solver_Dict.number_of_frames/25.);
 
@@ -210,6 +210,13 @@
         if(Rec_Dict.max_seq_length < 1){
 
             Rec_Dict.max_seq_length = 1;
+        }
+    
+        Rec_Dict.off_diagonal_band_width = (int)((double)Solver_Dict.number_of_frames/10.);
+        
+        if(Rec_Dict.off_diagonal_band_width < 1){
+            
+            Rec_Dict.off_diagonal_band_width = 1;
         }
     }
 

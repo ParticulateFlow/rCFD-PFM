@@ -400,7 +400,7 @@ void init_all(void)
             }
         }
 
-        rCFD_user_post();   /* post-process initialization */
+        rCFD_user_post();    /* post-process initialization */
 #endif
     }
 

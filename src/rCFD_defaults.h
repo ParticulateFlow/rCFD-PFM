@@ -195,7 +195,7 @@
 
     void rCFD_default_Rec_Dict(void)
     {
-        
+
         Rec_Dict.method = quarter_jumps_method;
 
         Rec_Dict.min_seq_length = (int)((double)Solver_Dict.number_of_frames/25.);
@@ -211,11 +211,11 @@
 
             Rec_Dict.max_seq_length = 1;
         }
-    
+
         Rec_Dict.off_diagonal_band_width = (int)((double)Solver_Dict.number_of_frames/10.);
-        
+
         if(Rec_Dict.off_diagonal_band_width < 1){
-            
+
             Rec_Dict.off_diagonal_band_width = 1;
         }
     }

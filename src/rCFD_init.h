@@ -120,20 +120,20 @@ void init_all(void)
         rCFD_default_Cell_Dict_L0();
 
         int i_layer;
-        
+
         loop_layers{
-            
+
             rCFD_user_set_Cell_Dict(i_layer);
         }
-        
+
         Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_Dict_type));
 
         rCFD_default_Face_Dict_L0();
-        
+
         loop_layers{
-            
+
             rCFD_user_set_Face_Dict(i_layer);
-        }       
+        }
 #endif
     }
 

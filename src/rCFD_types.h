@@ -118,7 +118,7 @@
     typedef struct Tracer_Dict_struct
     {
         short   format;
-        
+
         int     number_of_Tracers_per_cell;
 
         short   region_of_interest_exists;
@@ -165,7 +165,7 @@
 
         short   min_seq_length;
         short   max_seq_length;
-        
+
         short   off_diagonal_band_width;
 
     } Rec_Dict_type;

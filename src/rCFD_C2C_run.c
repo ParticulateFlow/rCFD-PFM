@@ -615,16 +615,16 @@ DEFINE_ON_DEMAND(rCFD_run)
         {
 
             if(Solver_Dict.recurrence_process_on){
-                
+
 #if RP_HOST     /* init rand. gen */
 
                 if(Solver.global_run_counter == 0){
-                    
+
                     srand(time(0));
-                    
+
                     Message("\n\nInitialized random generator");
                 }
-#endif              
+#endif
 
                 i_rec_max = 1;
 
@@ -648,8 +648,8 @@ DEFINE_ON_DEMAND(rCFD_run)
                         rand_real = (double)rand()/(double)RAND_MAX;
 
                         Rec.sequence_length = Rec_Dict.min_seq_length + (int)(rand_real*(double)(Rec_Dict.max_seq_length - Rec_Dict.min_seq_length));
-                        
-                        
+
+
 #endif
                         host_to_node_int_1(Rec.sequence_length);
 
@@ -817,7 +817,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                 if((_C.weight_after_shift[c1] > 0.)&&(_C.weight_after_shift[c0] == 0.0)){
 
                                     loop_data{
-                                            
+
                                         _C.data_swap[i_phase][c0][i_data] =
 
                                             (_C.weight_after_shift[c1] * _C.data_shift[i_phase][c1][i_data] +
@@ -1074,7 +1074,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                     /* TODO: allow for more diff. loops, account for heterogeneous diffusion */
 
                     loop_data{
-                        
+
                         switch (Data_Dict[i_phase][i_data].type){
 
                             case concentration_data:
@@ -1123,9 +1123,9 @@ DEFINE_ON_DEMAND(rCFD_run)
                                 loop_int_cells{
 
                                     i_frame = Rec.global_frame[_C.island_id[i_cell]];
-                                    
+
                                     if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
-                                        
+
                                         _C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
                                     }
 
@@ -1134,7 +1134,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                 break;
                             }
-                        
+
                         }
 
                     }
@@ -1218,7 +1218,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
             /* Balance correction */
             {
-                
+
                 /* Update balances */
                 {
                     /* B1: mass_integral, mass_integral_global */
@@ -1595,7 +1595,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
                                             if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density) > 0.0){
-                                                    
+
                                                 _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density + _C.data_swap[_i_data]) /
 
                                                     (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density);
@@ -1750,7 +1750,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
                                             if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity) > 0.0){
-                                            
+
                                                 _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase] *
 
                                                     Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + _C.data_swap[_i_data]) /

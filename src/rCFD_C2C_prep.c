@@ -489,8 +489,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             p->user[p_just_killed] = 1.;
             p->state.mass = 0.;
             p->type = 2;        /* kill tracer (evaporates particle) */
-            
-            MARK_TP(p, P_FL_REMOVED);           
+
+            MARK_TP(p, P_FL_REMOVED);
         }
         else{
 
@@ -605,8 +605,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             p->state.mass = 0.;
             p->type = 2;
 
-            MARK_TP(p, P_FL_REMOVED);           
-            
+            MARK_TP(p, P_FL_REMOVED);
+
             i_tracer = Tracer.monitor_counter[i_phase];
 
             if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
@@ -635,8 +635,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
         p->state.mass = 0.;
         p->type = 2;
 
-        MARK_TP(p, P_FL_REMOVED);       
-        
+        MARK_TP(p, P_FL_REMOVED);
+
         i_tracer = Tracer.monitor_counter[i_phase];
 
         if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
@@ -671,23 +671,23 @@ DEFINE_DPM_DRAG(rcfd_no_standard_drag,p,i)
 DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
 /*************************************************************************************/
 {
-#if RP_NODE 
+#if RP_NODE
 
     /* in case particle is declared dead: V[i], f[i] = 0 */
     if(p->user[p_just_killed] > 0){
-        
+
         p->state.V[i] = 0.0;
-        
+
         return 0.0;
     }
-    
+
     switch (Tracer_Dict.format){
-        
+
         case guide_by_force_format:
         {
             Thread* t = P_CELL_THREAD(p);
             cell_t  c = P_CELL(p);
-    
+
             if(Solver_Dict.number_of_phases == 1){
 
                 if(i==0)    return p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]) - p->state.V[0];
@@ -709,33 +709,33 @@ DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
                 if(i==1)    return p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]) - p->state.V[1];
 
                 if(i==2)    return p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]) - p->state.V[2];
-            }   
-            
+            }
+
             break;
         }
-        
+
         case guide_by_value_format:
         {
             Thread* t = P_CELL_THREAD(p);
             cell_t  c = P_CELL(p);
-                
+
             if(Solver_Dict.number_of_phases == 1){
 
-                if(i==0){    
-                
+                if(i==0){
+
                     p->state.V[i] = p->user[p_time_ratio] * (C_U(c,t) + p->user[p_u_rwm]);
                 }
 
-                if(i==1){    
-                
+                if(i==1){
+
                     p->state.V[i] = p->user[p_time_ratio] * (C_V(c,t) + p->user[p_v_rwm]);
                 }
 
                 if(i==2){
-                    
+
                     p->state.V[i] = p->user[p_time_ratio] * (C_W(c,t) + p->user[p_w_rwm]);
                 }
-                
+
                 return 0.0;
             }
             else{
@@ -746,24 +746,24 @@ DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
 
                 t_phase = THREAD_SUB_THREAD(t, i_phase);
 
-                if(i==0){    
-                
+                if(i==0){
+
                     p->state.V[i] = p->user[p_time_ratio] * (C_U(c,t_phase) + p->user[p_u_rwm]);
                 }
 
-                if(i==1){    
-                
+                if(i==1){
+
                     p->state.V[i] = p->user[p_time_ratio] * (C_V(c,t_phase) + p->user[p_v_rwm]);
                 }
 
-                if(i==2){    
-                
+                if(i==2){
+
                     p->state.V[i] = p->user[p_time_ratio] * (C_W(c,t_phase) + p->user[p_w_rwm]);
                 }
-                
+
                 return 0.0;
-            }           
-            
+            }
+
             break;
         }
     }
@@ -1070,7 +1070,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
     double  Rec_matrix[Solver_Dict.number_of_frames][Solver_Dict.number_of_frames];
 
     int     Rec_jump[Solver_Dict.number_of_frames];
-    
+
     double  Rec_jump_diff[Solver_Dict.number_of_frames];
 
     FILE    *f_out = NULL;
@@ -1180,7 +1180,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
         {
 #if RP_HOST
             switch (Rec_Dict.method){
-                
+
                 case  quarter_jumps_method:
                 {
 
@@ -1248,49 +1248,49 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
 
                         Rec_jump[i_frame] = j_frame_min;
 
-                        Rec_jump_diff[i_frame] = diff;                      
+                        Rec_jump_diff[i_frame] = diff;
                     }
-                
+
                     break;
                 }
-                
+
                 case off_diagonal_band_method:
-                {                   
+                {
                     int j_frame, j_frame_min = 0;
-                    
+
                     loop_frames{
-                        
+
                         diff = 1e10;
-                        
+
                         if(i_frame > Rec_Dict.off_diagonal_band_width){
-                            
+
                             for(j_frame = 0; j_frame < (i_frame - Rec_Dict.off_diagonal_band_width); j_frame++){
-                                
+
                                 if (Rec_matrix[i_frame][j_frame] < diff){
 
                                     diff = Rec_matrix[i_frame][j_frame];
 
                                     j_frame_min = j_frame;
-                                }                               
+                                }
                             }
                         }
-                        
+
                         if(i_frame < (Solver_Dict.number_of_frames - Rec_Dict.off_diagonal_band_width)){
-                            
+
                             for(j_frame = (i_frame + Rec_Dict.off_diagonal_band_width); j_frame < Solver_Dict.number_of_frames; j_frame++){
-                                
+
                                 if (Rec_matrix[i_frame][j_frame] < diff){
 
                                     diff = Rec_matrix[i_frame][j_frame];
 
                                     j_frame_min = j_frame;
-                                }                               
+                                }
                             }
                         }
 
-                        Rec_jump[i_frame] = j_frame_min;    
+                        Rec_jump[i_frame] = j_frame_min;
 
-                        Rec_jump_diff[i_frame] = diff;                                              
+                        Rec_jump_diff[i_frame] = diff;
                     }
                     break;
                 }
@@ -1351,7 +1351,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
 
                 fclose(f_out);
             }
-            
+
             /* Rec Path Diff */
             {
                 sprintf(file_name, "%s_diff_%d_%d_%d", File_Dict.Jump_filename, Solver.current_state, Solver.current_state, i_island);
@@ -1374,7 +1374,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
 
                 fclose(f_out);
             }
-            
+
 #endif
         }
 

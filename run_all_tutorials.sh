@@ -47,7 +47,7 @@ for d in */ ; do
     pushd ${d} >/dev/null
     if [ -f "run_batch.scm" ]; then
         echo "Executing tutorial ${d}"
-        fluent 3ddp -t2 -g < run_batch.scm >& run_batch.trn
+        fluent 3ddp -t2 -g < run_batch.scm | tee run_batch.trn
     fi
     popd >/dev/null
 done

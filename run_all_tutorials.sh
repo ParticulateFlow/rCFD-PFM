@@ -42,12 +42,29 @@ popd >/dev/null
 echo "Switching to target directory ..."
 pushd ${TARGETDIR}/tutorials >/dev/null
 
+BRED='\033[1;31m'
+BGREEN='\033[1;32m'
+NC='\033[0m' # No Color
+
 # run all tutorials
 for d in */ ; do
     pushd ${d} >/dev/null
     if [ -f "run_batch.scm" ]; then
-        echo "Executing tutorial ${d}"
+        echo "Executing tutorial ${d%/}"
         fluent 3ddp -t2 -g < run_batch.scm | tee run_batch.trn
+
+        # post-process balance
+        if [ -f "post/balance_monitor.out" ]; then
+            CONFIDENCE=`octave ../balance_check.m`
+
+            if [ $CONFIDENCE -lt 90 ]; then
+                echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}"
+            else
+                echo -e "Case ${d%/} ${BGREEN}OK${NC}"
+            fi
+        else
+            echo -e "Case ${d%/} ${BRED}FAILED${NC}"
+        fi
     fi
     popd >/dev/null
 done

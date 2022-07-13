@@ -44,13 +44,24 @@ pushd ${TARGETDIR}/tutorials >/dev/null
 
 BRED='\033[1;31m'
 BGREEN='\033[1;32m'
+BYELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+shopt -s expand_aliases
+alias decolorize='sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
+
+# remove old log file
+rm balance_check.log 2> /dev/null
+
+NSKIPPED=0
+NOK=0
+NINCONSISTENT=0
+NFAILED=0
 
 # run all tutorials
 for d in */ ; do
     pushd ${d} >/dev/null
     if [ -f "run_batch.scm" ]; then
-        echo "Executing tutorial ${d%/}"
+        echo "Executing case ${d%/} ..."
         fluent 3ddp -t2 -g < run_batch.scm | tee run_batch.trn
 
         # post-process balance
@@ -58,16 +69,34 @@ for d in */ ; do
             CONFIDENCE=`octave ../balance_check.m`
 
             if [ $CONFIDENCE -lt 90 ]; then
-                echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}"
+                echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}" | tee >(decolorize >> ../balance_check.log)
+                ((NINCONSISTENT++))
             else
-                echo -e "Case ${d%/} ${BGREEN}OK${NC}"
+                echo -e "Case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../balance_check.log)
+                ((NOK++))
             fi
         else
-            echo -e "Case ${d%/} ${BRED}FAILED${NC}"
+            echo -e "Case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../balance_check.log)
+            ((NFAILED++))
         fi
+    else
+        echo -e "Case ${d%/} ${BYELLOW}SKIPPED${NC}" | tee >(decolorize >> ../balance_check.log)
+        ((NSKIPPED++))
     fi
     popd >/dev/null
 done
+
+echo "-------"
+echo "SUMMARY"
+echo "-------"
+PLURALS=$([ $NSKIPPED -eq 1 ] && echo " " || echo "s")
+echo -e "$NSKIPPED case$PLURALS ${BYELLOW}SKIPPED${NC}"
+PLURALS=$([ $NOK -eq 1 ] && echo " " || echo "s")
+echo -e "$NOK case$PLURALS ${BGREEN}OK${NC}"
+PLURALS=$([ $NINCONSISTENT -eq 1 ] && echo " " || echo "s")
+echo -e "$NINCONSISTENT case$PLURALS ${BRED}INCONSISTENT${NC}"
+PLURALS=$([ $NFAILED -eq 1 ] && echo " " || echo "s")
+echo -e "$NFAILED case$PLURALS ${BRED}FAILED${NC}"
 
 popd >/dev/null
 

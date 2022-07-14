@@ -52,7 +52,6 @@ for d in */ ; do
 
             echo "Downloading Ansys Fluent cas & dat files for case ${d%/} ..."
             wget -nv -N --show-progress ${CASFILE}
-            #wget_output=$(wget -nv -nc --show-progress ${CASFILE})
 
             if [ $? -ne 0 ]; then
                 echo -e "Download of cas file for case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../../${LOGFILE})

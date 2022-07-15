@@ -19,6 +19,25 @@ fi
 echo "Copying src to target directory ..."
 cp -r ./src ${TARGETDIR}
 
+# switch to tutorial folder
+pushd tutorials >/dev/null
+
+# loop over all case folders
+echo "Copying pre-processing scripts to target directory ..."
+for d in */ ; do
+    if [ -f "${d}prep_batch.scm" ]; then
+        if [[ "${TARGETDIR}" = /* ]]; then
+            # absolute path
+            cp -f "${d}prep_batch.scm" "${TARGETDIR}/tutorials/${d}prep_batch.scm" 2>/dev/null
+        else
+            # relative path
+            cp -f "${d}prep_batch.scm" "../${TARGETDIR}/tutorials/${d}prep_batch.scm" 2>/dev/null
+        fi
+    fi
+done
+
+popd >/dev/null
+
 # switch to target dir
 echo "Switching to target directory ..."
 pushd ${TARGETDIR}/tutorials >/dev/null

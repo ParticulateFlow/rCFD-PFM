@@ -59,7 +59,8 @@ shopt -s expand_aliases
 alias decolorize='sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
 
 # remove old log file
-rm balance_check.log 2> /dev/null
+LOGFILE="balance_check.log"
+rm ${LOGFILE} 2> /dev/null
 
 NSKIPPED=0
 NOK=0
@@ -78,18 +79,18 @@ for d in */ ; do
             CONFIDENCE=`octave ../balance_check.m`
 
             if [ $CONFIDENCE -lt 90 ]; then
-                echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}" | tee >(decolorize >> ../balance_check.log)
+                echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}" | tee >(decolorize >> ../${LOGFILE})
                 ((NINCONSISTENT++))
             else
-                echo -e "Case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../balance_check.log)
+                echo -e "Case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../${LOGFILE})
                 ((NOK++))
             fi
         else
-            echo -e "Case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../balance_check.log)
+            echo -e "Case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../${LOGFILE})
             ((NFAILED++))
         fi
     else
-        echo -e "Case ${d%/} ${BYELLOW}SKIPPED${NC}" | tee >(decolorize >> ../balance_check.log)
+        echo -e "Case ${d%/} ${BYELLOW}SKIPPED${NC}" | tee >(decolorize >> ../${LOGFILE})
         ((NSKIPPED++))
     fi
     popd >/dev/null

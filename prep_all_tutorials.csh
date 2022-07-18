@@ -51,7 +51,6 @@ set BGREEN='\033[1;32m'
 set BYELLOW='\033[1;33m'
 set NC='\033[0m' # No Color
 
-#shopt -s expand_aliases
 alias decolorize 'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
 
 set NSKIPPED=0
@@ -77,7 +76,6 @@ foreach d ( */ )
                 @ NFAILED++
             else
                 echo "Download of cas file for case ${d} OK" | tee ../../${LOGFILE}
-                #printf "Download of cas file for case ${d} ${BGREEN}OK${NC}\n" | tee -a ../../${LOGFILE}
                 @ NOK++
             endif
 
@@ -105,11 +103,9 @@ end
 echo "----------------"
 echo "DOWNLOAD SUMMARY"
 echo "----------------"
-set PLURALS=' ' #`($NSKIPPED == 1) && echo ' ' || echo 's'`
+set PLURALS=' '
 echo "$NSKIPPED file download$PLURALS SKIPPED"
-#set PLURALS=$([ $NOK == 1 ] && echo " " || echo "s")
 echo "$NOK file download$PLURALS OK"
-#set PLURALS=$([ $NFAILED == 1 ] && echo " " || echo "s")
 echo "$NFAILED file download$PLURALS FAILED"
 echo ""
 
@@ -123,20 +119,17 @@ foreach d ( */ )
     pushd ${d} >/dev/null
     if ( -f "prep_batch.scm" ) then
         echo "Pre-processing case ${d} ..."
-        #fluent 3ddp -t2 -g < prep_batch.scm | tee prep_batch.trn
+        fluent 3ddp -t2 -g < prep_batch.scm | tee prep_batch.trn
 
         # check fluent return code
         if ( $status != 0 ) then
-            #echo -e "Pre-processing of case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../${LOGFILE})
             echo "Pre-processing of case ${d} FAILED" | tee ../${LOGFILE}
             @ NFAILED++
         else
-            #echo -e "Pre-processing of case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../${LOGFILE})
             echo "Pre-processing of case ${d} OK" | tee ../${LOGFILE}
             @ NOK++
         endif
     else
-        #echo -e "Pre-processing of case ${d%/} ${BYELLOW}SKIPPED${NC}" | tee >(decolorize >> ../${LOGFILE})
         echo "Pre-processing of case ${d} SKIPPED" | tee ../${LOGFILE}
         @ NSKIPPED++
     endif
@@ -146,11 +139,9 @@ end
 echo "----------------------"
 echo "PRE-PROCESSING SUMMARY"
 echo "----------------------"
-set PLURALS=' ' #$([ $NSKIPPED == 1 ] && echo " " || echo "s")
+set PLURALS=' '
 echo "$NSKIPPED case$PLURALS SKIPPED"
-#set PLURALS=$([ $NOK == 1 ] && echo " " || echo "s")
 echo "$NOK case$PLURALS OK"
-#set PLURALS=$([ $NFAILED == 1 ] && echo " " || echo "s")
 echo "$NFAILED case$PLURALS FAILED"
 
 popd >/dev/null

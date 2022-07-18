@@ -1,0 +1,119 @@
+#!/bin/csh
+
+set EXPECTED_ARGS=1
+if ( $#argv < ${EXPECTED_ARGS} ) then
+    echo "Usage: `basename $0 $1` {target directory}"
+    exit
+endif
+
+# name of target directory
+set TARGETDIR=$1
+
+# check if target directory exists
+if ( ! -d "${TARGETDIR}" ) then
+    echo "Directory ${TARGETDIR} does not exist, exiting"
+    exit
+endif
+
+# copy src folder to target dir
+echo "Copying src to target directory ..."
+cp -r ./src ${TARGETDIR}
+
+# copy balance_check.m to target dir
+cp -f "tutorials/balance_check.m" "${TARGETDIR}/tutorials/balance_check.m" >& /dev/null
+
+# switch to tutorial folder
+pushd tutorials >/dev/null
+
+# loop over all case folders
+echo "Copying run scripts to target directory ..."
+foreach d ( */ )
+    if ( -f "${d}run_batch.scm" ) then
+        if ( "${TARGETDIR}" =~ /* ) then
+            # absolute path
+            cp -f "${d}run_batch.scm" "${TARGETDIR}/tutorials/${d}run_batch.scm" >& /dev/null
+        else
+            # relative path
+            cp -f "${d}run_batch.scm" "../${TARGETDIR}/tutorials/${d}run_batch.scm" >& /dev/null
+        endif
+    endif
+end
+
+popd >/dev/null
+
+# switch to target dir and execute tutorials
+echo "Switching to target directory ..."
+pushd ${TARGETDIR}/tutorials >/dev/null
+
+set BRED='\033[1;31m'
+set BGREEN='\033[1;32m'
+set BYELLOW='\033[1;33m'
+set NC='\033[0m' # No Color
+
+#shopt -s expand_aliases
+alias decolorize 'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
+
+# remove old log file
+set LOGFILE="balance_check.log"
+rm ${LOGFILE} >& /dev/null
+
+set NSKIPPED=0
+set NOK=0
+set NINCONSISTENT=0
+set NFAILED=0
+
+# run all tutorials
+foreach d ( */ )
+    pushd ${d} >/dev/null
+    if ( -f "run_batch.scm" ) then
+        echo "Executing case ${d} ..."
+        #fluent 3ddp -t2 -g < run_batch.scm | tee run_batch.trn
+
+        # post-process balance
+        if ( -f "post/balance_monitor.out" ) then
+            set CONFIDENCE=`octave ../balance_check.m`
+
+            if ( $CONFIDENCE < 90 ) then
+                #echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}" | tee >(decolorize >> ../${LOGFILE})
+                echo "Case ${d} INCONSISTENT" | tee ../${LOGFILE}
+                @ NINCONSISTENT++
+            else
+                #echo -e "Case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../${LOGFILE})
+                echo "Case ${d} OK" | tee ../${LOGFILE}
+                @ NOK++
+            endif
+        else
+            #echo -e "Case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../${LOGFILE})
+            echo "Case ${d} FAILED" | tee ../${LOGFILE}
+            @ NFAILED++
+        endif
+    else
+        #echo -e "Case ${d%/} ${BYELLOW}SKIPPED${NC}" | tee >(decolorize >> ../${LOGFILE})
+        echo "Case ${d} SKIPPED" | tee ../${LOGFILE}
+        @ NSKIPPED++
+    endif
+    popd >/dev/null
+end
+
+echo "-------"
+echo "SUMMARY"
+echo "-------"
+
+set PLURALS="s"
+if (${NSKIPPED} == 1) set PLURALS=" "
+echo "$NSKIPPED case$PLURALS SKIPPED"
+
+set PLURALS="s"
+if (${NOK} == 1) set PLURALS=" "
+echo "$NOK case$PLURALS OK"
+
+set PLURALS="s"
+if (${NINCONSISTENT} == 1) set PLURALS=" "
+echo "$NINCONSISTENT case$PLURALS INCONSISTENT"
+
+set PLURALS="s"
+if (${NFAILED} == 1) set PLURALS=" "
+echo "$NFAILED case$PLURALS FAILED"
+
+popd >/dev/null
+

@@ -19,17 +19,11 @@ fi
 echo "Copying src to target directory ..."
 cp -r ./src ${TARGETDIR}
 
+# copy balance_check.m to target dir
+cp -f "tutorials/balance_check.m" "${TARGETDIR}/tutorials/balance_check.m" 2> /dev/null
+
 # switch to tutorial folder
 pushd tutorials >/dev/null
-
-# copy balance_check.m to target dir
-if [[ "${TARGETDIR}" = /* ]]; then
-    # absolute path
-    cp -f "balance_check.m" "${TARGETDIR}/tutorials/balance_check.m" 2>/dev/null
-else
-    # relative path
-    cp -f "balance_check.m" "../${TARGETDIR}/tutorials/balance_check.m" 2>/dev/null
-fi
 
 # loop over all case folders
 echo "Copying run scripts to target directory ..."

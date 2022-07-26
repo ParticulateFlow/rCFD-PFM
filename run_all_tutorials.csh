@@ -119,9 +119,9 @@ foreach d ( */ )
     popd >/dev/null
 end
 
-echo "-------"
-echo "SUMMARY"
-echo "-------"
+echo "-----------"
+echo "RUN SUMMARY"
+echo "-----------"
 
 set PLURALS="s"
 if (${NSKIPPED} == 1) set PLURALS=" "

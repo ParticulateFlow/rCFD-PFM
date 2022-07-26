@@ -118,9 +118,10 @@ for d in */ ; do
     popd >/dev/null
 done
 
-echo "-------"
-echo "SUMMARY"
-echo "-------"
+echo "-----------"
+echo "RUN SUMMARY"
+echo "-----------"
+
 PLURALS=$([ $NSKIPPED -eq 1 ] && echo " " || echo "s")
 echo -e "$NSKIPPED case$PLURALS ${BYELLOW}SKIPPED${NC}"
 PLURALS=$([ $NOK -eq 1 ] && echo " " || echo "s")

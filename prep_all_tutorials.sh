@@ -107,6 +107,7 @@ done
 echo "----------------"
 echo "DOWNLOAD SUMMARY"
 echo "----------------"
+
 PLURALS=$([ $NSKIPPED -eq 1 ] && echo " " || echo "s")
 echo -e "$NSKIPPED file download$PLURALS ${BYELLOW}SKIPPED${NC}"
 PLURALS=$([ $NOK -eq 1 ] && echo " " || echo "s")
@@ -157,6 +158,7 @@ done
 echo "----------------------"
 echo "PRE-PROCESSING SUMMARY"
 echo "----------------------"
+
 PLURALS=$([ $NSKIPPED -eq 1 ] && echo " " || echo "s")
 echo -e "$NSKIPPED case$PLURALS ${BYELLOW}SKIPPED${NC}"
 PLURALS=$([ $NOK -eq 1 ] && echo " " || echo "s")

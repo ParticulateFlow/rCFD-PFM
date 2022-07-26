@@ -106,9 +106,17 @@ end
 echo "----------------"
 echo "DOWNLOAD SUMMARY"
 echo "----------------"
-set PLURALS=' '
+
+set PLURALS="s"
+if (${NSKIPPED} == 1) set PLURALS=" "
 echo "$NSKIPPED file download$PLURALS SKIPPED"
+
+set PLURALS="s"
+if (${NOK} == 1) set PLURALS=" "
 echo "$NOK file download$PLURALS OK"
+
+set PLURALS="s"
+if (${NFAILED} == 1) set PLURALS=" "
 echo "$NFAILED file download$PLURALS FAILED"
 
 endif
@@ -155,9 +163,17 @@ end
 echo "----------------------"
 echo "PRE-PROCESSING SUMMARY"
 echo "----------------------"
-set PLURALS=' '
+
+set PLURALS="s"
+if (${NSKIPPED} == 1) set PLURALS=" "
 echo "$NSKIPPED case$PLURALS SKIPPED"
+
+set PLURALS="s"
+if (${NOK} == 1) set PLURALS=" "
 echo "$NOK case$PLURALS OK"
+
+set PLURALS="s"
+if (${NFAILED} == 1) set PLURALS=" "
 echo "$NFAILED case$PLURALS FAILED"
 
 popd >/dev/null

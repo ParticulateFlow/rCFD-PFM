@@ -73,23 +73,19 @@ foreach d ( */ )
         if ( -f "post/balance_monitor.out" ) then
             set CONFIDENCE=`octave ../balance_check.m`
 
-            if ( $CONFIDENCE < 90 ) then
-                #echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}" | tee >(decolorize >> ../${LOGFILE})
-                echo "Case ${d} INCONSISTENT" | tee ../${LOGFILE}
+            if ( ${CONFIDENCE} < 90 ) then
+                echo "Case ${d} INCONSISTENT" | tee -a ../${LOGFILE}
                 @ NINCONSISTENT++
             else
-                #echo -e "Case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../${LOGFILE})
-                echo "Case ${d} OK" | tee ../${LOGFILE}
+                echo "Case ${d} OK" | tee -a ../${LOGFILE}
                 @ NOK++
             endif
         else
-            #echo -e "Case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../${LOGFILE})
-            echo "Case ${d} FAILED" | tee ../${LOGFILE}
+            echo "Case ${d} FAILED" | tee -a ../${LOGFILE}
             @ NFAILED++
         endif
     else
-        #echo -e "Case ${d%/} ${BYELLOW}SKIPPED${NC}" | tee >(decolorize >> ../${LOGFILE})
-        echo "Case ${d} SKIPPED" | tee ../${LOGFILE}
+        echo "Case ${d} SKIPPED" | tee -a ../${LOGFILE}
         @ NSKIPPED++
     endif
     popd >/dev/null

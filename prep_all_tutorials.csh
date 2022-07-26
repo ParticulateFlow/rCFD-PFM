@@ -72,29 +72,29 @@ foreach d ( */ )
             wget -nv -N --show-progress ${CASFILE}
 
             if ( $status != 0 ) then
-                echo "Download of cas file for case ${d} FAILED" | tee ../../${LOGFILE}
+                echo "Download of cas file for case ${d} FAILED" | tee -a ../../${LOGFILE}
                 @ NFAILED++
             else
-                echo "Download of cas file for case ${d} OK" | tee ../../${LOGFILE}
+                echo "Download of cas file for case ${d} OK" | tee -a ../../${LOGFILE}
                 @ NOK++
             endif
 
             wget -nv -N --show-progress ${DATFILE}
             if ( $status != 0 ) then
-                echo "Download of dat file for case ${d} FAILED" | tee ../../${LOGFILE}
+                echo "Download of dat file for case ${d} FAILED" | tee -a ../../${LOGFILE}
                 @ NFAILED++
             else
-                echo "Download of dat file for case ${d} OK" | tee ../../${LOGFILE}
+                echo "Download of dat file for case ${d} OK" | tee -a ../../${LOGFILE}
                 @ NOK++
             endif
 
             popd >/dev/null
         else
-            echo "Download of files for case ${d} SKIPPED" | tee ../${LOGFILE}
+            echo "Download of files for case ${d} SKIPPED" | tee -a ../${LOGFILE}
             @ NSKIPPED++
         endif
     else
-        echo "Download of files for case ${d} SKIPPED" | tee ../${LOGFILE}
+        echo "Download of files for case ${d} SKIPPED" | tee -a ../${LOGFILE}
         @ NSKIPPED++
     endif
     popd >/dev/null
@@ -123,14 +123,14 @@ foreach d ( */ )
 
         # check fluent return code
         if ( $status != 0 ) then
-            echo "Pre-processing of case ${d} FAILED" | tee ../${LOGFILE}
+            echo "Pre-processing of case ${d} FAILED" | tee -a ../${LOGFILE}
             @ NFAILED++
         else
-            echo "Pre-processing of case ${d} OK" | tee ../${LOGFILE}
+            echo "Pre-processing of case ${d} OK" | tee -a ../${LOGFILE}
             @ NOK++
         endif
     else
-        echo "Pre-processing of case ${d} SKIPPED" | tee ../${LOGFILE}
+        echo "Pre-processing of case ${d} SKIPPED" | tee -a ../${LOGFILE}
         @ NSKIPPED++
     endif
     popd >/dev/null

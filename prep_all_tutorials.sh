@@ -59,6 +59,9 @@ NOK=0
 NFAILED=0
 
 # download all tutorial files
+if [[ $HOST == node* ]]; then
+    echo "Unable to download case files on nodes ..."
+else
 echo "Downloading case files ..."
 for d in */ ; do
     pushd ${d} >/dev/null
@@ -110,6 +113,9 @@ PLURALS=$([ $NOK -eq 1 ] && echo " " || echo "s")
 echo -e "$NOK file download$PLURALS ${BGREEN}OK${NC}"
 PLURALS=$([ $NFAILED -eq 1 ] && echo " " || echo "s")
 echo -e "$NFAILED file download$PLURALS ${BRED}FAILED${NC}"
+
+fi
+
 echo
 
 NSKIPPED=0

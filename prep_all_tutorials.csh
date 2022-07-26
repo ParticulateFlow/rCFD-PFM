@@ -58,6 +58,9 @@ set NOK=0
 set NFAILED=0
 
 # download all tutorial files
+if ( "${HOST}" =~ node* ) then
+    echo "Unable to download case files on nodes ..."
+else
 echo "Downloading case files ..."
 foreach d ( */ )
     pushd ${d} >/dev/null
@@ -107,6 +110,9 @@ set PLURALS=' '
 echo "$NSKIPPED file download$PLURALS SKIPPED"
 echo "$NOK file download$PLURALS OK"
 echo "$NFAILED file download$PLURALS FAILED"
+
+endif
+
 echo ""
 
 

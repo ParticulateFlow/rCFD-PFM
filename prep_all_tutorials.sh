@@ -73,7 +73,7 @@ for d in */ ; do
             DATFILE=`sed -n 's/^[ \t]*//;/dat.h5$/ p' README.md`
 
             echo "Downloading Ansys Fluent cas & dat files for case ${d%/} ..."
-            wget -nv -N --show-progress ${CASFILE}
+            wget -nv -N ${CASFILE}
 
             if [ $? -ne 0 ]; then
                 echo -e "Download of cas file for case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../../${LOGFILE})
@@ -83,7 +83,7 @@ for d in */ ; do
                 ((NOK++))
             fi
 
-            wget -nv -N --show-progress ${DATFILE}
+            wget -nv -N ${DATFILE}
             if [ $? -ne 0 ]; then
                 echo -e "Download of dat file for case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../../${LOGFILE})
                 ((NFAILED++))

@@ -72,7 +72,7 @@ foreach d ( */ )
             set DATFILE=`sed -n 's/^[ \t]*//;/dat.h5$/ p' README.md`
 
             echo "Downloading Ansys Fluent cas & dat files for case ${d} ..."
-            wget -nv -N --show-progress ${CASFILE}
+            wget -nv -N ${CASFILE}
 
             if ( $status != 0 ) then
                 echo "Download of cas file for case ${d} FAILED" | tee -a ../../${LOGFILE}
@@ -82,7 +82,7 @@ foreach d ( */ )
                 @ NOK++
             endif
 
-            wget -nv -N --show-progress ${DATFILE}
+            wget -nv -N ${DATFILE}
             if ( $status != 0 ) then
                 echo "Download of dat file for case ${d} FAILED" | tee -a ../../${LOGFILE}
                 @ NFAILED++

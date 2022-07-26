@@ -84,7 +84,27 @@ for d in */ ; do
 
         # post-process balance
         if [ -f "post/balance_monitor.out" ]; then
-            CONFIDENCE=`octave ../balance_check.m`
+
+            CONFIDENCE=0
+
+            command -v matlab >/dev/null
+            MATLAB_CHECK=$?
+            if [ ${MATLAB_CHECK} -eq 0 ]; then
+                cp ../balance_check.m .
+                matlab -noFigureWindows -batch "balance_check"
+                CONFIDENCE=$?
+            else
+                command -v octave >/dev/null
+                OCTAVE_CHECK=$?
+                if [ ${OCTAVE_CHECK} -eq 0 ]; then
+                    octave --silent ../balance_check.m
+                    CONFIDENCE=$?
+                else
+                    echo "Failed to find matlab/octave for post-processing ..."
+                fi
+            fi
+
+            echo "Confidence for case ${d%/}: ${CONFIDENCE}%" | tee -a ../${LOGFILE}
 
             if [ $CONFIDENCE -lt 90 ]; then
                 echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}" | tee >(decolorize >> ../${LOGFILE})

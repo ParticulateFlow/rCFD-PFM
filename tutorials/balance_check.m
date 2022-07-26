@@ -1,4 +1,4 @@
-#!/usr/bin/octave --silent
+% plot balances and return confidence
 
 close all;
 clear;
@@ -17,7 +17,7 @@ col_value = 4;
 col_target = 5;
 
 ntimesteps = max(balancemonitor(:,col_t))-min(balancemonitor(:,col_t))+1;
-stepsize = rows(balancemonitor)/ntimesteps;
+stepsize = size(balancemonitor,1)/ntimesteps;
 nfigures = stepsize;
 confidence = 1;
 
@@ -52,8 +52,8 @@ for ii=1:nfigures
     xlabel('time step');
     grid on;
 
-    print(hFig(1),[filedir,'balance_phase',int2str(iphase),'_data',int2str(idata),'.eps'],'-color','-deps');
+    print(hFig(1),[filedir,'balance_phase',int2str(iphase),'_data',int2str(idata),'.eps'],'-depsc');
 end
 
-printf("%i\n", floor(100*confidence+0.5));
+exit(floor(100*confidence+0.5));
 

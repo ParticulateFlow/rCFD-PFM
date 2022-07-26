@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 
 set EXPECTED_ARGS=1
 if ( $#argv < ${EXPECTED_ARGS} ) then

@@ -46,13 +46,6 @@ pushd ${TARGETDIR}/tutorials >/dev/null
 set LOGFILE="prep.log"
 rm ${LOGFILE} >& /dev/null
 
-set BRED='\033[1;31m'
-set BGREEN='\033[1;32m'
-set BYELLOW='\033[1;33m'
-set NC='\033[0m' # No Color
-
-alias decolorize 'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
-
 set NSKIPPED=0
 set NOK=0
 set NFAILED=0
@@ -123,7 +116,6 @@ endif
 
 echo ""
 
-
 set NSKIPPED=0
 set NOK=0
 set NFAILED=0
@@ -177,4 +169,5 @@ if (${NFAILED} == 1) set PLURALS=" "
 echo "$NFAILED case$PLURALS FAILED"
 
 popd >/dev/null
+
 

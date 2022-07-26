@@ -45,14 +45,6 @@ popd >/dev/null
 echo "Switching to target directory ..."
 pushd ${TARGETDIR}/tutorials >/dev/null
 
-set BRED='\033[1;31m'
-set BGREEN='\033[1;32m'
-set BYELLOW='\033[1;33m'
-set NC='\033[0m' # No Color
-
-#shopt -s expand_aliases
-alias decolorize 'sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
-
 # remove old log file
 set LOGFILE="balance_check.log"
 rm ${LOGFILE} >& /dev/null
@@ -140,4 +132,5 @@ if (${NFAILED} == 1) set PLURALS=" "
 echo "$NFAILED case$PLURALS FAILED"
 
 popd >/dev/null
+
 

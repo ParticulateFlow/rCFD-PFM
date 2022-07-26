@@ -125,10 +125,20 @@ foreach d ( */ )
     pushd ${d} >/dev/null
     if ( -f "prep_batch.scm" ) then
         echo "Pre-processing case ${d} ..."
-        fluent 3ddp -t2 -g < prep_batch.scm | tee prep_batch.trn
+
+        command -v fluent
+        set FLUENT_CHECK=$status
+        set FLUENT_STATUS=1
+
+        if ( ${FLUENT_CHECK} == 0) then
+            fluent 3ddp -t2 -g < prep_batch.scm | tee prep_batch.trn
+            set FLUENT_STATUS=$status
+        else
+            echo "Failed to find fluent installation ..."
+        endif
 
         # check fluent return code
-        if ( $status != 0 ) then
+        if ( ${FLUENT_STATUS} != 0 ) then
             echo "Pre-processing of case ${d} FAILED" | tee -a ../${LOGFILE}
             @ NFAILED++
         else

@@ -67,7 +67,15 @@ foreach d ( */ )
     pushd ${d} >/dev/null
     if ( -f "run_batch.scm" ) then
         echo "Executing case ${d} ..."
-        fluent 3ddp -t2 -g < run_batch.scm | tee run_batch.trn
+
+        command -v fluent
+        set FLUENT_CHECK=$status
+
+        if ( ${FLUENT_CHECK} == 0) then
+            fluent 3ddp -t2 -g < run_batch.scm | tee run_batch.trn
+        else
+            echo "Failed to find fluent installation ..."
+        endif
 
         # post-process balance
         if ( -f "post/balance_monitor.out" ) then

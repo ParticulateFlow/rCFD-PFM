@@ -127,10 +127,20 @@ for d in */ ; do
     pushd ${d} >/dev/null
     if [ -f "prep_batch.scm" ]; then
         echo "Pre-processing case ${d%/} ..."
-        fluent 3ddp -t2 -g < prep_batch.scm | tee prep_batch.trn
+
+        command -v fluent
+        FLUENT_CHECK=$?
+        FLUENT_STATUS=1
+
+        if [ ${FLUENT_CHECK} -eq 0 ]; then
+            fluent 3ddp -t2 -g < prep_batch.scm | tee prep_batch.trn
+            FLUENT_STATUS=$?
+        else
+            echo "Failed to find fluent installation ..."
+        fi
 
         # check fluent return code
-        if [ $? -ne 0 ]; then
+        if [ ${FLUENT_STATUS} -ne 0 ]; then
             echo -e "Pre-processing of case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../${LOGFILE})
             ((NFAILED++))
         else

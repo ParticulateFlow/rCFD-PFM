@@ -21,7 +21,7 @@
 
 - start Ansys/fluent with the same number of threads from this folder.
 - read FB_tutorial.scm
-- type into fluent console (rcfd_r1), followed by (rcfd_r1), ..., (rcfd_r7); or simply (rcfd_run)
+- type into fluent console (rcfd_r1), followed by (rcfd_r2), ..., (rcfd_r7); or simply (rcfd_run)
 
 - balances will be stored into ./post
 - run transcript will be stored into ./post
@@ -29,9 +29,32 @@
 
 - close Ansys/fluent
 
+## Reference rCFD simulation
+
+- start Ansys/fluent with the same number of threads from this folder.
+- read FB_tutorial.scm
+- type into fluent console (rcfd_ref1), followed by (rcfd_ref2), ..., (rcfd_ref6); or simply (rcfd_ref)
+
+- monitors of *secondary gas mass* and *solid mixing index* will be stored into ./ref
+- animation snap-shots of secondary gas and solid species concentration will be stored into ./ref
+
+- close Ansys/fluent
+
+## Reference CFD simulation
+
+- start Ansys/fluent by e.g. *fluent 3ddp -t4 &* from this folder
+- read FB_tutorial.scm
+- type into fluent console (cfd_ref1), followed by (cfd_ref2), ..., (cfd_ref6); or simply (cfd_ref)
+
+- monitors of *secondary gas mass* and *solid mixing index* will be stored into ./post
+- animation snap-shots of secondary gas and solid species concentration will be stored into ./post
+
+- close Ansys/fluent
+
 ## Known Limitations
 
 - (rcfd_run) works only after (rcfd_prep)
+- in case of reference (CFD or rCFD) simulations, the folder /post should already exist (otherwise, *.out and *.jpg remain in fluidized_bed main folder)
 - missing cross-partition diffusion
 
 ## License

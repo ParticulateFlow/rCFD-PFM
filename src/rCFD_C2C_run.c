@@ -606,6 +606,16 @@ DEFINE_ON_DEMAND(rCFD_run)
 
             if(Solver_Dict.recurrence_process_on){
 
+#if RP_HOST     /* init rand. gen */
+
+                if(Solver.global_run_counter == 0){
+
+                    srand(time(0));
+
+                    Message("\n\nInitialized random generator");
+                }
+#endif
+
                 i_rec_max = 1;
 
                 for(i_rec = 0; i_rec < i_layer; i_rec++){
@@ -624,11 +634,12 @@ DEFINE_ON_DEMAND(rCFD_run)
                         /* new rCFD_seq */
 
                         Rec.frame_in_sequence = 0;
-
 #if RP_HOST
                         rand_real = (double)rand()/(double)RAND_MAX;
 
                         Rec.sequence_length = Rec_Dict.min_seq_length + (int)(rand_real*(double)(Rec_Dict.max_seq_length - Rec_Dict.min_seq_length));
+
+
 #endif
                         host_to_node_int_1(Rec.sequence_length);
 
@@ -1052,58 +1063,70 @@ DEFINE_ON_DEMAND(rCFD_run)
 #if RP_NODE
                     /* TODO: allow for more diff. loops, account for heterogeneous diffusion */
 
-                    /* Init data_swap */
-                    loop_cells{
+                    loop_data{
 
-                        loop_data{
+                        switch (Data_Dict[i_phase][i_data].type){
 
-                            _C.data_swap[i_phase][i_cell][i_data] = 0.0;
-                        }
-                    }
+                            case concentration_data:
+                            {
+                                /* Init data_swap */
+                                loop_int_cells{
 
-                    /* define swap masses */
-                    loop_faces{
-
-                        c0 = _F.c0[i_face];
-                        c1 = _F.c1[i_face];
-
-                        loop_data{
-
-                            if(_C.data[i_phase][c0][i_data] > _C.data[i_phase][c1][i_data]){
-
-                                c = c0; c0 = c1; c1 = c;
-                            }
-
-                            if(_C.data[i_phase][c1][i_data] > _C.data[i_phase][c0][i_data]){
-
-                                if(_C.volume[c0] < _C.volume[c1]){
-
-                                    vol_flip = _C.volume[c0] * Data_Dict[i_phase][i_data].physical_diff;
-                                }
-                                else{
-                                    vol_flip = _C.volume[c1] * Data_Dict[i_phase][i_data].physical_diff;
+                                    _C.data_swap[_i_data] = 0.0;
                                 }
 
-                                _C.data_swap[i_phase][c1][i_data] -= vol_flip *
+                                /* define swap masses */
+                                loop_faces{
 
-                                    (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
+                                    c0 = _F.c0[i_face];
+                                    c1 = _F.c1[i_face];
 
-                                _C.data_swap[i_phase][c0][i_data] += vol_flip *
+                                    if(_C.data[_c0_data] > _C.data[_c1_data]){
 
-                                    (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
+                                        c = c0; c0 = c1; c1 = c;
+                                    }
+
+                                    if(_C.data[_c1_data] > _C.data[_c0_data]){
+
+                                        i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                        i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
+
+                                        if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
+
+                                            vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
+                                        }
+                                        else{
+                                            vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
+                                        }
+
+                                        _C.data_swap[i_phase][c1][i_data] -= vol_flip *
+
+                                            (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
+
+                                        _C.data_swap[i_phase][c0][i_data] += vol_flip *
+
+                                            (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
+                                    }
+                                }
+
+                                /* update data by data_swap */
+                                loop_int_cells{
+
+                                    i_frame = Rec.global_frame[_C.island_id[i_cell]];
+
+                                    if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
+
+                                        _C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
+                                    }
+
+                                    _C.data_swap[_i_data] = 0.0;
+                                }
+
+                                break;
                             }
+
                         }
-                    }
 
-                    /* update data by data_swap */
-                    loop_cells{
-
-                        loop_data{
-
-                            _C.data[i_phase][i_cell][i_data] += _C.data_swap[i_phase][i_cell][i_data] / _C.volume[i_cell];
-
-                            _C.data_swap[i_phase][i_cell][i_data] = 0.0;
-                        }
                     }
 #endif
                 }
@@ -1185,6 +1208,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
             /* Balance correction */
             {
+
                 /* Update balances */
                 {
                     /* B1: mass_integral, mass_integral_global */
@@ -1560,9 +1584,12 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-                                            _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density + _C.data_swap[_i_data]) /
+                                            if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density) > 0.0){
 
-                                                (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density);
+                                                _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density + _C.data_swap[_i_data]) /
+
+                                                    (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density);
+                                            }
 
                                             Balance[_i_balance].mass_integral += _C.data[_i_data] *
 
@@ -1712,11 +1739,14 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-                                            _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase] *
+                                            if((_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity) > 0.0){
 
-                                                Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + _C.data_swap[_i_data]) /
+                                                _C.data[_i_data] = (_C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase] *
 
-                                                (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity);
+                                                    Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity + _C.data_swap[_i_data]) /
+
+                                                    (_C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density * Phase_Dict[i_phase].heat_capacity);
+                                            }
 
                                             Balance[_i_balance].mass_integral += _C.data[_i_data] *
 

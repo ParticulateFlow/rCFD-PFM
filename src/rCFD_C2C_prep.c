@@ -62,79 +62,98 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 /*************************************************************************************/
 {
 #if RP_NODE
+
+#if 1	/* local vars */
+	
     Domain      *d=Get_Domain(1);
     Thread      *t, *t_phase;
-    cell_t      c;
 
     int         i_layer = 0, i_phase, i_cell;
 
-    int         time_steps_per_monitoring_interval;
+    int         time_steps_per_monitoring_interval, number_of_monitoring_steps;
 
-    double      v_mag, w0, L;
+    double      v_mag, grid_spacing;
+	
     double      *dt_cross_min, *dt_cross_max, dt_cross_min_global;
+	
+#endif
 
+	/* 1. allocate & initialize dt_cross */
+	{
+		dt_cross_min = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+		dt_cross_max = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
 
-    dt_cross_min = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
-    dt_cross_max = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+		loop_phases{
 
-    loop_phases{
-
-        dt_cross_min[i_phase] = 1.e10;
-        dt_cross_max[i_phase] = -1.e10;
-    }
-
-    thread_loop_c(t,d){begin_c_loop_int(c,t){
-
-        i_cell = (int)c;
+			dt_cross_min[i_phase] = 1.e10;
+			dt_cross_max[i_phase] = -1.e10;
+		}
+	}
+	
+    /* 2. set C.average_velocity, C.crossing_time, dt_cross_min/max */
+	thread_loop_c(t,d){ begin_c_loop_int(i_cell, t){
 
         loop_phases{
 
-            if(Solver_Dict.number_of_phases == 1){
+            /* 2.1. set t_phase */
+			{
+				if(Solver_Dict.number_of_phases == 1){
 
-                t_phase = t;
-            }
-            else if(THREAD_SUB_THREAD(t,i_phase) != NULL) {
+					t_phase = t;
+				}
+				else if(THREAD_SUB_THREAD(t,i_phase) != NULL) {
 
-                t_phase = THREAD_SUB_THREAD(t,i_phase);
-            }
-            else{
+					t_phase = THREAD_SUB_THREAD(t,i_phase);
+				}
+				else{
 
-                Message("\nERROR myid %d rCFD_analyse_CFD THREAD_SUB_THREAD(t,i_phase) == NULL", myid);
+					Message("\nERROR myid %d rCFD_analyse_CFD THREAD_SUB_THREAD(t,i_phase) == NULL", myid);
 
-                return;
-            }
+					return;
+				}
+			}
+            
+			/* 2.2. set C.average_velocity, C.crossing_time */
+			{
+				v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) + 
+				              C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
+							  C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
 
-            v_mag = sqrt(C_U(c,t_phase)*C_U(c,t_phase) + C_V(c,t_phase)*C_V(c,t_phase) + C_W(c,t_phase)*C_W(c,t_phase));
+				number_of_monitoring_steps = Solver_Dict.analyse_CFD_count;
 
-            w0 = (double)Solver_Dict.analyse_CFD_count;
+				_C.average_velocity[i_phase][i_cell] = ((double)number_of_monitoring_steps * _C.average_velocity[i_phase][i_cell] + v_mag) / 
+				
+					(double)(number_of_monitoring_steps + 1);
 
-            _C.average_velocity[i_phase][i_cell] = (w0 * _C.average_velocity[i_phase][i_cell] + v_mag) / (w0 + 1.0);
+				grid_spacing = pow(C_VOLUME(i_cell, t), 1./3.);
 
-            L = pow(C_VOLUME(c,t),1./3.);
+				if(_C.average_velocity[i_phase][i_cell] > 0.0){
 
-            if(_C.average_velocity[i_phase][i_cell] > 0.0){
+					_C.crossing_time[i_phase][i_cell] = grid_spacing/_C.average_velocity[i_phase][i_cell];
+				}
+				else{
 
-                _C.crossing_time[i_phase][i_cell] = L/_C.average_velocity[i_phase][i_cell];
-            }
-            else{
+					_C.crossing_time[i_phase][i_cell] = 1.0e10; /* something large */
+				}
+			}
+            
+			/* 2.3 set dt_cross_min/max */
+			{
+				if((dt_cross_max[i_phase] < _C.crossing_time[i_phase][i_cell]) && (_C.crossing_time[i_phase][i_cell] < 1.e10)){
 
-                _C.crossing_time[i_phase][i_cell] = 1.e10; /* something large */
-            }
+					dt_cross_max[i_phase] = _C.crossing_time[i_phase][i_cell];
+				}
 
-            if((dt_cross_max[i_phase] < _C.crossing_time[i_phase][i_cell]) && (_C.crossing_time[i_phase][i_cell] < 1.e10)){
+				if(dt_cross_min[i_phase] > _C.crossing_time[i_phase][i_cell]){
 
-                dt_cross_max[i_phase] = _C.crossing_time[i_phase][i_cell];
-            }
-
-            if(dt_cross_min[i_phase] > _C.crossing_time[i_phase][i_cell]){
-
-                dt_cross_min[i_phase] = _C.crossing_time[i_phase][i_cell];
-            }
+					dt_cross_min[i_phase] = _C.crossing_time[i_phase][i_cell];
+				}
+			}
         }
 
-    }end_c_loop_int(c,t)}
+    }end_c_loop_int(i_cell, t)}
 
-    /* propose recurrence time-step */
+    /* 3. recommend recurrence time-step width */
     {
         dt_cross_min_global = 1.e10;
 
@@ -167,12 +186,16 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
             time_steps_per_monitoring_interval, (Solver_Dict.analyse_CFD_count + 1));
     }
 
-    free(dt_cross_max);
-    free(dt_cross_min);
-
+	/* 4. free local vars */
+	{
+		free(dt_cross_max);
+		free(dt_cross_min);
+	}
+	
     Solver_Dict.analyse_CFD_count++;
 
     rCFD_user_pre_proc();
+	
 #endif
 }
 

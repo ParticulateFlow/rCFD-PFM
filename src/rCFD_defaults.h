@@ -99,15 +99,19 @@
 
         /* Node-0 generates folder structure */
         if(myid == 0){
+			
+			short directory_error_indicator = 0;
 
-            if( (mkdir("./data",0777) != 0) ||
-                (mkdir("./data/tmp",0777) != 0) ||
-                (mkdir("./data/vof",0777) != 0) ||
-                (mkdir("./data/c2c",0777) != 0) ||
-                (mkdir("./rec",0777) != 0) ||
-                (mkdir("./post",0777) != 0) ){
+            directory_error_indicator += mkdir("./data",0777);
+            directory_error_indicator += mkdir("./data/tmp",0777);
+            directory_error_indicator += mkdir("./data/vof",0777);
+            directory_error_indicator += mkdir("./data/c2c",0777);
+            directory_error_indicator += mkdir("./rec",0777);
+            directory_error_indicator += mkdir("./post",0777);
 
-                /*Message0("\nERROR rCFD_default_File_Dict");*/
+            if(directory_error_indicator != 0){
+				 
+				Message0("\nWARNING rCFD_default_File_Dict: could not create all sub-directories (maybe because they already exist)");
             }
         }
 

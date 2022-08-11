@@ -238,8 +238,10 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
 
         start_position_coords = (double*)malloc( number_of_start_position_coords * sizeof(double));
 
-            Message("\nmyid %d number_of_start_positions %d", myid, number_of_start_positions);
-
+        if(Solver_Dict.verbose == high_verbose){
+			
+			Message("\nmyid %d number_of_start_positions %d", myid, number_of_start_positions);
+		}
 #endif
     }
 

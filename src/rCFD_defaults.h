@@ -207,7 +207,7 @@
     void rCFD_default_Rec_Dict(void)
     {
 
-        Rec_Dict.method = quarter_jumps_method;
+        Rec_Dict.format = quarter_jumps_format;
 
         Rec_Dict.min_seq_length = (int)((double)Solver_Dict.number_of_frames/25.);
 

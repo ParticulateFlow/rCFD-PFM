@@ -1214,9 +1214,9 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
         /* calc jumps */
         {
 #if RP_HOST
-            switch (Rec_Dict.method){
+            switch (Rec_Dict.format){
 
-                case  quarter_jumps_method:
+                case quarter_jumps_format:
                 {
 
                     int N1_4=(int)floor((double)Solver_Dict.number_of_frames/4.);
@@ -1289,7 +1289,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                     break;
                 }
 
-                case off_diagonal_band_method:
+                case off_diagonal_band_format:
                 {
                     int j_frame, j_frame_min = 0;
 
@@ -1327,9 +1327,31 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
 
                         Rec_jump_diff[i_frame] = diff;
                     }
-                    break;
+                    
+					break;
                 }
-            }
+            
+				case replay_format:
+				{
+					loop_frames{
+					
+						if(i_frame < (Solver_Dict.number_of_frames - 2)){
+							
+							Rec_jump[i_frame] = i_frame + 1;
+							
+							Rec_jump_diff[i_frame] = Rec_matrix[i_frame][(i_frame + 1)];
+						}
+						else{
+							
+							Rec_jump[i_frame] = 0;
+							
+							Rec_jump_diff[i_frame] = Rec_matrix[i_frame][0];
+						}
+					}
+					
+					break;
+				}
+			}
 #endif
         }
 

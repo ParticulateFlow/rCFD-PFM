@@ -638,40 +638,36 @@ DEFINE_ON_DEMAND(rCFD_run)
                     if(Rec.frame_in_sequence < Rec.sequence_length){
 
                         Rec.frame_in_sequence++;
-                    }
-                    else{
+						
+						/* set next frame (within sequence) */
+						loop_islands{
 
-                        /* new rCFD_seq */
+							if(Rec.global_frame[i_island] < (Solver_Dict.number_of_frames - 1)){
+
+								Rec.global_frame[i_island]++;
+							}
+							else{
+
+								Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][(Solver_Dict.number_of_frames-1)];
+							}
+						}						
+                    }
+                    else{ /* new rCFD_seq */
 
                         Rec.frame_in_sequence = 0;
 #if RP_HOST
                         rand_real = (double)rand()/(double)RAND_MAX;
 
                         Rec.sequence_length = Rec_Dict.min_seq_length + (int)(rand_real*(double)(Rec_Dict.max_seq_length - Rec_Dict.min_seq_length));
-
-
 #endif
                         host_to_node_int_1(Rec.sequence_length);
 
+						/* set next frame (new sequence) */
                         loop_islands{
 
                             Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][Rec.global_frame[i_island]];
                         }
                     }
-
-                    /* set next frame */
-                    loop_islands{
-
-                        if(Rec.global_frame[i_island] < (Solver_Dict.number_of_frames - 1)){
-
-                            Rec.global_frame[i_island]++;
-                        }
-                        else{
-
-                            Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][(Solver_Dict.number_of_frames-1)];
-                        }
-                    }
-
                 }
             }
             else{

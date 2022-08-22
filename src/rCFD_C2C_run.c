@@ -638,19 +638,19 @@ DEFINE_ON_DEMAND(rCFD_run)
                     if(Rec.frame_in_sequence < Rec.sequence_length){
 
                         Rec.frame_in_sequence++;
-						
-						/* set next frame (within sequence) */
-						loop_islands{
 
-							if(Rec.global_frame[i_island] < (Solver_Dict.number_of_frames - 1)){
+                        /* set next frame (within sequence) */
+                        loop_islands{
 
-								Rec.global_frame[i_island]++;
-							}
-							else{
+                            if(Rec.global_frame[i_island] < (Solver_Dict.number_of_frames - 1)){
 
-								Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][(Solver_Dict.number_of_frames-1)];
-							}
-						}						
+                                Rec.global_frame[i_island]++;
+                            }
+                            else{
+
+                                Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][(Solver_Dict.number_of_frames-1)];
+                            }
+                        }
                     }
                     else{ /* new rCFD_seq */
 
@@ -662,7 +662,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 #endif
                         host_to_node_int_1(Rec.sequence_length);
 
-						/* set next frame (new sequence) */
+                        /* set next frame (new sequence) */
                         loop_islands{
 
                             Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][Rec.global_frame[i_island]];

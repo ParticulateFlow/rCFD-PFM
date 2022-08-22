@@ -63,8 +63,8 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 {
 #if RP_NODE
 
-#if 1	/* local vars */
-	
+#if 1   /* local vars */
+
     Domain      *d=Get_Domain(1);
     Thread      *t, *t_phase;
 
@@ -73,82 +73,82 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
     int         time_steps_per_monitoring_interval, number_of_monitoring_steps;
 
     double      v_mag, grid_spacing;
-	
+
     double      *dt_cross_min, *dt_cross_max, dt_cross_min_global;
-	
+
 #endif
 
-	/* 1. allocate & initialize dt_cross */
-	{
-		dt_cross_min = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
-		dt_cross_max = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+    /* 1. allocate & initialize dt_cross */
+    {
+        dt_cross_min = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+        dt_cross_max = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
 
-		loop_phases{
+        loop_phases{
 
-			dt_cross_min[i_phase] = 1.e10;
-			dt_cross_max[i_phase] = -1.e10;
-		}
-	}
-	
+            dt_cross_min[i_phase] = 1.e10;
+            dt_cross_max[i_phase] = -1.e10;
+        }
+    }
+
     /* 2. set C.average_velocity, C.crossing_time, dt_cross_min/max */
-	thread_loop_c(t,d){ begin_c_loop_int(i_cell, t){
+    thread_loop_c(t,d){ begin_c_loop_int(i_cell, t){
 
         loop_phases{
 
             /* 2.1. set t_phase */
-			{
-				if(Solver_Dict.number_of_phases == 1){
+            {
+                if(Solver_Dict.number_of_phases == 1){
 
-					t_phase = t;
-				}
-				else if(THREAD_SUB_THREAD(t,i_phase) != NULL) {
+                    t_phase = t;
+                }
+                else if(THREAD_SUB_THREAD(t,i_phase) != NULL) {
 
-					t_phase = THREAD_SUB_THREAD(t,i_phase);
-				}
-				else{
+                    t_phase = THREAD_SUB_THREAD(t,i_phase);
+                }
+                else{
 
-					Message("\nERROR myid %d rCFD_analyse_CFD THREAD_SUB_THREAD(t,i_phase) == NULL", myid);
+                    Message("\nERROR myid %d rCFD_analyse_CFD THREAD_SUB_THREAD(t,i_phase) == NULL", myid);
 
-					return;
-				}
-			}
-            
-			/* 2.2. set C.average_velocity, C.crossing_time */
-			{
-				v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) + 
-				              C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
-							  C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
+                    return;
+                }
+            }
 
-				number_of_monitoring_steps = Solver_Dict.analyse_CFD_count;
+            /* 2.2. set C.average_velocity, C.crossing_time */
+            {
+                v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) +
+                              C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
+                              C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
 
-				_C.average_velocity[i_phase][i_cell] = ((double)number_of_monitoring_steps * _C.average_velocity[i_phase][i_cell] + v_mag) / 
-				
-					(double)(number_of_monitoring_steps + 1);
+                number_of_monitoring_steps = Solver_Dict.analyse_CFD_count;
 
-				grid_spacing = pow(C_VOLUME(i_cell, t), 1./3.);
+                _C.average_velocity[i_phase][i_cell] = ((double)number_of_monitoring_steps * _C.average_velocity[i_phase][i_cell] + v_mag) /
 
-				if(_C.average_velocity[i_phase][i_cell] > 0.0){
+                    (double)(number_of_monitoring_steps + 1);
 
-					_C.crossing_time[i_phase][i_cell] = grid_spacing/_C.average_velocity[i_phase][i_cell];
-				}
-				else{
+                grid_spacing = pow(C_VOLUME(i_cell, t), 1./3.);
 
-					_C.crossing_time[i_phase][i_cell] = 1.0e10; /* something large */
-				}
-			}
-            
-			/* 2.3 set dt_cross_min/max */
-			{
-				if((dt_cross_max[i_phase] < _C.crossing_time[i_phase][i_cell]) && (_C.crossing_time[i_phase][i_cell] < 1.e10)){
+                if(_C.average_velocity[i_phase][i_cell] > 0.0){
 
-					dt_cross_max[i_phase] = _C.crossing_time[i_phase][i_cell];
-				}
+                    _C.crossing_time[i_phase][i_cell] = grid_spacing/_C.average_velocity[i_phase][i_cell];
+                }
+                else{
 
-				if(dt_cross_min[i_phase] > _C.crossing_time[i_phase][i_cell]){
+                    _C.crossing_time[i_phase][i_cell] = 1.0e10; /* something large */
+                }
+            }
 
-					dt_cross_min[i_phase] = _C.crossing_time[i_phase][i_cell];
-				}
-			}
+            /* 2.3 set dt_cross_min/max */
+            {
+                if((dt_cross_max[i_phase] < _C.crossing_time[i_phase][i_cell]) && (_C.crossing_time[i_phase][i_cell] < 1.e10)){
+
+                    dt_cross_max[i_phase] = _C.crossing_time[i_phase][i_cell];
+                }
+
+                if(dt_cross_min[i_phase] > _C.crossing_time[i_phase][i_cell]){
+
+                    dt_cross_min[i_phase] = _C.crossing_time[i_phase][i_cell];
+                }
+            }
         }
 
     }end_c_loop_int(i_cell, t)}
@@ -186,16 +186,16 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
             time_steps_per_monitoring_interval, (Solver_Dict.analyse_CFD_count + 1));
     }
 
-	/* 4. free local vars */
-	{
-		free(dt_cross_max);
-		free(dt_cross_min);
-	}
-	
+    /* 4. free local vars */
+    {
+        free(dt_cross_max);
+        free(dt_cross_min);
+    }
+
     Solver_Dict.analyse_CFD_count++;
 
     rCFD_user_pre_proc();
-	
+
 #endif
 }
 
@@ -239,9 +239,9 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
         start_position_coords = (double*)malloc( number_of_start_position_coords * sizeof(double));
 
         if(Solver_Dict.verbose == high_verbose){
-			
-			Message("\nmyid %d number_of_start_positions %d", myid, number_of_start_positions);
-		}
+
+            Message("\nmyid %d number_of_start_positions %d", myid, number_of_start_positions);
+        }
 #endif
     }
 
@@ -423,8 +423,8 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
             }
 
             p->user[p_phase_id] = (double)i_phase;
-			
-			p->state.rho = Phase_Dict[i_phase].density;
+
+            p->state.rho = Phase_Dict[i_phase].density;
 
             number_of_initialized_particles++;
         }
@@ -455,7 +455,7 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
                 Tracer.number_of_shifts[i_phase] = 2 * (node_last + 1) * number_of_cells_in_partition * Tracer_Dict.number_of_Tracers_per_cell;
 
                 Tracer.shifts[i_phase] = (C2C_shift_type*)malloc( Tracer.number_of_shifts[i_phase] * sizeof(C2C_shift_type));
-				
+
             }
 
             Tracer.allocated = 1;
@@ -468,7 +468,7 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
         }
     }
 
-	#endif
+    #endif
 }
 
 /*************************************************************************************/
@@ -499,7 +499,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
     }
 
     /* U.1: Initialize Tracers */
-	
+
     if(Tracer_just_started){
 
         rand_real = (double)rand()/(double)RAND_MAX;
@@ -523,67 +523,67 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             p->state.rho        = C_R(i_cell, t_phase);
 
             /* tracer_splitting in slow cells */
-			{
-				v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) + 
-				              C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
-							  C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
-							  
-				grid_spacing = pow(C_VOLUME(i_cell,t), (1./3.));			  
-							  
-				if(v_mag < grid_spacing / (100. * Solver_Dict.global_time_step)){
+            {
+                v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) +
+                              C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
+                              C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
 
-					_C.crossing_time[i_phase][i_cell] = 100. * Solver_Dict.global_time_step;
-				}
-				else{
-					
-					_C.crossing_time[i_phase][i_cell] = grid_spacing / v_mag;
-				}
-				
-				if(excess_Tracer_cell_crossing_time){
+                grid_spacing = pow(C_VOLUME(i_cell,t), (1./3.));
 
-					time_ratio = _C.crossing_time[i_phase][i_cell] / (2. * Phase_Dict[i_phase].time_step);  /* (time_ratio > 1.) */
+                if(v_mag < grid_spacing / (100. * Solver_Dict.global_time_step)){
 
-					p->user[p_time_ratio] = time_ratio;
+                    _C.crossing_time[i_phase][i_cell] = 100. * Solver_Dict.global_time_step;
+                }
+                else{
 
-					/* store c0_c0_tracer */
-					if((Tracer_Database_not_full) && (p->user[p_w0] > 0.0)){
+                    _C.crossing_time[i_phase][i_cell] = grid_spacing / v_mag;
+                }
 
-						i_tracer = Tracer.monitor_counter[i_phase];
+                if(excess_Tracer_cell_crossing_time){
 
-						if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
+                    time_ratio = _C.crossing_time[i_phase][i_cell] / (2. * Phase_Dict[i_phase].time_step);  /* (time_ratio > 1.) */
 
-							Tracer.shifts[i_phase][i_tracer].c0 =       i_cell;
-							Tracer.shifts[i_phase][i_tracer].node0 =    myid;
-							Tracer.shifts[i_phase][i_tracer].w0 =       (1.-1./time_ratio) * p->user[p_w0];
-							Tracer.shifts[i_phase][i_tracer].c1 =       i_cell;
-							Tracer.shifts[i_phase][i_tracer].node1 =    myid;
+                    p->user[p_time_ratio] = time_ratio;
 
-							Tracer.monitor_counter[i_phase]++;
-						}
-					}
+                    /* store c0_c0_tracer */
+                    if((Tracer_Database_not_full) && (p->user[p_w0] > 0.0)){
 
-					/* init c0_c1_tracer */
-					{
-						p->user[p_w0] = (1./time_ratio) * p->user[p_w0];
+                        i_tracer = Tracer.monitor_counter[i_phase];
 
-						p->state.V[0] = time_ratio * C_U(i_cell,t_phase);
-						p->state.V[1] = time_ratio * C_V(i_cell,t_phase);
-						p->state.V[2] = time_ratio * C_W(i_cell,t_phase);
-					}
-				}
-				else{
+                        if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
 
-					/* normal tracer initialization */
-					{
-						p->state.V[0] = C_U(i_cell,t_phase);
-						p->state.V[1] = C_V(i_cell,t_phase);
-						p->state.V[2] = C_W(i_cell,t_phase);
+                            Tracer.shifts[i_phase][i_tracer].c0 =       i_cell;
+                            Tracer.shifts[i_phase][i_tracer].node0 =    myid;
+                            Tracer.shifts[i_phase][i_tracer].w0 =       (1.-1./time_ratio) * p->user[p_w0];
+                            Tracer.shifts[i_phase][i_tracer].c1 =       i_cell;
+                            Tracer.shifts[i_phase][i_tracer].node1 =    myid;
 
-						p->user[p_time_ratio] = 1.0;
-					}
-				}
-			}
-			
+                            Tracer.monitor_counter[i_phase]++;
+                        }
+                    }
+
+                    /* init c0_c1_tracer */
+                    {
+                        p->user[p_w0] = (1./time_ratio) * p->user[p_w0];
+
+                        p->state.V[0] = time_ratio * C_U(i_cell,t_phase);
+                        p->state.V[1] = time_ratio * C_V(i_cell,t_phase);
+                        p->state.V[2] = time_ratio * C_W(i_cell,t_phase);
+                    }
+                }
+                else{
+
+                    /* normal tracer initialization */
+                    {
+                        p->state.V[0] = C_U(i_cell,t_phase);
+                        p->state.V[1] = C_V(i_cell,t_phase);
+                        p->state.V[2] = C_W(i_cell,t_phase);
+
+                        p->user[p_time_ratio] = 1.0;
+                    }
+                }
+            }
+
             if(Tracer_Dict.random_walk[i_phase]){
 
                 random_walk_velocity = rCFD_user_set_random_walk_velocity();
@@ -677,8 +677,8 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
             Tracer.shifts[i_phase][i_tracer].node1 =    myid;
 
             Tracer.monitor_counter[i_phase]++;
-			
-			Tracer.ready2write = 1;
+
+            Tracer.ready2write = 1;
         }
     }
 
@@ -806,118 +806,118 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 
     /* TODO (9/21) - adapt weights of MPI C2Cs such that they obey to actual mass fluxes */
 
-	Tracer.ready2write = PRF_GIHIGH1(Tracer.ready2write);
-	
+    Tracer.ready2write = PRF_GIHIGH1(Tracer.ready2write);
+
     if((Tracer.ready2write == 1) && (Tracer_Database_not_full)){
 
         int     i_phase, i_layer = 0, i_state, i_cell, i_tracer;
-		
-		int     c0, node0, c1, node1, number_of_lock_cells;	
-		
-		Domain  *d = Get_Domain(1);
-		Thread  *t;
 
-		FILE    *f_out = NULL;
-		char    file_name[80];
+        int     c0, node0, c1, node1, number_of_lock_cells;
+
+        Domain  *d = Get_Domain(1);
+        Thread  *t;
+
+        FILE    *f_out = NULL;
+        char    file_name[80];
 
         loop_phases{
 
-			/* open f_out */
-			{
-				i_state = Solver.current_state;
+            /* open f_out */
+            {
+                i_state = Solver.current_state;
 
-				sprintf(file_name,"%s_%d_%d_%d", File_Dict.C2C_filename, i_state, i_phase, myid);
+                sprintf(file_name,"%s_%d_%d_%d", File_Dict.C2C_filename, i_state, i_phase, myid);
 
-				if(Tracer.frame_counter == 0){
+                if(Tracer.frame_counter == 0){
 
-					f_out = fopen(file_name,"w");
-				}
-				else{
+                    f_out = fopen(file_name,"w");
+                }
+                else{
 
-					f_out = fopen(file_name,"a");
-				}
+                    f_out = fopen(file_name,"a");
+                }
 
-				if(f_out == NULL){
+                if(f_out == NULL){
 
-					Message("\n... ERROR: rCFD_write_C2Cs: f_out == NULL  ...\n");
-					
-					return;
-				}
-			}
-			
+                    Message("\n... ERROR: rCFD_write_C2Cs: f_out == NULL  ...\n");
+
+                    return;
+                }
+            }
+
             if(Tracer.monitor_counter[i_phase] > 0){
 
- 				/* avoid lock cells (i.e. cells which only point to themselves) */
-				{
-					thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
+                /* avoid lock cells (i.e. cells which only point to themselves) */
+                {
+                    thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
 
-						begin_c_loop(i_cell,t){
+                        begin_c_loop(i_cell,t){
 
-							_C.hit_by_other_cell[i_cell] = 0;
+                            _C.hit_by_other_cell[i_cell] = 0;
 
-						}end_c_loop(i_cell,t);
-					}}
+                        }end_c_loop(i_cell,t);
+                    }}
 
-					for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
+                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
 
-						c0 =        Tracer.shifts[i_phase][i_tracer].c0;
-						node0 =     Tracer.shifts[i_phase][i_tracer].node0;
-						c1 =        Tracer.shifts[i_phase][i_tracer].c1;
-						node1 =     Tracer.shifts[i_phase][i_tracer].node1;
+                        c0 =        Tracer.shifts[i_phase][i_tracer].c0;
+                        node0 =     Tracer.shifts[i_phase][i_tracer].node0;
+                        c1 =        Tracer.shifts[i_phase][i_tracer].c1;
+                        node1 =     Tracer.shifts[i_phase][i_tracer].node1;
 
-						if((c0 != c1) || (node0 != node1)){
+                        if((c0 != c1) || (node0 != node1)){
 
-							_C.hit_by_other_cell[c1] += 1;
-						}
-					}
+                            _C.hit_by_other_cell[c1] += 1;
+                        }
+                    }
 
-					/* loop Tracers and count lock cells */
+                    /* loop Tracers and count lock cells */
 
-					number_of_lock_cells = 0;
+                    number_of_lock_cells = 0;
 
-					for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
+                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
 
-						c1 = Tracer.shifts[i_phase][i_tracer].c1;
+                        c1 = Tracer.shifts[i_phase][i_tracer].c1;
 
-						if(_C.hit_by_other_cell[c1] == 0){
+                        if(_C.hit_by_other_cell[c1] == 0){
 
-							number_of_lock_cells++;
-						}
-					}
-				}
+                            number_of_lock_cells++;
+                        }
+                    }
+                }
 
-				fprintf(f_out,"%d \n", (Tracer.monitor_counter[i_phase] - number_of_lock_cells));
+                fprintf(f_out,"%d \n", (Tracer.monitor_counter[i_phase] - number_of_lock_cells));
 
-				for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
+                for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
 
-					c1 = Tracer.shifts[i_phase][i_tracer].c1;
+                    c1 = Tracer.shifts[i_phase][i_tracer].c1;
 
-					if(_C.hit_by_other_cell[c1] > 0){
+                    if(_C.hit_by_other_cell[c1] > 0){
 
-						fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c0);
-						fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node0);
-						fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c1);
-						fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node1);
-						fprintf(f_out,"%e ",Tracer.shifts[i_phase][i_tracer].w0);
+                        fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c0);
+                        fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node0);
+                        fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c1);
+                        fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node1);
+                        fprintf(f_out,"%e ",Tracer.shifts[i_phase][i_tracer].w0);
 
-						fprintf(f_out,"\n");
-					}
-				}
+                        fprintf(f_out,"\n");
+                    }
+                }
 
-				Tracer.monitor_counter[i_phase] = 0;
+                Tracer.monitor_counter[i_phase] = 0;
             }
-			else{
-				
-				fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
-				
-				number_of_lock_cells = 0;
-			}
-			
-			fclose(f_out);
+            else{
 
-			Message0("\n... rCFD_write_C2Cs: identified %d lock cells\n", PRF_GISUM1(number_of_lock_cells));
-			
-			Message0("\n... wrote C2C frame # %d for phase %d ...", Tracer.frame_counter, i_phase);
+                fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
+
+                number_of_lock_cells = 0;
+            }
+
+            fclose(f_out);
+
+            Message0("\n... rCFD_write_C2Cs: identified %d lock cells\n", PRF_GISUM1(number_of_lock_cells));
+
+            Message0("\n... wrote C2C frame # %d for phase %d ...", Tracer.frame_counter, i_phase);
 
         }
 
@@ -1327,31 +1327,31 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
 
                         Rec_jump_diff[i_frame] = diff;
                     }
-                    
-					break;
+
+                    break;
                 }
-            
-				case replay_format:
-				{
-					loop_frames{
-					
-						if(i_frame < (Solver_Dict.number_of_frames - 2)){
-							
-							Rec_jump[i_frame] = i_frame + 1;
-							
-							Rec_jump_diff[i_frame] = Rec_matrix[i_frame][(i_frame + 1)];
-						}
-						else{
-							
-							Rec_jump[i_frame] = 0;
-							
-							Rec_jump_diff[i_frame] = Rec_matrix[i_frame][0];
-						}
-					}
-					
-					break;
-				}
-			}
+
+                case replay_format:
+                {
+                    loop_frames{
+
+                        if(i_frame < (Solver_Dict.number_of_frames - 2)){
+
+                            Rec_jump[i_frame] = i_frame + 1;
+
+                            Rec_jump_diff[i_frame] = Rec_matrix[i_frame][(i_frame + 1)];
+                        }
+                        else{
+
+                            Rec_jump[i_frame] = 0;
+
+                            Rec_jump_diff[i_frame] = Rec_matrix[i_frame][0];
+                        }
+                    }
+
+                    break;
+                }
+            }
 #endif
         }
 

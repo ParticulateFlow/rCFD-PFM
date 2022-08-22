@@ -156,7 +156,7 @@
     enum{ /* rec format */
         quarter_jumps_format,
         off_diagonal_band_format,
-		replay_format,
+        replay_format,
         number_of_rec_formats
     };
 

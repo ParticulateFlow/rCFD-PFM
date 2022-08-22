@@ -15,32 +15,43 @@ if [ ! -d "${TARGETDIR}" ]; then
     exit
 fi
 
-# copy src folder to target dir
-echo "Copying src to target directory ..."
-cp -r ./src ${TARGETDIR}
+PREP_IN_PLACE=false
+if [[ "${TARGETDIR}" -ef ./ ]]; then
+    PREP_IN_PLACE=true
+fi
 
-# switch to tutorial folder
-pushd tutorials >/dev/null
+if [ "${PREP_IN_PLACE}" = false ]; then
+    # copy src folder to target dir
+    echo "Copying src to target directory ..."
+    cp -r ./src ${TARGETDIR}
 
-# loop over all case folders
-echo "Copying pre-processing scripts to target directory ..."
-for d in */ ; do
-    if [ -f "${d}prep_batch.scm" ]; then
-        if [[ "${TARGETDIR}" = /* ]]; then
-            # absolute path
-            cp -f "${d}prep_batch.scm" "${TARGETDIR}/tutorials/${d}prep_batch.scm" 2>/dev/null
-        else
-            # relative path
-            cp -f "${d}prep_batch.scm" "../${TARGETDIR}/tutorials/${d}prep_batch.scm" 2>/dev/null
+    # switch to tutorial folder
+    pushd tutorials >/dev/null
+
+    # loop over all case folders
+    echo "Copying pre-processing scripts to target directory ..."
+    for d in */ ; do
+        if [ -f "${d}prep_batch.scm" ]; then
+            if [[ "${TARGETDIR}" = /* ]]; then
+                # absolute path
+                cp -f "${d}prep_batch.scm" "${TARGETDIR}/tutorials/${d}prep_batch.scm" 2>/dev/null
+            else
+                # relative path
+                cp -f "${d}prep_batch.scm" "../${TARGETDIR}/tutorials/${d}prep_batch.scm" 2>/dev/null
+            fi
         fi
-    fi
-done
+    done
 
-popd >/dev/null
+    popd >/dev/null
 
-# switch to target dir
-echo "Switching to target directory ..."
-pushd ${TARGETDIR}/tutorials >/dev/null
+    # switch to target dir
+    echo "Switching to target directory ..."
+    pushd ${TARGETDIR}/tutorials >/dev/null
+else
+    # switch to tutorials dir
+    echo "Switching to tutorials directory ..."
+    pushd tutorials >/dev/null
+fi
 
 # remove old log file
 LOGFILE="prep.log"

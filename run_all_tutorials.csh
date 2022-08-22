@@ -15,35 +15,48 @@ if ( ! -d "${TARGETDIR}" ) then
     exit
 endif
 
-# copy src folder to target dir
-echo "Copying src to target directory ..."
-cp -r ./src ${TARGETDIR}
+set RUN_IN_PLACE=false
+set FULL_TARGETDIR=`realpath "${TARGETDIR}"`
+set FULL_CURRENTDIR=`pwd`
+if ( "${FULL_TARGETDIR}" == "${FULL_CURRENTDIR}" ) then
+    set RUN_IN_PLACE=true
+endif
 
-# copy balance_check.m to target dir
-cp -f "tutorials/balance_check.m" "${TARGETDIR}/tutorials/balance_check.m" >& /dev/null
+if ( ${RUN_IN_PLACE} == false ) then
+    # copy src folder to target dir
+    echo "Copying src to target directory ..."
+    cp -r ./src ${TARGETDIR}
 
-# switch to tutorial folder
-pushd tutorials >/dev/null
+    # copy balance_check.m to target dir
+    cp -f "tutorials/balance_check.m" "${TARGETDIR}/tutorials/balance_check.m" >& /dev/null
 
-# loop over all case folders
-echo "Copying run scripts to target directory ..."
-foreach d ( */ )
-    if ( -f "${d}run_batch.scm" ) then
-        if ( "${TARGETDIR}" =~ /* ) then
-            # absolute path
-            cp -f "${d}run_batch.scm" "${TARGETDIR}/tutorials/${d}run_batch.scm" >& /dev/null
-        else
-            # relative path
-            cp -f "${d}run_batch.scm" "../${TARGETDIR}/tutorials/${d}run_batch.scm" >& /dev/null
+    # switch to tutorial folder
+    pushd tutorials >/dev/null
+
+    # loop over all case folders
+    echo "Copying run scripts to target directory ..."
+    foreach d ( */ )
+        if ( -f "${d}run_batch.scm" ) then
+            if ( "${TARGETDIR}" =~ /* ) then
+                # absolute path
+                cp -f "${d}run_batch.scm" "${TARGETDIR}/tutorials/${d}run_batch.scm" >& /dev/null
+            else
+                # relative path
+                cp -f "${d}run_batch.scm" "../${TARGETDIR}/tutorials/${d}run_batch.scm" >& /dev/null
+            endif
         endif
-    endif
-end
+    end
 
-popd >/dev/null
+    popd >/dev/null
 
-# switch to target dir and execute tutorials
-echo "Switching to target directory ..."
-pushd ${TARGETDIR}/tutorials >/dev/null
+    # switch to target dir and execute tutorials
+    echo "Switching to target directory ..."
+    pushd ${TARGETDIR}/tutorials >/dev/null
+else
+    # switch to tutorials dir and execute tutorials
+    echo "Switching to tutorials directory ..."
+    pushd tutorials >/dev/null
+endif
 
 # remove old log file
 set LOGFILE="balance_check.log"

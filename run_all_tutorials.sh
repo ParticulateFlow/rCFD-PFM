@@ -15,35 +15,46 @@ if [ ! -d "${TARGETDIR}" ]; then
     exit
 fi
 
-# copy src folder to target dir
-echo "Copying src to target directory ..."
-cp -r ./src ${TARGETDIR}
+RUN_IN_PLACE=false
+if [[ "${TARGETDIR}" -ef ./ ]]; then
+    RUN_IN_PLACE=true
+fi
 
-# copy balance_check.m to target dir
-cp -f "tutorials/balance_check.m" "${TARGETDIR}/tutorials/balance_check.m" 2> /dev/null
+if [ "${RUN_IN_PLACE}" = false ]; then
+    # copy src folder to target dir
+    echo "Copying src to target directory ..."
+    cp -r ./src ${TARGETDIR}
 
-# switch to tutorial folder
-pushd tutorials >/dev/null
+    # copy balance_check.m to target dir
+    cp -f "tutorials/balance_check.m" "${TARGETDIR}/tutorials/balance_check.m" 2> /dev/null
 
-# loop over all case folders
-echo "Copying run scripts to target directory ..."
-for d in */ ; do
-    if [ -f "${d}run_batch.scm" ]; then
-        if [[ "${TARGETDIR}" = /* ]]; then
-            # absolute path
-            cp -f "${d}run_batch.scm" "${TARGETDIR}/tutorials/${d}run_batch.scm" 2>/dev/null
-        else
-            # relative path
-            cp -f "${d}run_batch.scm" "../${TARGETDIR}/tutorials/${d}run_batch.scm" 2>/dev/null
+    # switch to tutorial folder
+    pushd tutorials >/dev/null
+
+    # loop over all case folders
+    echo "Copying run scripts to target directory ..."
+    for d in */ ; do
+        if [ -f "${d}run_batch.scm" ]; then
+            if [[ "${TARGETDIR}" = /* ]]; then
+                # absolute path
+                cp -f "${d}run_batch.scm" "${TARGETDIR}/tutorials/${d}run_batch.scm" 2>/dev/null
+            else
+                # relative path
+                cp -f "${d}run_batch.scm" "../${TARGETDIR}/tutorials/${d}run_batch.scm" 2>/dev/null
+            fi
         fi
-    fi
-done
+    done
 
-popd >/dev/null
+    popd >/dev/null
 
-# switch to target dir and execute tutorials
-echo "Switching to target directory ..."
-pushd ${TARGETDIR}/tutorials >/dev/null
+    # switch to target dir and execute tutorials
+    echo "Switching to target directory ..."
+    pushd ${TARGETDIR}/tutorials >/dev/null
+else
+    # switch to tutorials dir and execute tutorials
+    echo "Switching to tutorials directory ..."
+    pushd tutorials >/dev/null
+fi
 
 BRED='\033[1;31m'
 BGREEN='\033[1;32m'

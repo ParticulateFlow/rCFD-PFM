@@ -15,32 +15,45 @@ if ( ! -d "${TARGETDIR}" ) then
     exit
 endif
 
-# copy src folder to target dir
-echo "Copying src to target directory ..."
-cp -r ./src ${TARGETDIR}
+set PREP_IN_PLACE=false
+set FULL_TARGETDIR=`realpath "${TARGETDIR}"`
+set FULL_CURRENTDIR=`pwd`
+if ( "${FULL_TARGETDIR}" == "${FULL_CURRENTDIR}" ) then
+    set PREP_IN_PLACE=true
+endif
 
-# switch to tutorial folder
-pushd tutorials >/dev/null
+if ( ${PREP_IN_PLACE} == false ) then
+    # copy src folder to target dir
+    echo "Copying src to target directory ..."
+    cp -r ./src ${TARGETDIR}
 
-# loop over all case folders
-echo "Copying pre-processing scripts to target directory ..."
-foreach d ( */ )
-    if ( -f "${d}prep_batch.scm" ) then
-        if ( "${TARGETDIR}" =~ /* ) then
-            # absolute path
-            cp -f "${d}prep_batch.scm" "${TARGETDIR}/tutorials/${d}prep_batch.scm" >& /dev/null
-        else
-            # relative path
-            cp -f "${d}prep_batch.scm" "../${TARGETDIR}/tutorials/${d}prep_batch.scm" >& /dev/null
+    # switch to tutorial folder
+    pushd tutorials >/dev/null
+
+    # loop over all case folders
+    echo "Copying pre-processing scripts to target directory ..."
+    foreach d ( */ )
+        if ( -f "${d}prep_batch.scm" ) then
+            if ( "${TARGETDIR}" =~ /* ) then
+                # absolute path
+                cp -f "${d}prep_batch.scm" "${TARGETDIR}/tutorials/${d}prep_batch.scm" >& /dev/null
+            else
+                # relative path
+                cp -f "${d}prep_batch.scm" "../${TARGETDIR}/tutorials/${d}prep_batch.scm" >& /dev/null
+            endif
         endif
-    endif
-end
+    end
 
-popd >/dev/null
+    popd >/dev/null
 
-# switch to target dir
-echo "Switching to target directory ..."
-pushd ${TARGETDIR}/tutorials >/dev/null
+    # switch to target dir
+    echo "Switching to target directory ..."
+    pushd ${TARGETDIR}/tutorials >/dev/null
+else
+    # switch to tutorials dir
+    echo "Switching to tutorials directory ..."
+    pushd tutorials >/dev/null
+endif
 
 # remove old log file
 set LOGFILE="prep.log"

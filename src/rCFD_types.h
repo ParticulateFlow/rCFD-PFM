@@ -103,6 +103,10 @@
         double      heat_capacity;
 
         double      reference_temperature;
+        
+        double      vof_max;
+        
+        short       hindered_drift_on;
 
         int         number_of_user_vars;
 
@@ -257,6 +261,8 @@
         int         current_layer;
 
         int         global_run_counter;
+        
+        short       balance_file_opened;
 
         double      global_time;
 

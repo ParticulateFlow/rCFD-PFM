@@ -27,7 +27,7 @@
     };
 
     #define     Global_Verbose          low_verbose
-
+    
 
     /* A. default Dicts */
 
@@ -106,7 +106,7 @@
 
         /* Node-0 generates folder structure */
         if(myid == 0){
-
+            
             short directory_error_indicator = 0;
 
             directory_error_indicator += mkdir("./data",0777);
@@ -117,7 +117,7 @@
             directory_error_indicator += mkdir("./post",0777);
 
             if(directory_error_indicator != 0){
-
+                 
                 Message0("\nWARNING rCFD_default_File_Dict: could not create all sub-directories (maybe because they already exist)\n");
             }
         }
@@ -155,6 +155,10 @@
             Phase_Dict[i_phase].heat_capacity = 1.0;
 
             Phase_Dict[i_phase].reference_temperature = 300.0;
+            
+            Phase_Dict[i_phase].vof_max = 1.0;
+            
+            Phase_Dict[i_phase].hindered_drift_on = 0;
 
             Phase_Dict[i_phase].number_of_user_vars = 0;
 
@@ -401,6 +405,8 @@
         }
 
         Solver.global_time = 0.0;
+        
+        Solver.balance_file_opened = 0;
     }
 
     void rCFD_default_Topo(void)
@@ -476,7 +482,7 @@
             else{
 
                 short   vof_file_exisits = 1;
-
+                
                 i_state = 0;
 
                 loop_phases{
@@ -502,10 +508,10 @@
                             }
                         }
 
-                        vof_file_exisits = 0;
+                        vof_file_exisits = 0;                       
                     }
                     else{
-
+                        
                         loop_frames{
 
                             fscanf(f_in,"%d\n", &i_tmp);
@@ -533,11 +539,11 @@
                         fclose(f_in);
                     }
                 }
-
+                
                 vof_file_exisits = PRF_GILOW1(vof_file_exisits);
-
+                
                 if( ! vof_file_exisits){
-
+                    
                     Message0("\nWARNING rCFD_default_Cell_L0: at least one vof file doesn't exist (for the preparation phase, this is normal)\n");
                 }
             }

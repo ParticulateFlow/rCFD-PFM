@@ -20,7 +20,14 @@
     #define     Global_Version_Year     2022
     #define     Global_Version_Month    2
 
-    #define     Global_Verbose          1
+    enum{
+        no_verbose,
+        low_verbose,
+        high_verbose
+    };
+
+    #define     Global_Verbose          low_verbose
+
 
     /* A. default Dicts */
 
@@ -100,14 +107,18 @@
         /* Node-0 generates folder structure */
         if(myid == 0){
 
-            if( (mkdir("./data",0777) != 0) ||
-                (mkdir("./data/tmp",0777) != 0) ||
-                (mkdir("./data/vof",0777) != 0) ||
-                (mkdir("./data/c2c",0777) != 0) ||
-                (mkdir("./rec",0777) != 0) ||
-                (mkdir("./post",0777) != 0) ){
+            short directory_error_indicator = 0;
 
-                /*Message0("\nERROR rCFD_default_File_Dict");*/
+            directory_error_indicator += mkdir("./data",0777);
+            directory_error_indicator += mkdir("./data/tmp",0777);
+            directory_error_indicator += mkdir("./data/vof",0777);
+            directory_error_indicator += mkdir("./data/c2c",0777);
+            directory_error_indicator += mkdir("./rec",0777);
+            directory_error_indicator += mkdir("./post",0777);
+
+            if(directory_error_indicator != 0){
+
+                Message0("\nWARNING rCFD_default_File_Dict: could not create all sub-directories (maybe because they already exist)\n");
             }
         }
 
@@ -144,6 +155,10 @@
             Phase_Dict[i_phase].heat_capacity = 1.0;
 
             Phase_Dict[i_phase].reference_temperature = 300.0;
+
+            Phase_Dict[i_phase].vof_max = 1.0;
+
+            Phase_Dict[i_phase].hindered_drift_on = 0;
 
             Phase_Dict[i_phase].number_of_user_vars = 0;
 
@@ -196,7 +211,7 @@
     void rCFD_default_Rec_Dict(void)
     {
 
-        Rec_Dict.method = quarter_jumps_method;
+        Rec_Dict.format = quarter_jumps_format;
 
         Rec_Dict.min_seq_length = (int)((double)Solver_Dict.number_of_frames/25.);
 
@@ -390,6 +405,8 @@
         }
 
         Solver.global_time = 0.0;
+
+        Solver.balance_file_opened = 0;
     }
 
     void rCFD_default_Topo(void)
@@ -464,6 +481,8 @@
             }
             else{
 
+                short   vof_file_exisits = 1;
+
                 i_state = 0;
 
                 loop_phases{
@@ -489,7 +508,7 @@
                             }
                         }
 
-                        Message("\nWARNING myid %d: rCFD_default_Cell: _C.vof: f_in == NULL for i_phase %d ...\n", myid, i_phase);
+                        vof_file_exisits = 0;
                     }
                     else{
 
@@ -519,6 +538,13 @@
 
                         fclose(f_in);
                     }
+                }
+
+                vof_file_exisits = PRF_GILOW1(vof_file_exisits);
+
+                if( ! vof_file_exisits){
+
+                    Message0("\nWARNING rCFD_default_Cell_L0: at least one vof file doesn't exist (for the preparation phase, this is normal)\n");
                 }
             }
         }

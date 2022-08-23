@@ -573,10 +573,12 @@ DEFINE_ON_DEMAND(rCFD_run)
     int         i_frame_c0, i_frame_c1;
     int         i_tmp;
 
+    int         i_warning_fill_1, i_warning_drift_1;
+
     short       balance_error_exists;
 
     double      w0, data0, vol_flip;
-    double      drift_volume, local_drift_exchange, local_mass_c0, local_mass_c1, local_mass;
+    double      drift_volume, local_drift_exchange, local_mass_c0, local_mass_c1, local_mass, hindering_factor, available_c1_mass;
     double      sum_of_conc, flux_in, flux_out, data_in_mean, data_out_mean, flux_mean;
     double      available_exchange, exchange_ratio;
 
@@ -589,6 +591,15 @@ DEFINE_ON_DEMAND(rCFD_run)
 #endif
 
     Solver.clock = clock();
+
+    /* W: initialize i_warning's */
+    {
+#if RP_NODE
+
+        i_warning_fill_1    = 0;
+        i_warning_drift_1   = 0;
+#endif
+    }
 
     loop_runs{
 
@@ -638,40 +649,36 @@ DEFINE_ON_DEMAND(rCFD_run)
                     if(Rec.frame_in_sequence < Rec.sequence_length){
 
                         Rec.frame_in_sequence++;
-                    }
-                    else{
 
-                        /* new rCFD_seq */
+                        /* set next frame (within sequence) */
+                        loop_islands{
+
+                            if(Rec.global_frame[i_island] < (Solver_Dict.number_of_frames - 1)){
+
+                                Rec.global_frame[i_island]++;
+                            }
+                            else{
+
+                                Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][(Solver_Dict.number_of_frames-1)];
+                            }
+                        }
+                    }
+                    else{ /* new rCFD_seq */
 
                         Rec.frame_in_sequence = 0;
 #if RP_HOST
                         rand_real = (double)rand()/(double)RAND_MAX;
 
                         Rec.sequence_length = Rec_Dict.min_seq_length + (int)(rand_real*(double)(Rec_Dict.max_seq_length - Rec_Dict.min_seq_length));
-
-
 #endif
                         host_to_node_int_1(Rec.sequence_length);
 
+                        /* set next frame (new sequence) */
                         loop_islands{
 
                             Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][Rec.global_frame[i_island]];
                         }
                     }
-
-                    /* set next frame */
-                    loop_islands{
-
-                        if(Rec.global_frame[i_island] < (Solver_Dict.number_of_frames - 1)){
-
-                            Rec.global_frame[i_island]++;
-                        }
-                        else{
-
-                            Rec.global_frame[i_island] = Rec.jumps[i_state][i_state2][i_island][(Solver_Dict.number_of_frames-1)];
-                        }
-                    }
-
                 }
             }
             else{
@@ -793,8 +800,6 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                     /* C3: fill holes */
                     {
-                        /*Message("\nmyid %d, number_of_cells %d, number_of_faces %d", myid, _Cell_Dict.number_of_cells, _Face_Dict.number_of_faces);*/
-
                         number_of_unhit_cells = 1;
 
                         number_of_fill_loops = 0;
@@ -847,14 +852,14 @@ DEFINE_ON_DEMAND(rCFD_run)
                                     _C.weight_after_swap[i_cell] = 0.0;
                                 }
 
-                                if(_C.weight_after_shift[i_cell] == 0.0){
+                                i_frame = Rec.global_frame[_C.island_id[i_cell]];
+
+                                if((_C.weight_after_shift[i_cell] == 0.0) && (_C.vof[i_frame][i_cell][i_phase] > 0.0)){
 
                                     number_of_unhit_cells++;
                                 }
 
                             }
-
-                            number_of_unhit_cells = PRF_GISUM1(number_of_unhit_cells);
                         }
 
                         /* data = data_update */
@@ -862,15 +867,22 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                             loop_data{
 
-                                _C.data[i_phase][i_cell][i_data] = _C.data_shift[i_phase][i_cell][i_data];
+                                _C.data[_i_data] = _C.data_shift[_i_data];
                             }
                         }
+
+                        i_warning_fill_1 = PRF_GISUM1(number_of_unhit_cells);
                     }
                 }
 
                 if(Solver_Dict.verbose){
 
-                    Message0("\n\nConvection: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
+                    Message0("\n\nC2C shifts: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
+
+                    if(i_warning_fill_1){
+
+                        Message0("\n\nWARNING rCFD_run, c2c shifts, fill holes: %d unvisited cells exist", i_warning_fill_1);
+                    }
                 }
 #endif
             }
@@ -882,7 +894,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                     /* Existing Limitations (11/21)
 
-                        L1: drifting of concentration might lead to conc. > 1.
+                        L1: drifting pattern might depend on face order
 
                         L2: drifting of tmperature_data not yet implemented
 
@@ -978,7 +990,6 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                     case concentration_data:
                                     {
-
                                         /* set _C.drift_exchange */
                                         loop_faces{
 
@@ -1003,6 +1014,8 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                         drift_volume += Data_Dict[i_phase][i_data].drift_velocity[i_dim] * _F.area[i_face][i_dim] *
 
                                                             Solver.timestep_width[i_layer] / (double)Solver_Dict.number_of_drift_loops;
+
+                                                        /* drift_volume is defined per face, w/o information of vof's of c0/c1 */
                                                     }
 
                                                     /* flip cells, such that flux is from c0 to c1 */
@@ -1017,14 +1030,77 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                         drift_volume *= -1.0;
                                                     }
 
+                                                    /* in granular flow, drifting ability depend on solid volume fraction */
+                                                    if(Phase_Dict[i_phase].hindered_drift_on){
+
+                                                        hindering_factor = 1.0 - _C.vof[i_frame_c0][c0][i_phase] / Phase_Dict[i_phase].vof_max;
+
+                                                        if(hindering_factor < 0.0){
+
+                                                            hindering_factor = 0.0;
+                                                        }
+
+                                                        drift_volume *= hindering_factor;
+                                                    }
+
+#if 0   /* code sketch changing_c2c_bulk_diameter_on */
+
+                                                    if(Phase_Dict[i_phase].changing_c2c_bulk_diameter_on){
+
+                                                        loop_data_2{
+
+                                                            if((_Data_Dict[i_phase][i_data].fractional_diameter > 0.0)&&(_C.data[i_phase][c0][i_data] > 0.0)){
+
+                                                                c0_mean_diam += _Data_Dict[i_phase][i_data].fractional_diameter * _C.data[i_phase][c0][i_data];
+
+                                                                c0_mass_fraction += _C.data[i_phase][c0][i_data];
+                                                            }
+                                                        }
+
+                                                        if(c0_mass_fraction > 0.0){
+
+                                                            c0_mean_diam /= c0_mass_fraction;
+                                                        }
+                                                        else{
+                                                            c0_mean_diam = Phase_Dict[i_phase].c2c_bulk_diameter;
+                                                        }
+
+                                                        fractional_diameter = _Data_Dict[i_phase][i_data].fractional_diameter;
+
+                                                        if(fractional_diameter != Phase_Dict[i_phase].c2c_bulk_diameter){
+
+                                                            drift_scale = (fractional_diameter - c0_mw_mean_diam)/(fractional_diameter - Phase_Dict[i_phase].c2c_bulk_diameter);
+                                                        }
+                                                        else{
+
+                                                            drift_scale = 1.0;
+                                                        }
+
+                                                        drift_volume *= drift_scale;
+                                                    }
+
+                                                    /* end of code sketch */
+#endif
+
                                                     if(drift_volume > _C.volume[c0]){
 
                                                         drift_volume = _C.volume[c0];
+
+                                                        i_warning_drift_1 ++;
                                                     }
 
                                                     local_drift_exchange = _C.data[i_phase][c0][i_data] * drift_volume * _C.vof[i_frame_c0][c0][i_phase] *
 
-                                                            Phase_Dict[i_phase].density;
+                                                        Phase_Dict[i_phase].density;     /* [kg] */
+
+                                                    available_c1_mass = (1.0 - _C.data[i_phase][c1][i_data]) * _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase] *
+
+                                                        Phase_Dict[i_phase].density;
+
+                                                    if(local_drift_exchange > available_c1_mass){
+
+                                                        local_drift_exchange = available_c1_mass;
+                                                    }
 
                                                     _C.drift_exchange[c0] -= local_drift_exchange;
                                                     _C.drift_exchange[c1] += local_drift_exchange;
@@ -1032,18 +1108,19 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             }
                                         }
 
-                                        /* parallel exchange of local_drift_exchange */
+                                        /* parallel exchange of _C.drift_exchange */
                                         {
                                             sum_up_parallel_corona_cells(_C.drift_exchange, i_layer);
                                         }
 
+                                        /* adapt _C.data by _C.drift_exchange */
                                         loop_cells{
 
                                             i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
                                             local_mass = _C.volume[i_cell] * _C.vof[_i_vof] * Phase_Dict[i_phase].density;
 
-                                            if(local_mass > 0.0){
+                                            if(local_mass > 1.0e-10){
 
                                                 _C.data[_i_data] = ((_C.data[_i_data] * local_mass) + _C.drift_exchange[i_cell]) / local_mass;
                                             }
@@ -1204,8 +1281,16 @@ DEFINE_ON_DEMAND(rCFD_run)
                 }
 
                 if(Solver_Dict.verbose){
+#if RP_NODE
+                    Message0("\n\nFace swaps: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
 
-                    Message0("\n\nDiffusion: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
+                    i_warning_drift_1 = PRF_GISUM1(i_warning_drift_1);
+
+                    if(i_warning_drift_1){
+
+                        Message0("\n\nWARNING rCFD_run, face swap, data drifting: limited drift by c0-volume at %d faces", i_warning_drift_1);
+                    }
+#endif
                 }
             }
 
@@ -1804,9 +1889,11 @@ DEFINE_ON_DEMAND(rCFD_run)
                             if( (Balance_Dict[i_phase][i_data].write_balance_to_file) &&
                                 ((Solver.global_run_counter % Balance_Dict[i_phase][i_data].write_balance_to_file_interval) == 0)){
 
-                                if((Solver.global_run_counter == 0) && (i_phase == 0) && (i_data == 0)){
+                                if(Solver.balance_file_opened == 0){
 
                                     f_out = fopen(File_Dict.Balance_filename, "w");
+
+                                    Solver.balance_file_opened = 1;
                                 }
                                 else{
                                     f_out = fopen(File_Dict.Balance_filename, "a");
@@ -1829,11 +1916,6 @@ DEFINE_ON_DEMAND(rCFD_run)
                 /* Adjust conc. data, such that sum(conc) = 1 */
                 if(Solver_Dict.control_conc_sum_on){
 
-                    /* known limitations:
-
-                        L1: concentration values might exceed [0..1]
-
-                    */
 #if RP_NODE
                     loop_cells{
 
@@ -1843,7 +1925,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                             if(Data_Dict[i_phase][i_data].type == concentration_data){
 
-                                sum_of_conc += _C.data[i_phase][i_cell][i_data];
+                                sum_of_conc += _C.data[_i_data];
                             }
                         }
 
@@ -1853,7 +1935,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                 if(sum_of_conc > 0.0){
 
-                                    _C.data[i_phase][i_cell][i_data] /= sum_of_conc;
+                                    _C.data[_i_data] /= sum_of_conc;
                                 }
                             }
                         }
@@ -1897,6 +1979,16 @@ DEFINE_ON_DEMAND(rCFD_run)
                 fprintf(f_out,"\n\n   %d Runs @ global run counter %d",
 
                     Solver_Dict.number_of_runs, Solver.global_run_counter);
+
+                if(i_warning_fill_1){
+
+                    fprintf(f_out,"\n\n   WARNING: %d fill cell warnings exist, consider increasing fill loops", i_warning_fill_1);
+                }
+
+                if(i_warning_drift_1){
+
+                    fprintf(f_out,"\n\n   WARNING: %d drift warnings exist, consider increasing number of drift loops", i_warning_drift_1);
+                }
 
                 fprintf(f_out,"\n\n   %f seconds real world time took %f seconds compute time",
 

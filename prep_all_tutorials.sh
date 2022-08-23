@@ -140,14 +140,18 @@ NFAILED=0
 for d in */ ; do
     pushd ${d} >/dev/null
     if [ -f "prep_batch.scm" ]; then
-        echo "Pre-processing case ${d%/} ..."
 
         command -v fluent
         FLUENT_CHECK=$?
         FLUENT_STATUS=1
 
         if [ ${FLUENT_CHECK} -eq 0 ]; then
-            fluent 3ddp -t2 -g < prep_batch.scm | tee prep_batch.trn
+            NPROCESSORS=`sed -E -n 's/(^[ \t]*\([ \t]*define[ \t]*number_of_processors[ \t]*)([0-9]+)([ \t]*\)[ \t]*)/\2/ p' prep_batch.scm`
+            if [ -z "${NPROCESSORS}" ]; then
+                NPROCESSORS=2
+            fi
+            echo "Pre-processing case ${d%/} on ${NPROCESSORS} processors ..."
+            fluent 3ddp -t${NPROCESSORS} -g < prep_batch.scm | tee prep_batch.trn
             FLUENT_STATUS=$?
         else
             echo "Failed to find fluent installation ..."

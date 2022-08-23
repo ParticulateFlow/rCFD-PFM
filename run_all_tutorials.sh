@@ -78,51 +78,59 @@ NFAILED=0
 for d in */ ; do
     pushd ${d} >/dev/null
     if [ -f "run_batch.scm" ]; then
-        echo "Executing case ${d%/} ..."
+        if [ -f "./data/c2c/c2c_0_0_0" ]; then
+            command -v fluent >/dev/null
+            FLUENT_CHECK=$?
 
-        command -v fluent >/dev/null
-        FLUENT_CHECK=$?
-
-        if [ ${FLUENT_CHECK} -eq 0 ]; then
-            fluent 3ddp -t2 -g < run_batch.scm | tee run_batch.trn
-        else
-            echo "Failed to find fluent installation ..."
-        fi
-
-        # post-process balance
-        if [ -f "post/balance_monitor.out" ]; then
-
-            CONFIDENCE=0
-
-            command -v matlab >/dev/null
-            MATLAB_CHECK=$?
-            if [ ${MATLAB_CHECK} -eq 0 ]; then
-                cp ../balance_check.m .
-                matlab -noFigureWindows -batch "balance_check"
-                CONFIDENCE=$?
+            if [ ${FLUENT_CHECK} -eq 0 ]; then
+                # get number of processors from number of files for state0, phase0
+                pushd ./data/c2c/ >/dev/null
+                NPROCESSORS=`ls -1q c2c_0_0_* | wc -l`
+                popd >/dev/null
+                echo "Executing case ${d%/} on ${NPROCESSORS} processors ..."
+                fluent 3ddp -t${NPROCESSORS} -g < run_batch.scm | tee run_batch.trn
             else
-                command -v octave >/dev/null
-                OCTAVE_CHECK=$?
-                if [ ${OCTAVE_CHECK} -eq 0 ]; then
-                    octave --silent ../balance_check.m
+                echo "Failed to find fluent installation ..."
+            fi
+
+            # post-process balance
+            if [ -f "post/balance_monitor.out" ]; then
+
+                CONFIDENCE=0
+
+                command -v matlab >/dev/null
+                MATLAB_CHECK=$?
+                if [ ${MATLAB_CHECK} -eq 0 ]; then
+                    cp ../balance_check.m .
+                    matlab -noFigureWindows -batch "balance_check"
                     CONFIDENCE=$?
                 else
-                    echo "Failed to find matlab/octave for post-processing ..."
+                    command -v octave >/dev/null
+                    OCTAVE_CHECK=$?
+                    if [ ${OCTAVE_CHECK} -eq 0 ]; then
+                        octave --silent ../balance_check.m
+                        CONFIDENCE=$?
+                    else
+                        echo "Failed to find matlab/octave for post-processing ..."
+                    fi
                 fi
-            fi
 
-            echo "Confidence for case ${d%/}: ${CONFIDENCE}%" | tee -a ../${LOGFILE}
+                echo "Confidence for case ${d%/}: ${CONFIDENCE}%" | tee -a ../${LOGFILE}
 
-            if [ $CONFIDENCE -lt 90 ]; then
-                echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}" | tee >(decolorize >> ../${LOGFILE})
-                ((NINCONSISTENT++))
+                if [ $CONFIDENCE -lt 90 ]; then
+                    echo -e "Case ${d%/} ${BRED}INCONSISTENT${NC}" | tee >(decolorize >> ../${LOGFILE})
+                    ((NINCONSISTENT++))
+                else
+                    echo -e "Case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../${LOGFILE})
+                    ((NOK++))
+                fi
             else
-                echo -e "Case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../${LOGFILE})
-                ((NOK++))
+                echo -e "Case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../${LOGFILE})
+                ((NFAILED++))
             fi
         else
-            echo -e "Case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../${LOGFILE})
-            ((NFAILED++))
+            echo -e "Case ${d%/} ${BYELLOW}SKIPPED${NC} (missing data)" | tee >(decolorize >> ../${LOGFILE})
+            ((NSKIPPED++))
         fi
     else
         echo -e "Case ${d%/} ${BYELLOW}SKIPPED${NC}" | tee >(decolorize >> ../${LOGFILE})

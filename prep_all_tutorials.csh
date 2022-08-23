@@ -31,14 +31,16 @@ if ( ${PREP_IN_PLACE} == false ) then
     pushd tutorials >/dev/null
 
     # loop over all case folders
-    echo "Copying pre-processing scripts to target directory ..."
+    echo "Copying user_src and pre-processing scripts to target directory ..."
     foreach d ( */ )
         if ( -f "${d}prep_batch.scm" ) then
             if ( "${TARGETDIR}" =~ /* ) then
                 # absolute path
+                cp -r "${d}user_src" "${TARGETDIR}/tutorials/${d}user_src"
                 cp -f "${d}prep_batch.scm" "${TARGETDIR}/tutorials/${d}prep_batch.scm" >& /dev/null
             else
                 # relative path
+                cp -r "${d}user_src" "../${TARGETDIR}/tutorials/${d}user_src"
                 cp -f "${d}prep_batch.scm" "../${TARGETDIR}/tutorials/${d}prep_batch.scm" >& /dev/null
             endif
         endif

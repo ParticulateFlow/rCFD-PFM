@@ -34,14 +34,16 @@ if ( ${RUN_IN_PLACE} == false ) then
     pushd tutorials >/dev/null
 
     # loop over all case folders
-    echo "Copying run scripts to target directory ..."
+    echo "Copying user_src and run scripts to target directory ..."
     foreach d ( */ )
         if ( -f "${d}run_batch.scm" ) then
             if ( "${TARGETDIR}" =~ /* ) then
                 # absolute path
+                cp -r "${d}user_src" "${TARGETDIR}/tutorials/${d}user_src"
                 cp -f "${d}run_batch.scm" "${TARGETDIR}/tutorials/${d}run_batch.scm" >& /dev/null
             else
                 # relative path
+                cp -r "${d}user_src" "../${TARGETDIR}/tutorials/${d}user_src"
                 cp -f "${d}run_batch.scm" "../${TARGETDIR}/tutorials/${d}run_batch.scm" >& /dev/null
             endif
         endif

@@ -38,7 +38,15 @@ for ii=1:nfigures
     target_value = balancemonitor(ii:stepsize:end,col_target);
 
     abs_diff_value = abs(actual_value-target_value);
-    epsilon = 0.1*0.5*(max(target_value)-min(target_value));
+    max_target_value = max(target_value);
+    min_target_value = min(target_value);
+    epsilon = 0.1*0.5*(max_target_value-min_target_value);
+    if epsilon < 1e-10
+        epsilon = 0.1*abs(max_target_value);
+        if epsilon < 1e-10
+            epsilon = 0.1;
+        end
+    end
     delta_k = 0.1*abs_diff_value/epsilon;
     confidence = min(confidence, 1 - max(delta_k));
 

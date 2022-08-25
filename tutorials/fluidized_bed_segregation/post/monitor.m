@@ -1,4 +1,4 @@
-% 2022-08-17 
+% 2022-08-17
 % Stefan Pirker
 % Department of particulate flow modelling
 % Linz, Austria
@@ -20,7 +20,7 @@ NHEADERLINES = 0;
 %% full CFD
 
 data = importdata('./monitor_rCFD.out',' ',NHEADERLINES);
-        
+
 [N_lines, N_columns] = size(data)
 
 figure(1);

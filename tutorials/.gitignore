@@ -1,0 +1,8 @@
+*.h5
+*.log
+*.trn
+cleanup-*
+libudf_*/
+data/
+post/
+rec/

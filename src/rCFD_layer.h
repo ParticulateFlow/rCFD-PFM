@@ -35,9 +35,23 @@
 
         _C.vof = malloc_r_3d(Solver_Dict.number_of_frames, _Cell_Dict.number_of_cells, Solver_Dict.number_of_phases);
 
-        _C.data =       malloc_r_3d(Solver_Dict.number_of_phases, _Cell_Dict.number_of_cells, Phase_Dict[i_phase].number_of_data);
-        _C.data_shift = malloc_r_3d(Solver_Dict.number_of_phases, _Cell_Dict.number_of_cells, Phase_Dict[i_phase].number_of_data);
-        _C.data_swap =  malloc_r_3d(Solver_Dict.number_of_phases, _Cell_Dict.number_of_cells, Phase_Dict[i_phase].number_of_data);
+        _C.data =       (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+        _C.data_shift = (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+        _C.data_swap =  (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
+
+        loop_phases{
+
+            _C.data[i_phase] =       (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+            _C.data_shift[i_phase] = (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+            _C.data_swap[i_phase] =  (double**)malloc(_Cell_Dict.number_of_cells * sizeof(double*));
+
+            loop_cells{
+
+                _C.data[i_phase][i_cell] =       (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                _C.data_shift[i_phase][i_cell] = (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+                _C.data_swap[i_phase][i_cell] =  (double*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(double));
+            }
+        }
 
         if(Solver_Dict.data_drifting_on){
 

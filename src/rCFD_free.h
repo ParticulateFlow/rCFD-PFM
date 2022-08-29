@@ -51,11 +51,59 @@
 
                 free_r_3d(_C.vof);
 
-                free_r_3d(_C.data);
+                if(_C.data != NULL){
 
-                free_r_3d(_C.data_shift);
+                    loop_phases{
 
-                free_r_3d(_C.data_swap);
+                        if(_C.data[i_phase] != NULL){
+
+                            loop_cells{
+
+                                free(_C.data[i_phase][i_cell]);
+                            }
+
+                            free(_C.data[i_phase]);
+                        }
+                    }
+
+                    free(_C.data);
+                }
+
+                if(_C.data_shift != NULL){
+
+                    loop_phases{
+
+                        if(_C.data_shift[i_phase] != NULL){
+
+                            loop_cells{
+
+                                free(_C.data_shift[i_phase][i_cell]);
+                            }
+
+                            free(_C.data_shift[i_phase]);
+                        }
+                    }
+
+                    free(_C.data_shift);
+                }
+
+                if(_C.data_swap != NULL){
+
+                    loop_phases{
+
+                        if(_C.data_swap[i_phase] != NULL){
+
+                            loop_cells{
+
+                                free(_C.data_swap[i_phase][i_cell]);
+                            }
+
+                            free(_C.data_swap[i_phase]);
+                        }
+                    }
+
+                    free(_C.data_swap);
+                }
 
                 free(_C.drift_exchange);
 

@@ -104,6 +104,10 @@
 
         double      reference_temperature;
 
+        double      vof_max;
+
+        short       hindered_drift_on;
+
         int         number_of_user_vars;
 
         double      *user;
@@ -153,15 +157,16 @@
 
     } Norm_Dict_type;
 
-    enum{ /* rec method */
-        quarter_jumps_method,
-        off_diagonal_band_method,
-        number_of_rec_methods
+    enum{ /* rec format */
+        quarter_jumps_format,
+        off_diagonal_band_format,
+        replay_format,
+        number_of_rec_formats
     };
 
     typedef struct Rec_Dict_struct
     {
-        short   method;
+        short   format;
 
         short   min_seq_length;
         short   max_seq_length;
@@ -256,6 +261,8 @@
         int         current_layer;
 
         int         global_run_counter;
+
+        short       balance_file_opened;
 
         double      global_time;
 

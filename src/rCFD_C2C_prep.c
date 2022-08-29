@@ -399,7 +399,7 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
     {
         int number_of_initialized_particles = 0;
 
-         loop(p,I->p_init){
+        loop(p,I->p_init){
 
             p->user[p_just_started] =   1.;
             p->user[p_start_time] =     CURRENT_TIME - CURRENT_TIMESTEP;

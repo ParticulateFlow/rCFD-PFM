@@ -142,7 +142,7 @@ void init_all(void)
         rCFD_default_Topo();
 
 #if RP_NODE
-        int i_layer, i_face;
+        int i_layer;
 
         Topo.Cell = (Cell_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_type));
 
@@ -261,7 +261,7 @@ void init_all(void)
 
     /* G5. Rec */
     {
-        int     i_state, i_state2, i_island;
+        int     i_island;
 
         Rec.global_frame = (int*)malloc(Solver_Dict.number_of_islands * sizeof(int));
 

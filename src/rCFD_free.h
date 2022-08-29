@@ -14,8 +14,6 @@
 
     void free_all(void)
     {
-        int i_state;
-
         free(Rec.global_frame);
 
         free_i_4d(Rec.jumps);
@@ -165,6 +163,8 @@
         free(Norms.norm);
 
         if(C2Cs != NULL){
+
+            int i_state;
 
             loop_states{
 

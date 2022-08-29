@@ -17,7 +17,7 @@
     {
     #if RP_NODE
 
-        int i_cell, i_phase, i_frame;
+        int i_cell, i_phase;
 
         _C.x = malloc_r_2d(_Cell_Dict.number_of_cells, 3);
 

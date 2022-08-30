@@ -1097,14 +1097,25 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
 {
 #if RP_NODE
 
-    Domain  *d=Get_Domain(1);
-    Thread  *t, *t_mix, *t_phase;
+#if 1   /*local vars */
 
     int     i_state, i_norm, i_phase, i_cell, i_layer = 0;
 
+    Domain  *d=Get_Domain(1);
+    
+    Thread  *t, *t_mix, *t_phase;
+    
+    FILE    *f_out = NULL, *f_trn = NULL;
+    
+    char    file_name[80];
+    
+    int     total_number_of_norms = PRF_GISUM1(Norms.number_of_norms), total_number_of_cells = PRF_GISUM1(_Cell_Dict.number_of_cells);
+
+#endif
+    
     if ((Tracer.monitoring_started) && (Norms_write_interval) && (Norm_Database_not_full)){
 
-        /* N.1 calc norms */
+        /* 1. calc norms */
         {
             i_norm = 0;
 
@@ -1141,10 +1152,9 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
             }
         }
 
-        /* N.2 write norms */
+        /* 2. write norms */
         {
-            FILE    *f_out;
-            char    file_name[80];
+            
 
             i_state = Solver.current_state;
 
@@ -1175,14 +1185,27 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
 
             fclose(f_out);
 
+            if(Transcript){
+                
+                sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
+
+                f_trn = fopen(file_name, "a" );
+                
+                if(f_trn){
+                
+                    fprintf(f_trn, "\n\nrCFD_write_fields");
+
+                    fprintf(f_trn, "\n\n    wrote norm frame # %d with %d values", Norms.frame_counter, total_number_of_norms);
+                    
+                    fclose(f_trn);
+                }
+            }
+            
             Message0("\n... Norm frame # %d written ...\n", Norms.frame_counter);
         }
 
-        /* N.3 in case of multiphase, write vof Files */
+        /* 3. in case of multiphase, write vof Files */
         if(Solver_Dict.number_of_phases > 1){
-
-            FILE    *f_out;
-            char    file_name[80];
 
             i_state = Solver.current_state;
 
@@ -1206,7 +1229,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
                     return;
                 }
 
-                fprintf(f_out,"%d \n", _Cell_Dict.number_of_cells);
+                fprintf(f_out,"%d \n", _Cell_Dict.number_of_int_cells);
 
                 t_phase = THREAD_SUB_THREAD(t_mix, i_phase);
 
@@ -1227,6 +1250,20 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
                 fclose(f_out);
 
                 Message0("\n... vof frame # %d written for phase %d ...", Norms.frame_counter, i_phase);
+                
+                if(Transcript){
+                                
+                    sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
+                    
+                    f_trn = fopen(file_name, "a" );
+                    
+                    if(f_trn){
+ 
+                        fprintf(f_trn, "\n\n    wrote vof frame # %d of phase %d with %d values (incl. corona cells)", Norms.frame_counter, i_phase, total_number_of_cells);
+                        
+                        fclose(f_trn);
+                    }
+                }   
             }
         }
 

@@ -277,7 +277,7 @@
 
                 Balance_Dict[i_phase][i_data].accuracy_level = 0.01;
 
-                Balance_Dict[i_phase][i_data].write_balance_to_file = 0;
+                Balance_Dict[i_phase][i_data].write_balance_to_file = 1;
 
                 Balance_Dict[i_phase][i_data].write_balance_to_file_interval = 1;
             }

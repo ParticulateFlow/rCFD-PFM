@@ -195,19 +195,7 @@
 
     void rCFD_user_set_Balance_Dict(void)
     {
-#if RP_NODE
-       int i_phase, i_data;
 
-        loop_phases{
-
-            loop_data{
-
-                Balance_Dict[i_phase][i_data].write_balance_to_file = 1;
-
-                Balance_Dict[i_phase][i_data].write_balance_to_file_interval = 1;
-            }
-        }
-#endif
     }
 
     void rCFD_user_set_Topo_Dict(void)

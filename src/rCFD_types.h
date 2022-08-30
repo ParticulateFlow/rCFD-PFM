@@ -73,6 +73,8 @@
     typedef struct File_Dict_struct
     {
         char    *tracer_start_position_filename;
+        
+        char    *Prep_Transscript_filename;
 
         char    *C2C_filename;
 

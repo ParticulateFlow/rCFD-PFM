@@ -126,6 +126,8 @@
 
         File_Dict.C2C_filename =                       "./data/c2c/c2c";
 
+        File_Dict.Prep_Transscript_filename =          "./rCFD_prep.trn";
+
         File_Dict.Norm_filename =                      "./data/tmp/norm";
 
         File_Dict.vof_filename =                       "./data/vof/vof";

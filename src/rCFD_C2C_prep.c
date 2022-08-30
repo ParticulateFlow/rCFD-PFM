@@ -521,6 +521,44 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
         }
     }
     
+    /* 3. Transcript */
+    {
+        loop_phases{
+            
+            number_of_valid_tracers[i_phase] = PRF_GISUM1(number_of_valid_tracers[i_phase]);
+
+            number_of_invalid_tracers[i_phase] = PRF_GISUM1(number_of_invalid_tracers[i_phase]);
+        }           
+        
+        if((Transcript) && (Solver_Dict.verbose == high_verbose)){
+        
+            FILE    *f_trn = NULL;
+            
+            char    file_name[80];
+            
+            sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
+            
+            f_trn = fopen(file_name, "a" );
+            
+            if(f_trn){
+            
+                loop_phases{
+                    
+                    if(i_phase == 0){
+                        
+                        fprintf(f_trn, "\n\nrcfd_init_tracers @ time-step %ld", N_TIME);
+                    }
+                    
+                    fprintf(f_trn, "\n\n    i_phase = %d: initialized %d valid and %d invalid tracers", 
+
+                        i_phase, number_of_valid_tracers[i_phase], number_of_invalid_tracers[i_phase]);
+                }
+                
+                fclose(f_trn);
+            }
+        }
+    }
+    
 #endif
 }
 

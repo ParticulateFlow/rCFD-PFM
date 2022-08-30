@@ -439,6 +439,8 @@
                 }
 
                 _C.volume[i_cell] = C_VOLUME(i_cell, t);
+                
+                _C.grid_spacing[i_cell] = pow(C_VOLUME(i_cell, t), (1.0/3.0));
 
         }end_c_loop_all(i_cell,t)}}
 

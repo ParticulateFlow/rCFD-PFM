@@ -72,7 +72,7 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 
     int         time_steps_per_monitoring_interval, number_of_monitoring_steps;
 
-    double      v_mag, grid_spacing;
+    double      v_mag;
 
     double      *dt_cross_min, *dt_cross_max, dt_cross_min_global;
 
@@ -125,11 +125,9 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 
                     (double)(number_of_monitoring_steps + 1);
 
-                grid_spacing = pow(C_VOLUME(i_cell, t), 1./3.);
-
                 if(_C.average_velocity[i_phase][i_cell] > 0.0){
 
-                    _C.crossing_time[i_phase][i_cell] = grid_spacing/_C.average_velocity[i_phase][i_cell];
+                    _C.crossing_time[i_phase][i_cell] = _C.grid_spacing[i_cell]/_C.average_velocity[i_phase][i_cell];
                 }
                 else{
 

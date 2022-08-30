@@ -276,6 +276,7 @@
     {
         double      **x;
         double      *volume;
+        double      *grid_spacing;
 
         double      **average_velocity; /* [i_phase][i_cell] */
         double      **crossing_time;

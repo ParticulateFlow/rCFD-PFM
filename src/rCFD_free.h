@@ -87,6 +87,11 @@
                     free(_C.volume);
                 }
 
+                if(_C.grid_spacing != NULL){
+
+                    free(_C.grid_spacing);
+                }
+
                 if(_C.average_velocity != NULL){
 
                     loop_phases{

@@ -27,6 +27,7 @@
         }
 
         _C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+        _C.grid_spacing = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
 
         _C.average_velocity =    (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));
         _C.crossing_time =       (double**)malloc(Solver_Dict.number_of_phases * sizeof(double*));

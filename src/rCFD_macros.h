@@ -107,7 +107,10 @@
     #define     excess_Tracer_cell_crossing_time    (_C.crossing_time[i_phase][i_cell] > (2. * Solver_Dict.global_time_step))
     #define     Tracer_has_crossed_cell_border      ((int)p->user[p_c_old] != i_cell)
     #define     Tracer_from_slow_cell               (p->user[p_time_ratio] > 1.0)
-    #define     Tracer_not_stored_yet               (p->user[p_just_killed] < 1.0)
+    #define     Tracer_not_stored_yet               (p->user[p_invalid] < 1.0)
+    #define     Tracer_just_killed                  (p->user[p_invalid] > 0.0)
+    #define     Tracer_invalid                      (p->user[p_invalid] > 0.0)
+    #define     Tracer_still_alive                  (p->user[p_invalid] < 1.0)
     #define     Tracer_lifetime_expired             ((CURRENT_TIME - p->user[p_start_time]) >= Solver_Dict.global_time_step)
 
     /* rCFD_write_Norms */
@@ -122,7 +125,7 @@
     #define     p_vars_used_by_others           0
     #define     p_just_started                  (0 + p_vars_used_by_others)
     #define     p_start_time                    (1 + p_vars_used_by_others)
-    #define     p_just_killed                   (2 + p_vars_used_by_others)
+    #define     p_invalid                       (2 + p_vars_used_by_others)
     #define     p_phase_id                      (3 + p_vars_used_by_others)
     #define     p_phase_fraction                (4 + p_vars_used_by_others)
     #define     p_c0                            (5 + p_vars_used_by_others)

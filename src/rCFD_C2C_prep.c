@@ -386,50 +386,105 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
 /*************************************************************************************/
 {
 #if RP_NODE
+
+#if 1   /* local vars */
+
     Particle    *p;
+    
     Domain      *d=Get_Domain(1);
+    
     Thread      *t = NULL, *t_phase = NULL;
+    
     cell_t      c;
 
     int         i_phase;
+    
+    int         number_of_valid_tracers[Solver_Dict.number_of_phases], number_of_invalid_tracers[Solver_Dict.number_of_phases];
+    
+    double      rand_real;
+    
+#endif  
 
-    /* A. init particle vars */
+    /* 1. initialize particle vars */
     {
         int number_of_initialized_particles = 0;
+        
+        loop_phases{
+            
+            number_of_valid_tracers[i_phase] = 0; 
+            
+            number_of_invalid_tracers[i_phase] = 0;
+        }
 
-        loop(p,I->p_init){
+        loop(p, I->p_init){
 
-            p->user[p_just_started] =   1.;
+            p->user[p_just_started] =   1.0;
+            
             p->user[p_start_time] =     CURRENT_TIME - CURRENT_TIMESTEP;
-            p->user[p_just_killed] =    0.;
+            
+            p->user[p_invalid] =        0.0;
 
-            i_phase = (number_of_initialized_particles % Solver_Dict.number_of_phases);
+            /* set phase_id, phase_vof, in case vof==0 set tracer invalid */
+            {
+                i_phase = (number_of_initialized_particles % Solver_Dict.number_of_phases);
 
-            if(Solver_Dict.number_of_phases == 1){
+                p->user[p_phase_id] = (double)i_phase;
 
-                p->user[p_phase_fraction] = 1.0;
+                p->state.rho = Phase_Dict[i_phase].density;
+                
+                if(Solver_Dict.number_of_phases == 1){
+
+                    p->user[p_phase_fraction] = 1.0;
+                }
+                else{
+
+                    c = P_CELL(p);
+
+                    t = P_CELL_THREAD(p);
+
+                    t_phase = THREAD_SUB_THREAD(t, i_phase);
+                    
+                    if(C_VOF(c, t_phase) > 0.0){
+                        
+                        p->user[p_phase_fraction] = C_VOF(c, t_phase);
+                    }
+                    else{
+                        
+                        p->user[p_phase_fraction] = 0.0;
+                        
+                        p->user[p_invalid] = 1.0;
+                    }
+                }
             }
-            else{
+            
+            /* in some cases (e.g. coarse graining, full database, monitoring hasn't started yet, ...),
+               set tracers invalid */
+            {
+                rand_real = (double)rand()/(double)RAND_MAX;
 
-                c = P_CELL(p);
-
-                t = P_CELL_THREAD(p);
-
-                t_phase = THREAD_SUB_THREAD(t, i_phase);
-
-                p->user[p_phase_fraction] = C_VOF(c, t_phase);
+                if((not_Tracer_start_interval) || (too_early_to_start_Tracers) || (Tracer_Database_full) || (kill_Tracer_by_coarse_graining)){
+                    
+                    p->user[p_invalid] = 1.0;
+                }
             }
-
-            p->user[p_phase_id] = (double)i_phase;
-
-            p->state.rho = Phase_Dict[i_phase].density;
-
+            
+            /* count valid and invalid tracers */
+            {
+                if(p->user[p_invalid] > 0.0){
+                    
+                    number_of_invalid_tracers[i_phase]++;
+                }
+                else{
+                    
+                    number_of_valid_tracers[i_phase]++;
+                }
+            }
+            
             number_of_initialized_particles++;
         }
     }
 
-
-    /* B. upon first call, allocate Tracer.shifts */
+    /* 2. upon first call, allocate Tracer.shifts */
     {
 
         int number_of_cells_in_partition;
@@ -465,8 +520,8 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
             Message0("\n... rCFD_init_tracers, initialized particles  ...\n");
         }
     }
-
-    #endif
+    
+#endif
 }
 
 /*************************************************************************************/
@@ -474,14 +529,26 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 /*************************************************************************************/
 {
 #if RP_NODE
-    double  rand_real = 0., time_ratio, random_walk_velocity, v_mag, grid_spacing;
+
+#if 1  /*local vars */
+    double  rand_real = 0., time_ratio, random_walk_velocity, v_mag;
 
     int     i_phase, i_tracer, i_layer = 0;
 
     Thread  *t_phase = NULL;
 
-    /* U.0 Multiphase settings */
-    {
+#endif
+
+    /* 1. Remove invalid tracers & exit */ 
+    if(Tracer_invalid){
+        
+        MARK_TP(p, P_FL_REMOVED);
+        
+        return;
+    }       
+    
+    /* 2. Multiphase settings */   
+    {   
         if(Solver_Dict.number_of_phases == 1){
 
             i_phase = 0;
@@ -496,125 +563,107 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
         }
     }
 
-    /* U.1: Initialize Tracers */
-
+    /* 3. Initialize Tracers */    
     if(Tracer_just_started){
 
-        rand_real = (double)rand()/(double)RAND_MAX;
+        Tracer.monitoring_started = 1;
 
-        if((not_Tracer_start_interval) || (too_early_to_start_Tracers) || (Tracer_Database_full) || (kill_Tracer_by_coarse_graining)){
+        p->user[p_c0]       = (double)i_cell;
+        p->user[p_node0]    = (double)myid;
+        p->user[p_w0]       = C_VOLUME(i_cell,t) * p->user[p_phase_fraction];
+        p->user[p_c_old]    = (double)i_cell;
+        p->state.rho        = C_R(i_cell, t_phase);
 
-            p->user[p_just_killed] = 1.;
-            p->state.mass = 0.;
-            p->type = 2;        /* kill tracer (evaporates particle) */
+        /* tracer_splitting in slow cells */
+        {
+            v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) +
+                          C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
+                          C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
 
-            MARK_TP(p, P_FL_REMOVED);
-        }
-        else{
+            if(v_mag < _C.grid_spacing[i_cell] / (100. * Solver_Dict.global_time_step)){
 
-            Tracer.monitoring_started = 1;
-
-            p->user[p_c0]       = (double)i_cell;
-            p->user[p_node0]    = (double)myid;
-            p->user[p_w0]       = C_VOLUME(i_cell,t) * p->user[p_phase_fraction];
-            p->user[p_c_old]    = (double)i_cell;
-            p->state.rho        = C_R(i_cell, t_phase);
-
-            /* tracer_splitting in slow cells */
-            {
-                v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) +
-                              C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
-                              C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
-
-                grid_spacing = pow(C_VOLUME(i_cell,t), (1./3.));
-
-                if(v_mag < grid_spacing / (100. * Solver_Dict.global_time_step)){
-
-                    _C.crossing_time[i_phase][i_cell] = 100. * Solver_Dict.global_time_step;
-                }
-                else{
-
-                    _C.crossing_time[i_phase][i_cell] = grid_spacing / v_mag;
-                }
-
-                if(excess_Tracer_cell_crossing_time){
-
-                    time_ratio = _C.crossing_time[i_phase][i_cell] / (2. * Phase_Dict[i_phase].time_step);  /* (time_ratio > 1.) */
-
-                    p->user[p_time_ratio] = time_ratio;
-
-                    /* store c0_c0_tracer */
-                    if((Tracer_Database_not_full) && (p->user[p_w0] > 0.0)){
-
-                        i_tracer = Tracer.monitor_counter[i_phase];
-
-                        if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
-
-                            Tracer.shifts[i_phase][i_tracer].c0 =       i_cell;
-                            Tracer.shifts[i_phase][i_tracer].node0 =    myid;
-                            Tracer.shifts[i_phase][i_tracer].w0 =       (1.-1./time_ratio) * p->user[p_w0];
-                            Tracer.shifts[i_phase][i_tracer].c1 =       i_cell;
-                            Tracer.shifts[i_phase][i_tracer].node1 =    myid;
-
-                            Tracer.monitor_counter[i_phase]++;
-                        }
-                    }
-
-                    /* init c0_c1_tracer */
-                    {
-                        p->user[p_w0] = (1./time_ratio) * p->user[p_w0];
-
-                        p->state.V[0] = time_ratio * C_U(i_cell,t_phase);
-                        p->state.V[1] = time_ratio * C_V(i_cell,t_phase);
-                        p->state.V[2] = time_ratio * C_W(i_cell,t_phase);
-                    }
-                }
-                else{
-
-                    /* normal tracer initialization */
-                    {
-                        p->state.V[0] = C_U(i_cell,t_phase);
-                        p->state.V[1] = C_V(i_cell,t_phase);
-                        p->state.V[2] = C_W(i_cell,t_phase);
-
-                        p->user[p_time_ratio] = 1.0;
-                    }
-                }
-            }
-
-            if(Tracer_Dict.random_walk[i_phase]){
-
-                random_walk_velocity = rCFD_user_set_random_walk_velocity();
-
-                rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
-                p->user[p_u_rwm] =  rand_real * random_walk_velocity;
-
-                rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
-                p->user[p_v_rwm] =  rand_real * random_walk_velocity;
-
-                rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
-                p->user[p_w_rwm] =  rand_real * random_walk_velocity;
-
-                p->state.V[0] += p->user[p_u_rwm];
-                p->state.V[1] += p->user[p_v_rwm];
-                p->state.V[2] += p->user[p_w_rwm];
-
-                p->user[p_vel_rwm_old] = random_walk_velocity;
+                _C.crossing_time[i_phase][i_cell] = 100. * Solver_Dict.global_time_step;
             }
             else{
 
-                p->user[p_u_rwm] = 0.0;
-                p->user[p_v_rwm] = 0.0;
-                p->user[p_w_rwm] = 0.0;
+                _C.crossing_time[i_phase][i_cell] = _C.grid_spacing[i_cell] / v_mag;
             }
+
+            if(excess_Tracer_cell_crossing_time){
+
+                time_ratio = _C.crossing_time[i_phase][i_cell] / (2. * Phase_Dict[i_phase].time_step);  /* (time_ratio > 1.) */
+
+                p->user[p_time_ratio] = time_ratio;
+
+                /* store c0_c0_tracer */
+                if((Tracer_Database_not_full) && (p->user[p_w0] > 0.0)){
+
+                    i_tracer = Tracer.monitor_counter[i_phase];
+
+                    if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
+
+                        Tracer.shifts[i_phase][i_tracer].c0 =       i_cell;
+                        Tracer.shifts[i_phase][i_tracer].node0 =    myid;
+                        Tracer.shifts[i_phase][i_tracer].w0 =       (1.-1./time_ratio) * p->user[p_w0];
+                        Tracer.shifts[i_phase][i_tracer].c1 =       i_cell;
+                        Tracer.shifts[i_phase][i_tracer].node1 =    myid;
+
+                        Tracer.monitor_counter[i_phase]++;
+                    }
+                }
+
+                /* init c0_c1_tracer */
+                {
+                    p->user[p_w0] = (1./time_ratio) * p->user[p_w0];
+
+                    p->state.V[0] = time_ratio * C_U(i_cell,t_phase);
+                    p->state.V[1] = time_ratio * C_V(i_cell,t_phase);
+                    p->state.V[2] = time_ratio * C_W(i_cell,t_phase);
+                }
+            }
+            else{
+
+                /* normal tracer initialization */
+                {
+                    p->state.V[0] = C_U(i_cell,t_phase);
+                    p->state.V[1] = C_V(i_cell,t_phase);
+                    p->state.V[2] = C_W(i_cell,t_phase);
+
+                    p->user[p_time_ratio] = 1.0;
+                }
+            }
+        }
+
+        if(Tracer_Dict.random_walk[i_phase]){
+
+            random_walk_velocity = rCFD_user_set_random_walk_velocity();
+
+            rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
+            p->user[p_u_rwm] =  rand_real * random_walk_velocity;
+
+            rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
+            p->user[p_v_rwm] =  rand_real * random_walk_velocity;
+
+            rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
+            p->user[p_w_rwm] =  rand_real * random_walk_velocity;
+
+            p->state.V[0] += p->user[p_u_rwm];
+            p->state.V[1] += p->user[p_v_rwm];
+            p->state.V[2] += p->user[p_w_rwm];
+
+            p->user[p_vel_rwm_old] = random_walk_velocity;
+        }
+        else{
+
+            p->user[p_u_rwm] = 0.0;
+            p->user[p_v_rwm] = 0.0;
+            p->user[p_w_rwm] = 0.0;
         }
 
         p->user[p_just_started] = 0.;
     }
 
-
-    /* U.2: Consider (i) RWM changes across cells  (ii) fast Tracer from slow cells */
-
+    /* 4. Consider (i) RWM changes across cells  (ii) fast Tracer from slow cells */
     if(Tracer_has_crossed_cell_border){
 
         p->user[p_c_old] = (double)i_cell;
@@ -632,7 +681,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 
         if((Tracer_from_slow_cell) && (Tracer_Database_not_full) && (Tracer_not_stored_yet)){
 
-            p->user[p_just_killed] = 1.;
+            p->user[p_invalid] = 1.;
             p->state.mass = 0.;
             p->type = 2;
 
@@ -653,12 +702,10 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
         }
     }
 
+    /* 5. store and kill tracers after lifetime */
+    if((Tracer_lifetime_expired) && (Tracer_Database_not_full)){
 
-    /* U.3: store and kill tracers after lifetime */
-
-    if((Tracer_lifetime_expired) && (Tracer_Database_not_full) && (Tracer_not_stored_yet)){
-
-        p->user[p_just_killed] = 2.;
+        p->user[p_invalid] = 2.;
         p->state.mass = 0.;
         p->type = 2;
 
@@ -697,7 +744,7 @@ DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
 #if RP_NODE
 
     /* in case particle is declared dead: V[i], f[i] = 0 */
-    if(p->user[p_just_killed] > 0){
+    if(p->user[p_invalid] > 0){
 
         p->state.V[i] = 0.0;
 

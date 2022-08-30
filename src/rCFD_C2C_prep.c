@@ -1092,7 +1092,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 }
 
 /*************************************************************************************/
-DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
+DEFINE_EXECUTE_AT_END(rCFD_write_fields)
 /*************************************************************************************/
 {
 #if RP_NODE

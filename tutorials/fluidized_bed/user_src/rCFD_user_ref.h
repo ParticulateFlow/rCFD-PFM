@@ -21,9 +21,9 @@
 #if 1
 
 #if RP_NODE
-		static short	ref_species_initiated = 0;
+        static short    ref_species_initiated = 0;
 
-		static double	mean_c_drift_0_conc = 0.0;
+        static double   mean_c_drift_0_conc = 0.0;
 #endif
 
         /* names of phases */
@@ -79,7 +79,7 @@
 
         Solver_Dict.face_swap_max_per_loop =               (1./8.); 
 
-		Solver_Dict.control_conc_sum_on = 				   0;
+        Solver_Dict.control_conc_sum_on =                  0;
     }   
 
     void rCFD_user_set_File_Dict(void)
@@ -258,7 +258,7 @@
     void rCFD_user_init_Data(const short i_layer)
     {
 #if RP_NODE
-		
+        
         int     i_phase, i_cell, i_data, i_dim, i_frame;
 
         i_data = c_drift_0;
@@ -268,7 +268,7 @@
         loop_phases{
         
             loop_cells{
-					
+                    
                 loop_dim{
                     
                     x[i_dim] = _C.x[i_cell][i_dim];
@@ -279,18 +279,18 @@
                     if(i_phase == solid){
                         
                         _C.data[_i_data] = 1./3.;
-						
-						if(i_data == c_drift_0){
-							
-							if(x[1] > 0.0){
-								
-								_C.data[_i_data] = 1.0;                            /* mixing condition for solid phase */
-							}
-							else{
-								
-								_C.data[_i_data] = 0.0;
-							}
-						}		
+                        
+                        if(i_data == c_drift_0){
+                            
+                            if(x[1] > 0.0){
+                                
+                                _C.data[_i_data] = 1.0;                            /* mixing condition for solid phase */
+                            }
+                            else{
+                                
+                                _C.data[_i_data] = 0.0;
+                            }
+                        }       
                     }
                     
                     if(i_phase == gas){
@@ -310,43 +310,43 @@
             }
         }
         
-		/* initialize mean_solid_A_conc (using +=) */	
-		{		
-			mixing_nom = 0.0;
-			
-			mixing_denom = 0.0;
-				
-			i_phase = solid;
-			
-			i_data = c_drift_0;
-			
-			loop_cells{
-					
-				i_frame = Rec.global_frame[_C.island_id[i_cell]];
-				
-				mixing_nom += _C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
-				
-				mixing_denom += _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
-			}
-		
-			mixing_nom = PRF_GRSUM1(mixing_nom);			/* sum of mixing_nom */
-			
-			mixing_denom = PRF_GRSUM1(mixing_denom);		/* sum of mixing_denom */
-			
-			if(mixing_denom > 0.0){
-				
-				mean_c_drift_0_conc = mixing_nom / mixing_denom;              /* mean solid concentration */
-				
-			}
-			else{
-				
-				mean_c_drift_0_conc = 0.0;			
-			}
-		}
+        /* initialize mean_solid_A_conc (using +=) */   
+        {       
+            mixing_nom = 0.0;
+            
+            mixing_denom = 0.0;
+                
+            i_phase = solid;
+            
+            i_data = c_drift_0;
+            
+            loop_cells{
+                    
+                i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                
+                mixing_nom += _C.data[_i_data] * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
+                
+                mixing_denom += _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];
+            }
+        
+            mixing_nom = PRF_GRSUM1(mixing_nom);            /* sum of mixing_nom */
+            
+            mixing_denom = PRF_GRSUM1(mixing_denom);        /* sum of mixing_denom */
+            
+            if(mixing_denom > 0.0){
+                
+                mean_c_drift_0_conc = mixing_nom / mixing_denom;              /* mean solid concentration */
+                
+            }
+            else{
+                
+                mean_c_drift_0_conc = 0.0;          
+            }
+        }
 
         Message0("\n\n...rCFD_user_init_Data\n");               
 #endif
-	}
+    }
 
 #endif
     
@@ -360,6 +360,29 @@
         return 0;
     }
     
+    short rCFD_user_phase_switch(const short i_phase)
+    {
+#if RP_NODE
+
+        short   i_phase_new = i_phase;
+        
+        if(i_phase == ph_gas){
+            
+            i_phase_new = ph_solid;
+        }
+        
+        if((i_phase_new < 0) || (i_phase_new >= Solver_Dict.number_of_phases)){
+            
+            i_phase_new = i_phase;
+        }
+        
+        return i_phase_new;
+#else
+
+        return 0;   /* just to avoid compiler complains */
+#endif
+    }       
+
     void rCFD_user_access_data_before_shift(const short i_phase, const short i_layer)
     {
 #if RP_NODE
@@ -458,8 +481,8 @@
 
         Domain  *d=Get_Domain(1);
         Thread  *t;
-		
-		double mass_c_gas_A, mixing_index, mixing_nom, mixing_denom;
+        
+        double mass_c_gas_A, mixing_index, mixing_nom, mixing_denom;
         
         i_layer = 0;
         
@@ -468,120 +491,120 @@
             rCFD_map_from_to_layer(Solver.current_layer, i_layer);
         }      
         
-		/* P.1. eval mass_c_gas_A and mixing_index */
-		{	
-			mass_c_gas_A = 0.0;
-			
-			i_phase = gas;
-			
-			i_data = c_gas_A;
-			
-			loop_int_cells{
-						
-				i_frame = Rec.global_frame[_C.island_id[i_cell]];
-				
-				mass_c_gas_A +=  _C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof];                                              
-			}
-			
-			mass_c_gas_A = PRF_GRSUM1(mass_c_gas_A);                                                                                                       																				/* sum of mass of gas B */
-			
-			mixing_nom = 0.0;
-			
-			mixing_denom = 0.0;
-			
-			i_phase = solid;
-			
-			thread_loop_c(t, d){
-				
-				if(FLUID_CELL_THREAD_P(t)){
-					
-					begin_c_loop_int(i_cell,t){
-						
-						i_frame = Rec.global_frame[_C.island_id[i_cell]];
-						
-						mixing_nom += fabs( _C.data[i_phase][i_cell][c_drift_0] - mean_c_drift_0_conc) * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];                                 
-						
-						/* species mass fraction - mean solid concentration --------- that should tend to value 0 */
-						
-						mixing_denom += _C.volume[i_cell]  * _C.vof[i_frame][i_cell][i_phase];
-						
-					}end_c_loop_int(i_cell,t)
-				}
-			}
-			
-			mixing_nom = PRF_GRSUM1(mixing_nom);                       																																											  /* sum of species mixing */
-			
-			mixing_denom = PRF_GRSUM1(mixing_denom);
-			
-			if(mixing_denom > 0.0){
-				
-				mixing_index = 1.0 - 2.0 * mixing_nom / mixing_denom;
-				
-				/* mixing index should be within the value of 0 and 1 */
-			}
-			else{
-				
-				mixing_index = 0.0;
-			}
-		}		
-			   
-		/* P.2. node-0 writes values to ref file */
-		if(myid == 0){
+        /* P.1. eval mass_c_gas_A and mixing_index */
+        {   
+            mass_c_gas_A = 0.0;
+            
+            i_phase = gas;
+            
+            i_data = c_gas_A;
+            
+            loop_int_cells{
+                        
+                i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                
+                mass_c_gas_A +=  _C.data[_i_data] * _C.volume[i_cell] * _C.vof[_i_vof];                                              
+            }
+            
+            mass_c_gas_A = PRF_GRSUM1(mass_c_gas_A);                                                                                                                                                                                    /* sum of mass of gas B */
+            
+            mixing_nom = 0.0;
+            
+            mixing_denom = 0.0;
+            
+            i_phase = solid;
+            
+            thread_loop_c(t, d){
+                
+                if(FLUID_CELL_THREAD_P(t)){
+                    
+                    begin_c_loop_int(i_cell,t){
+                        
+                        i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                        
+                        mixing_nom += fabs( _C.data[i_phase][i_cell][c_drift_0] - mean_c_drift_0_conc) * _C.volume[i_cell] * _C.vof[i_frame][i_cell][i_phase];                                 
+                        
+                        /* species mass fraction - mean solid concentration --------- that should tend to value 0 */
+                        
+                        mixing_denom += _C.volume[i_cell]  * _C.vof[i_frame][i_cell][i_phase];
+                        
+                    }end_c_loop_int(i_cell,t)
+                }
+            }
+            
+            mixing_nom = PRF_GRSUM1(mixing_nom);                                                                                                                                                                                                  /* sum of species mixing */
+            
+            mixing_denom = PRF_GRSUM1(mixing_denom);
+            
+            if(mixing_denom > 0.0){
+                
+                mixing_index = 1.0 - 2.0 * mixing_nom / mixing_denom;
+                
+                /* mixing index should be within the value of 0 and 1 */
+            }
+            else{
+                
+                mixing_index = 0.0;
+            }
+        }       
+               
+        /* P.2. node-0 writes values to ref file */
+        if(myid == 0){
 
-			FILE	*f_out = NULL;
-			
-			if(ref_species_initiated == 0){
-				
-				f_out = fopen("./monitor_rCFD.out","w");
-			}
-			else{
-				f_out = fopen("./monitor_rCFD.out","a");
-			}
-			
-			if(f_out == NULL){
-				
-				Message0("\nERROR: Could not open ref monitor file\n");
-				
-				return;
-			}
-			
-			fprintf(f_out, "%e %e %e\n", Solver.global_time, mass_c_gas_A, mixing_index);
-			
-			fclose(f_out);
-		}
-		
-		/* P.3. nodes write species conc to UDMI */
-		{
+            FILE    *f_out = NULL;
+            
+            if(ref_species_initiated == 0){
+                
+                f_out = fopen("./monitor_rCFD.out","w");
+            }
+            else{
+                f_out = fopen("./monitor_rCFD.out","a");
+            }
+            
+            if(f_out == NULL){
+                
+                Message0("\nERROR: Could not open ref monitor file\n");
+                
+                return;
+            }
+            
+            fprintf(f_out, "%e %e %e\n", Solver.global_time, mass_c_gas_A, mixing_index);
+            
+            fclose(f_out);
+        }
+        
+        /* P.3. nodes write species conc to UDMI */
+        {
 
-			thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell, t){
-						     
-				i_frame = Rec.global_frame[_C.island_id[i_cell]];
-					 
-				i_UDMI = 1;     /* start index */
-					 
-				i_phase = gas;
-					 
-				i_data = c_gas_A;
-							
-				C_UDMI(i_cell, t, i_UDMI) = _C.data[_i_data];
-				
-				i_UDMI = 2;
-						
-				i_phase = solid;
-					 
-				i_data = c_drift_0;
-				
-				C_UDMI(i_cell, t, i_UDMI) = _C.data[_i_data] * _C.vof[_i_vof];
-									
-			}end_c_loop_int(i_cell, t)}}
-		}
-		
-		ref_species_initiated = 1;
-		
-		Message0("\n\n...CFD_ref_monitors\n");
+            thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell, t){
+                             
+                i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                     
+                i_UDMI = 1;     /* start index */
+                     
+                i_phase = gas;
+                     
+                i_data = c_gas_A;
+                            
+                C_UDMI(i_cell, t, i_UDMI) = _C.data[_i_data];
+                
+                i_UDMI = 2;
+                        
+                i_phase = solid;
+                     
+                i_data = c_drift_0;
+                
+                C_UDMI(i_cell, t, i_UDMI) = _C.data[_i_data] * _C.vof[_i_vof];
+                                    
+            }end_c_loop_int(i_cell, t)}}
+        }
+        
+        ref_species_initiated = 1;
+        
+        Message0("\n\n...CFD_ref_monitors\n");
 #endif
-	}
-	
+    }
+    
 
 #endif
 

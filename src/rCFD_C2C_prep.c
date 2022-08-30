@@ -890,18 +890,30 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
     /* TODO (9/21) - adapt weights of MPI C2Cs such that they obey to actual mass fluxes */
 
     Tracer.ready2write = PRF_GIHIGH1(Tracer.ready2write);
-
+    
     if((Tracer.ready2write == 1) && (Tracer_Database_not_full)){
 
-        int     i_phase, i_layer = 0, i_state, i_cell, i_tracer;
+#if 1   /* local vars */
 
-        int     c0, node0, c1, node1, number_of_lock_cells;
+        int     i_phase, i_state, i_tracer, i_cell, i_layer = 0, i_face;
+
+        int     total_number_of_stored_C2Cs, number_of_unhit_cells, number_of_fill_loops, c0, c1, c;
+
+        FILE    *f_out = NULL, *f_trn = NULL;
+        
+        char    file_name[80];
 
         Domain  *d = Get_Domain(1);
-        Thread  *t;
+        
+        Thread  *t, *t_mix = NULL, *t_phase;
+        
+#endif      
 
-        FILE    *f_out = NULL;
-        char    file_name[80];
+        /* get ANSYS fluid thread */
+        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
+            
+            t_mix = t;
+        }}
 
         loop_phases{
 
@@ -928,80 +940,144 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                 }
             }
 
-            if(Tracer.monitor_counter[i_phase] > 0){
-
-                /* avoid lock cells (i.e. cells which only point to themselves) */
-                {
-                    thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
-
-                        begin_c_loop(i_cell,t){
-
-                            _C.hit_by_other_cell[i_cell] = 0;
-
-                        }end_c_loop(i_cell,t);
-                    }}
-
-                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
-
-                        c0 =        Tracer.shifts[i_phase][i_tracer].c0;
-                        node0 =     Tracer.shifts[i_phase][i_tracer].node0;
-                        c1 =        Tracer.shifts[i_phase][i_tracer].c1;
-                        node1 =     Tracer.shifts[i_phase][i_tracer].node1;
-
-                        if((c0 != c1) || (node0 != node1)){
-
-                            _C.hit_by_other_cell[c1] += 1;
-                        }
-                    }
-
-                    /* loop Tracers and count lock cells */
-
-                    number_of_lock_cells = 0;
-
-                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
-
-                        c1 = Tracer.shifts[i_phase][i_tracer].c1;
-
-                        if(_C.hit_by_other_cell[c1] == 0){
-
-                            number_of_lock_cells++;
-                        }
-                    }
+            /* write C2C shifts */
+            {
+                loop_int_cells{
+                    
+                    _C.weight_after_shift[i_cell] = 0.0;
                 }
+                
+                if(Tracer.monitor_counter[i_phase] > 0){
 
-                fprintf(f_out,"%d \n", (Tracer.monitor_counter[i_phase] - number_of_lock_cells));
+                    fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
 
-                for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
-
-                    c1 = Tracer.shifts[i_phase][i_tracer].c1;
-
-                    if(_C.hit_by_other_cell[c1] > 0){
+                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
 
                         fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c0);
                         fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node0);
                         fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c1);
                         fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node1);
                         fprintf(f_out,"%e ",Tracer.shifts[i_phase][i_tracer].w0);
-
-                        fprintf(f_out,"\n");
+                        
+                        _C.weight_after_shift[Tracer.shifts[i_phase][i_tracer].c1] += Tracer.shifts[i_phase][i_tracer].w0;
+                        
                     }
+
+                    total_number_of_stored_C2Cs = Tracer.monitor_counter[i_phase];
+                    
+                    Tracer.monitor_counter[i_phase] = 0;
+                }
+                else{
+
+                    fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
+                    
+                    total_number_of_stored_C2Cs = 0;
                 }
 
-                Tracer.monitor_counter[i_phase] = 0;
-            }
-            else{
-
-                fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
-
-                number_of_lock_cells = 0;
+                fclose(f_out);
             }
 
-            fclose(f_out);
+            /* Message & Transcript */
+            {
+                /* check for large regions of unhit cells, which cannot be repaired by fill_holes */
+                {
+                    
+                    /* C3: adapted version of fill holes */
+                    {
+                        number_of_unhit_cells = 1;
 
-            Message0("\n... rCFD_write_C2Cs: identified %d lock cells\n", PRF_GISUM1(number_of_lock_cells));
+                        number_of_fill_loops = 0;
+                        
+                        loop_int_cells{
+                            
+                            _C.weight_after_swap[i_cell] = 0.0;
+                        }
+                        
+                        while((number_of_unhit_cells > 0) && (number_of_fill_loops < Solver_Dict.max_fill_loops)){
 
-            Message0("\n... wrote C2C frame # %d for phase %d ...", Tracer.frame_counter, i_phase);
+                            number_of_fill_loops++;
 
+                            /* fill holes by face swaps */
+                            loop_faces{
+
+                                c0 = _F.c0[i_face];
+                                c1 = _F.c1[i_face];
+
+                                if((_C.weight_after_shift[c0] > 0.)&&(_C.weight_after_shift[c1] == 0.0)){
+
+                                    c = c0; c0 = c1; c1 = c;
+                                }
+
+                                if((_C.weight_after_shift[c1] > 0.)&&(_C.weight_after_shift[c0] == 0.0)){
+
+                                     _C.weight_after_swap[c0] += _C.weight_after_shift[c1];
+                                }
+                            }
+
+                            number_of_unhit_cells = 0;
+
+                            loop_int_cells{
+
+                                if(_C.weight_after_swap[i_cell] > 0.0){
+
+                                    _C.weight_after_shift[i_cell] = _C.weight_after_swap[i_cell];
+
+                                    _C.weight_after_swap[i_cell] = 0.0;
+                                }
+                                
+                                if(Solver_Dict.number_of_phases == 1){
+                                    
+                                    if(_C.weight_after_shift[i_cell] == 0.0){
+
+                                        number_of_unhit_cells++;
+                                    }
+                                }
+                                else{
+                                    
+                                    t_phase = THREAD_SUB_THREAD(t_mix, i_phase);
+                                    
+                                    if((_C.weight_after_shift[i_cell] == 0.0) && (C_VOF(i_cell, t_phase) > 0.0)){
+
+                                        number_of_unhit_cells++;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        number_of_unhit_cells = PRF_GISUM1(number_of_unhit_cells);
+
+                    }               
+                }
+                
+                total_number_of_stored_C2Cs = PRF_GISUM1(total_number_of_stored_C2Cs);
+                
+                if(Transcript){
+                    
+                    Message0("\n... wrote C2C frame # %d for phase %d with %d shifts ...", Tracer.frame_counter, i_phase, total_number_of_stored_C2Cs);
+                                
+                    sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
+                    
+                    f_trn = fopen(file_name, "a" );
+                    
+                    if(f_trn){
+                    
+                        if(i_phase == 0){
+                            
+                            fprintf(f_trn, "\n\nrCFD_write_C2Cs");
+                        }
+    
+                        fprintf(f_trn, "\n\n    wrote C2C frame # %d of phase %d with %d shifts", Tracer.frame_counter, i_phase, total_number_of_stored_C2Cs);
+                        
+                        if(number_of_unhit_cells > 0){
+                            
+                            fprintf(f_trn, "\n\n    WARNING: %d unhit cells after filling the holes, ", number_of_unhit_cells);
+                            fprintf(f_trn,   "\n             consider increasing Solver_Dict.max_fill_loops (current value = %d)", Solver_Dict.max_fill_loops);
+                        }
+                        
+                        fclose(f_trn);
+                    }
+                }
+            }
         }
 
         Tracer.frame_counter++;

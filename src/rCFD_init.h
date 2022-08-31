@@ -304,8 +304,8 @@ void init_all(void)
                     Balance[i_phase][i_data].node2node_flux      = malloc_r_2d(compute_node_count, compute_node_count);
                     Balance[i_phase][i_data].node2node_data_flux = malloc_r_2d(compute_node_count, compute_node_count);
 
-                    memset(Balance[i_phase][i_data].node2node_flux,      0, nbytes);
-                    memset(Balance[i_phase][i_data].node2node_data_flux, 0, nbytes);
+                    memset(Balance[i_phase][i_data].node2node_flux[0],      0, nbytes);
+                    memset(Balance[i_phase][i_data].node2node_data_flux[0], 0, nbytes);
                 }
 
                 Balance[i_phase][i_data].mass_integral = 0.0;

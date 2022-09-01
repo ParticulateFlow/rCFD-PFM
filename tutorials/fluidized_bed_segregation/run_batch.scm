@@ -29,6 +29,7 @@
     rCFD_init.h
     rCFD_layer.h
     rCFD_utilities.h
+    rCFD_memory.h
     rCFD_free.h
     \"\" ")
 

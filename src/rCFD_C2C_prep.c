@@ -2,6 +2,7 @@
 
 #include "rCFD_types.h"
 #include "rCFD_globals.h"
+#include "rCFD_memory.h"
 #include "rCFD_parallel.h"
 #include "rCFD_defaults.h"
 #include "rCFD_macros.h"
@@ -1116,12 +1117,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
     {
 #if RP_NODE
 
-        Norm_Database = (double**)malloc(Solver_Dict.number_of_frames * sizeof(double*));
-
-        loop_frames{
-
-            Norm_Database[i_frame] = (double*)malloc(Norms.number_of_norms * sizeof(double));
-        }
+        Norm_Database = malloc_r_2d(Solver_Dict.number_of_frames, Norms.number_of_norms);
 
         i_state = Solver.current_state;
 
@@ -1440,18 +1436,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
     /* free local vars */
     {
 #if RP_NODE
-        if(Norm_Database != NULL){
-
-            loop_frames{
-
-                if(Norm_Database[i_frame] != NULL){
-
-                    free(Norm_Database[i_frame]);
-                }
-            }
-
-            free(Norm_Database);
-        }
+        free_r_2d(Norm_Database);
 #endif
     }
 

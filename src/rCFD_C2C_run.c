@@ -1,7 +1,9 @@
 #include <stdio.h>
+#include <string.h> //memset
 
 #include "rCFD_types.h"
 #include "rCFD_globals.h"
+#include "rCFD_memory.h"
 #include "rCFD_parallel.h"
 #include "rCFD_defaults.h"
 #include "rCFD_macros.h"
@@ -99,23 +101,11 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
                             C2Cs[_i_C2C].shifts_out[i_layer] =  NULL;
                         }
 
-                        C2Cs[_i_C2C].island_offsets =    (int**)malloc(Solver_Dict.number_of_layers * sizeof(int*));
-                        C2Cs[_i_C2C].island_offsets_in = (int**)malloc(Solver_Dict.number_of_layers * sizeof(int*));
+                        C2Cs[_i_C2C].island_offsets    = malloc_i_2d(Solver_Dict.number_of_layers, Solver_Dict.number_of_islands+1);
+                        C2Cs[_i_C2C].island_offsets_in = malloc_i_2d(Solver_Dict.number_of_layers, Solver_Dict.number_of_islands+1);
 
-                        loop_layers{
-
-                            C2Cs[_i_C2C].island_offsets[i_layer] =      (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
-                            C2Cs[_i_C2C].island_offsets_in[i_layer] =   (int*)malloc((Solver_Dict.number_of_islands+1) * sizeof(int));
-
-                            loop_islands{
-
-                                C2Cs[_i_C2C].island_offsets[i_layer][i_island] =        0;
-                                C2Cs[_i_C2C].island_offsets_in[i_layer][i_island] =     0;
-                            }
-
-                            C2Cs[_i_C2C].island_offsets[i_layer][(i_island + 1)] =      0;
-                            C2Cs[_i_C2C].island_offsets_in[i_layer][(i_island + 1)] =   0;
-                        }
+                        memset(C2Cs[_i_C2C].island_offsets[0],    0, Solver_Dict.number_of_layers * (Solver_Dict.number_of_islands+1) * sizeof(int));
+                        memset(C2Cs[_i_C2C].island_offsets_in[0], 0, Solver_Dict.number_of_layers * (Solver_Dict.number_of_islands+1) * sizeof(int));
 
 
                         /* following vars will be allocated in rCFD_parallel.h */

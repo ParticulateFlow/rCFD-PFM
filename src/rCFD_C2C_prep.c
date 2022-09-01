@@ -1229,7 +1229,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
                     return;
                 }
 
-                fprintf(f_out,"%d \n", _Cell_Dict.number_of_int_cells);
+                fprintf(f_out,"%d \n", _Cell_Dict.number_of_cells);
 
                 t_phase = THREAD_SUB_THREAD(t_mix, i_phase);
 

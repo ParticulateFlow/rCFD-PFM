@@ -450,6 +450,7 @@
         }
 
         if(_C.vof != NULL){
+        /* TODO: check, if _C.vof is needed in prep. mode */
 
             FILE    *f_in = NULL;
             char    file_name[80];
@@ -469,18 +470,10 @@
                 }
             }
             else{
-
-                short   vof_file_exisits = 1;
-
-                i_state = 0;
-
-                loop_phases{
-
-                    sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
-
-                    f_in = fopen(file_name, "r");
-
-                    if(f_in == NULL){
+                
+                if(Solver_Dict.mode == preparation_mode){
+                    
+                    loop_phases{
 
                         loop_frames{
 
@@ -496,44 +489,76 @@
                                 }
                             }
                         }
-
-                        vof_file_exisits = 0;
                     }
-                    else{
+                }
+                
+                else{   /* load vof files in rCFD_run mode */
 
-                        loop_frames{
+                    short   vof_file_exisits = 1;
 
-                            fscanf(f_in,"%d\n", &i_tmp);
+                    i_state = 0;
 
-                            if(i_tmp != _Cell_Dict.number_of_cells){
+                    loop_phases{
 
-                                Message("\nERROR: rCFD_default_Cell: _C.vof: i_tmp != _Cell_Dict.number_of_cells ...\n");
+                        sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
 
-                                return;
+                        f_in = fopen(file_name, "r");
+
+                        if(f_in == NULL){
+
+                            loop_frames{
+
+                                loop_cells{
+
+                                    if(i_phase == 0){
+
+                                        _C.vof[_i_vof] = 1.0;
+                                    }
+                                    else{
+
+                                        _C.vof[_i_vof] = 0.0;
+                                    }
+                                }
                             }
 
-                            loop_cells{
+                            vof_file_exisits = 0;
+                        }
+                        else{
 
-                                fscanf(f_in,"%le\n", &_C.vof[_i_vof]);
+                            loop_frames{
 
-                                if((_C.vof[_i_vof] < 0.0) || (_C.vof[_i_vof] > 1.0)){
+                                fscanf(f_in,"%d\n", &i_tmp);
 
-                                    Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, _C.vof[_i_vof]);
+                                if(i_tmp != _Cell_Dict.number_of_cells){
+
+                                    Message("\nERROR: rCFD_default_Cell: _C.vof: i_tmp != _Cell_Dict.number_of_cells ...\n");
 
                                     return;
                                 }
+
+                                loop_cells{
+
+                                    fscanf(f_in,"%le\n", &_C.vof[_i_vof]);
+
+                                    if((_C.vof[_i_vof] < 0.0) || (_C.vof[_i_vof] > 1.0)){
+
+                                        Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, _C.vof[_i_vof]);
+
+                                        return;
+                                    }
+                                }
                             }
+
+                            fclose(f_in);
                         }
-
-                        fclose(f_in);
                     }
-                }
 
-                vof_file_exisits = PRF_GILOW1(vof_file_exisits);
+                    vof_file_exisits = PRF_GILOW1(vof_file_exisits);
 
-                if( ! vof_file_exisits){
+                    if( ! vof_file_exisits){
 
-                    Message0("\nWARNING rCFD_default_Cell_L0: at least one vof file doesn't exist (for the preparation phase, this is normal)\n");
+                        Message0("\nWARNING rCFD_default_Cell_L0: at least one vof file doesn't exist\n");
+                    }
                 }
             }
         }

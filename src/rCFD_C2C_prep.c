@@ -53,9 +53,9 @@
 DEFINE_ON_DEMAND(rCFD_init_all)
 /*************************************************************************************/
 {
-    init_all();
+    init_all_for_prep();
 
-    Message0("\n\n...rCFD_init_all\n");
+    Message0("\n\n...rCFD_init_all_for_prep\n");
 }
 
 /*************************************************************************************/
@@ -1649,5 +1649,43 @@ DEFINE_ON_DEMAND(rCFD_free_all)
     free_all_parallel();
 #endif
 
-    Message0("\n\n...rCFD_free_all");
+    /* Transcript and Message */
+    if(myid == 0){
+#if RP_NODE 
+        FILE    *f_trn = NULL;
+        
+        char    file_name[80];
+        
+        if(Solver_Dict.mode == preparation_mode){
+            
+            sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
+        }
+        else{
+            
+            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
+        }
+                    
+        f_trn = fopen(file_name, "a" );
+
+        if(f_trn){
+
+            time_t      current_time = time(NULL);
+
+            char        *c_time_string = ctime(&current_time);
+            
+            if(Solver_Dict.mode == preparation_mode){
+                
+                fprintf(f_trn,"\n\nrCFD_prep ends @ %s", c_time_string);
+            }
+            else{
+                
+                fprintf(f_trn,"\n\nrCFD_run ends @ %s", c_time_string);
+            }
+
+            fclose(f_trn);
+        }
+        
+        Message0("\n\n...rCFD_free_all");
+#endif      
+    }
 }

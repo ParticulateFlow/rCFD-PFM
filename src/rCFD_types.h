@@ -12,6 +12,11 @@
 
     /* A. Global Dicts */
 
+    enum{ /* solver modes */
+        preparation_mode,
+        run_mode
+    };
+    
     typedef struct Solver_Dict_struct
     {
         short   version_year, version_month;
@@ -21,6 +26,8 @@
         char    run_transcript_filename[80];
 
         /* main characteristics */
+        
+        short   mode;
 
         short   number_of_frames;
         short   number_of_states;
@@ -75,6 +82,8 @@
         char    *tracer_start_position_filename;
         
         char    *Prep_Transscript_filename;
+        
+        char    *Run_Transscript_filename;
 
         char    *C2C_filename;
 

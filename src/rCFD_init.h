@@ -16,8 +16,7 @@
 */
 
 void init_all_for_prep(void)
-{
-    
+{   
     /* 1.1. Create dictionaries and define file names */
     {
         rCFD_default_File_Dict();
@@ -62,7 +61,7 @@ void init_all_for_prep(void)
         }
     }
 
-    /* D3. Phase_Dict */
+    /* 1.4. Phase_Dict */
     {
 #if RP_NODE
         Phase_Dict = (Phase_Dict_type*)malloc(Solver_Dict.number_of_phases * sizeof(Phase_Dict_type));
@@ -73,7 +72,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* D4. Tracer_Dict */
+    /* 1.5. Tracer_Dict */
     {
 #if RP_NODE
         Tracer_Dict.random_walk = (short*)malloc(Solver_Dict.number_of_phases * sizeof(short));
@@ -84,7 +83,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* D5. Norm_Dict */
+    /* 1.6. Norm_Dict */
     {
 #if RP_NODE
         rCFD_default_Norm_Dict();
@@ -93,50 +92,14 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* D6. Rec_Dict */
+    /* 1.7. Rec_Dict */
     {
         rCFD_default_Rec_Dict();
 
         rCFD_user_set_Rec_Dict();
     }
 
-    /* D7. Data_Dict */
-    {
-#if RP_NODE
-        int i_phase;
-
-        Data_Dict = (Data_Dict_type**)malloc(Solver_Dict.number_of_phases * sizeof(Data_Dict_type*));
-
-        loop_phases{
-
-            Data_Dict[i_phase] = (Data_Dict_type*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(Data_Dict_type));
-        }
-
-        rCFD_default_Data_Dict();
-
-        rCFD_user_set_Data_Dict();
-#endif
-    }
-
-    /* D8. Balance_Dict */
-    {
-#if RP_NODE
-        int i_phase;
-
-        Balance_Dict = (Balance_Dict_type**)malloc(Solver_Dict.number_of_phases * sizeof(Balance_Dict_type*));
-
-        loop_phases{
-
-            Balance_Dict[i_phase] = (Balance_Dict_type*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(Balance_Dict_type));
-        }
-
-        rCFD_default_Balance_Dict();
-
-        rCFD_user_set_Balance_Dict();
-#endif
-    }
-
-    /* D9. Topo_Dict */
+    /* 1.8 Topo_Dict */
     {
         rCFD_default_Topo_Dict();
 
@@ -166,7 +129,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* G1. Topo */
+    /* 1.9. Topo */
     {
         rCFD_default_Topo();
 
@@ -246,7 +209,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* G3. Tracer */
+    /* 1.10. Tracers */
     {
 #if RP_NODE
 
@@ -261,7 +224,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* G4. Norms */
+    /* 1.11. Norms */
     {
 #if RP_NODE
         Domain  *d=Get_Domain(1);
@@ -288,7 +251,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* G5. Rec */
+    /* 1.12. Rec */
     {
         int     i_island;
 
@@ -305,122 +268,7 @@ void init_all_for_prep(void)
         rCFD_default_Rec();
     }
 
-    /* G6. Balance (first initialization) */
-    {
-#if RP_NODE
-        int i_phase, i_data;
-
-        Balance = (Balance_type**)malloc(Solver_Dict.number_of_phases * sizeof(Balance_type*));
-
-        loop_phases{
-
-            Balance[i_phase] = (Balance_type*)malloc(Phase_Dict[i_phase].number_of_data * sizeof(Balance_type));
-
-            loop_data{
-
-                /* global_balancing */
-                if(Balance_Dict[i_phase][i_data].type == global_balancing){
-
-                    Balance[i_phase][i_data].node2node_flux = NULL;
-                    Balance[i_phase][i_data].node2node_data_flux = NULL;
-                }
-
-                /* per node balancing */
-                else if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
-
-                    int nbytes = compute_node_count * compute_node_count * sizeof(double);
-
-                    Balance[i_phase][i_data].node2node_flux      = malloc_r_2d(compute_node_count, compute_node_count);
-                    Balance[i_phase][i_data].node2node_data_flux = malloc_r_2d(compute_node_count, compute_node_count);
-
-                    memset(Balance[i_phase][i_data].node2node_flux[0],      0, nbytes);
-                    memset(Balance[i_phase][i_data].node2node_data_flux[0], 0, nbytes);
-                }
-
-                Balance[i_phase][i_data].mass_integral = 0.0;
-
-                Balance[i_phase][i_data].mass_integral_target = Balance[i_phase][i_data].mass_integral;
-
-                Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
-
-                Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;
-
-                Balance[i_phase][i_data].mass_source = 0.0;
-
-                Balance[i_phase][i_data].mass_source_global = 0.0;
-
-                Balance[i_phase][i_data].mass_error = 0.0;
-
-                Balance[i_phase][i_data].mass_error_global = 0.0;
-            }
-        }
-#endif
-    }
-
-    /* G1 + G6: Init data fields and update balances */
-    {
-#if RP_NODE
-        int i_layer, i_frame, i_phase, i_data, i_cell;
-
-        i_layer = 0;    /* user initialization just for base layer of grid, might be changed to loop_layers in future */
-
-        rCFD_user_init_Data(i_layer);
-
-        i_frame = 0;
-
-        loop_int_cells{
-
-            loop_phases{
-
-                loop_data{
-
-                    switch (Data_Dict[i_phase][i_data].type){
-
-                        case generic_data:
-
-                            Balance[_i_balance].mass_integral += _C.data[_i_data];
-
-                            break;
-
-                        case concentration_data:
-
-                            Balance[_i_balance].mass_integral += _C.data[_i_data] *
-
-                                Phase_Dict[i_phase].density * _C.volume[i_cell] * _C.vof[_i_vof];
-
-                            break;
-
-                        case temperature_data:
-
-                            Balance[_i_balance].mass_integral += _C.data[_i_data] *
-
-                                Phase_Dict[i_phase].heat_capacity * Phase_Dict[i_phase].density * _C.volume[i_cell] * _C.vof[_i_vof];
-
-                            break;
-
-                        default: break;
-                    }
-                }
-            }
-        }
-
-        loop_phases{
-
-            loop_data{
-
-                Balance[i_phase][i_data].mass_integral_target = Balance[i_phase][i_data].mass_integral;
-
-                Balance[i_phase][i_data].mass_integral_global = PRF_GRSUM1(Balance[i_phase][i_data].mass_integral);
-
-                Balance[i_phase][i_data].mass_integral_target_global = Balance[i_phase][i_data].mass_integral_global;
-            }
-        }
-
-        rCFD_user_post();    /* post-process initialization */
-#endif
-    }
-
-    /* P: Parallel grid communication */
+    /* 1.13. Parallel grid communication */
     {
 #if RP_NODE
 
@@ -428,7 +276,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* L: Initialize layers */
+    /* 1.14. Initialize layers */
     if(Solver_Dict.number_of_layers > 1){
 #if RP_NODE
 

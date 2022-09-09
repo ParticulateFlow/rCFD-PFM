@@ -74,6 +74,7 @@
         rCFD_macros.h
         rCFD_init.h
         rCFD_layer.h
+        rCFD_memory.h
         rCFD_free.h
         \"\" ")
 )
@@ -272,6 +273,7 @@
         rCFD_macros.h
         rCFD_init.h
         rCFD_layer.h
+        rCFD_memory.h
         rCFD_free.h
         \"\" ")
 )

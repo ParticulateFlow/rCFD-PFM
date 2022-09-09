@@ -38,6 +38,8 @@
 
         Solver_Dict.verbose =          Global_Verbose;
 
+        Solver_Dict.mode = run_mode;
+        
         Solver_Dict.number_of_frames =     1;
         Solver_Dict.number_of_states =     1;
         Solver_Dict.number_of_phases =     1;
@@ -80,25 +82,6 @@
         Solver_Dict.balance_correction_update = 1;
         Solver_Dict.control_conc_sum_on = 1;
 
-        if(Transcript){
-
-            FILE    *f_out = fopen("./Run.trn", "w");
-
-            if(f_out){
-
-                fprintf(f_out,"rCFD_default_Solver_Dict");
-
-                fprintf(f_out,"\n\n   Version: %4d.%02d", Solver_Dict.version_year, Solver_Dict.version_month);
-
-                time_t      current_time = time(NULL);
-
-                char        *c_time_string = ctime(&current_time);
-
-                fprintf(f_out,"\n\n   Run start @ %s", c_time_string);
-
-                fclose(f_out);
-            }
-        }
     }
 
     void rCFD_default_File_Dict(void)
@@ -128,6 +111,8 @@
 
         File_Dict.Prep_Transscript_filename =          "./rCFD_prep.trn";
 
+        File_Dict.Run_Transscript_filename =           "./rCFD_run.trn";
+        
         File_Dict.Norm_filename =                      "./data/tmp/norm";
 
         File_Dict.vof_filename =                       "./data/vof/vof";

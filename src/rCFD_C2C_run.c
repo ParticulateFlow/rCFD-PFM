@@ -483,29 +483,35 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 
         total_number_of_C2Cs_read = PRF_GISUM1(total_number_of_C2Cs_read);
 
-        if(Transcript){
+        if(myid == 0){
 
-            FILE    *f_out = fopen("./Run.trn", "a");
+            FILE    *f_trn = NULL;
+            
+            char    file_name[80];
+            
+            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
 
-            if(f_out){
+            f_trn = fopen(file_name, "a");
 
-                fprintf(f_out,"\n\nrCFD_read_C2Cs");
+            if(f_trn){
 
-                fprintf(f_out,"\n\n   Read %d C2Cs from %s in %f seconds",
+                fprintf(f_trn,"\n\nrCFD_read_C2Cs");
+
+                fprintf(f_trn,"\n\n   Read %d C2Cs from %s in %f seconds",
 
                     total_number_of_C2Cs_read, File_Dict.C2C_filename,
 
                     (double)(clock() - Solver.clock)/(double)CLOCKS_PER_SEC);
 
-                fclose(f_out);
+                fclose(f_trn);
             }
+
+            Message("\n...rCFD_read_C2Cs ->  Read %d C2Cs from %s in %f seconds",
+
+                total_number_of_C2Cs_read, File_Dict.C2C_filename,
+
+                (double)(clock() - Solver.clock)/(double)CLOCKS_PER_SEC);
         }
-
-        Message0("\n...rCFD_read_C2Cs ->  Read %d C2Cs from %s in %f seconds",
-
-            total_number_of_C2Cs_read, File_Dict.C2C_filename,
-
-            (double)(clock() - Solver.clock)/(double)CLOCKS_PER_SEC);
 #endif
     }
 }
@@ -1960,43 +1966,49 @@ DEFINE_ON_DEMAND(rCFD_run)
     /* D. Message & Transcript */
     {
 #if RP_NODE
-        if(Transcript){
+        if(myid == 0){
 
-            FILE    *f_out = fopen("./Run.trn", "a");
+            FILE    *f_trn = NULL;
+            
+            char    file_name[80];
+            
+            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
 
-            if(f_out){
+            f_trn = fopen(file_name, "a");
 
-                fprintf(f_out,"\n\nrCFD_run");
+            if(f_trn){
 
-                fprintf(f_out,"\n\n   %d Runs @ global run counter %d",
+                fprintf(f_trn,"\n\nrCFD_run");
+
+                fprintf(f_trn,"\n\n   %d Runs @ global run counter %d",
 
                     Solver_Dict.number_of_runs, Solver.global_run_counter);
 
                 if(i_warning_fill_1){
 
-                    fprintf(f_out,"\n\n   WARNING: %d fill cell warnings exist, consider increasing fill loops", i_warning_fill_1);
+                    fprintf(f_trn,"\n\n   WARNING: %d fill cell warnings exist, consider increasing fill loops", i_warning_fill_1);
                 }
 
                 if(i_warning_drift_1){
 
-                    fprintf(f_out,"\n\n   WARNING: %d drift warnings exist, consider increasing number of drift loops", i_warning_drift_1);
+                    fprintf(f_trn,"\n\n   WARNING: %d drift warnings exist, consider increasing number of drift loops", i_warning_drift_1);
                 }
 
-                fprintf(f_out,"\n\n   %f seconds real world time took %f seconds compute time",
+                fprintf(f_trn,"\n\n   %f seconds real world time took %f seconds compute time",
 
                     Solver_Dict.global_time_step * (double)Solver_Dict.number_of_runs,
 
                     (double)(clock() - Solver.clock)/(double)CLOCKS_PER_SEC);
 
-                fclose(f_out);
+                fclose(f_trn);
             }
+            
+            Message("\n...rCFD_run -> %d Runs in %f seconds @ global run counter %d and global time %f\n",
+
+                Solver_Dict.number_of_runs, (double)(clock() - Solver.clock)/(double)CLOCKS_PER_SEC,
+
+                Solver.global_run_counter, Solver.global_time);
         }
-
-        Message0("\n...rCFD_run -> %d Runs in %f seconds @ global run counter %d and global time %f\n",
-
-            Solver_Dict.number_of_runs, (double)(clock() - Solver.clock)/(double)CLOCKS_PER_SEC,
-
-            Solver.global_run_counter, Solver.global_time);
 #endif
     }
 }
@@ -2011,23 +2023,43 @@ DEFINE_ON_DEMAND(rCFD_free_all)
     free_all_parallel();
 #endif
 
-#if RP_NODE
-    if(Transcript){
+    /* Transcript and Message */
+    if(myid == 0){
+#if RP_NODE 
+        FILE    *f_trn = NULL;
+        
+        char    file_name[80];
+        
+        if(Solver_Dict.mode == preparation_mode){
+            
+            sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
+        }
+        else{
+            
+            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
+        }
+                    
+        f_trn = fopen(file_name, "a" );
 
-        FILE    *f_out = fopen("./Run.trn", "a");
-
-        if(f_out){
-
-            fprintf(f_out,"\n\nrCFD_free_all");
+        if(f_trn){
 
             time_t      current_time = time(NULL);
 
             char        *c_time_string = ctime(&current_time);
+            
+            if(Solver_Dict.mode == preparation_mode){
+                
+                fprintf(f_trn,"\n\nrCFD_prep ends @ %s", c_time_string);
+            }
+            else{
+                
+                fprintf(f_trn,"\n\nrCFD_run ends @ %s", c_time_string);
+            }
 
-            fprintf(f_out,"\n\n   Run end @ %s", c_time_string);
-
-            fclose(f_out);
+            fclose(f_trn);
         }
+        
+        Message0("\n\n...rCFD_free_all");
+#endif      
     }
-#endif
 }

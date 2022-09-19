@@ -227,25 +227,53 @@ void init_all_for_prep(void)
 
 }
 
-void init_all(void)
+void init_all_for_run(void)
 {
-    /* D1. Solver_Dict & Solver */
-    {
-        rCFD_default_Solver_Dict();
-
-        rCFD_user_set_Solver_Dict();
-
-        rCFD_default_Solver();
-    }
-
-    /* D2. File_Dict */
+    /* 1. Create dictionaries and define file names */
     {
         rCFD_default_File_Dict();
 
         rCFD_user_set_File_Dict();
     }
 
-    /* D3. Phase_Dict */
+    /* 2. Solver_Dict & Solver */
+    {
+        rCFD_default_Solver_Dict();
+       
+        Solver_Dict.mode = run_mode;
+        
+        rCFD_user_set_Solver_Dict();
+
+        rCFD_default_Solver();
+    }
+
+    /* 3. Start transcript file */
+    {
+        char    file_name[80];
+        
+        FILE    *f_trn = NULL;
+        
+        sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
+                    
+        f_trn = fopen(file_name, "w" );
+
+        if(f_trn){
+
+            fprintf(f_trn,"rCFD_run");
+
+            fprintf(f_trn,"\n\n   Version: %4d.%02d", Solver_Dict.version_year, Solver_Dict.version_month);
+
+            time_t      current_time = time(NULL);
+
+            char        *c_time_string = ctime(&current_time);
+
+            fprintf(f_trn,"\n\n   rCFD_run starts @ %s", c_time_string);
+
+            fclose(f_trn);
+        }
+    }
+    
+    /* 4. Phase_Dict */
     {
 #if RP_NODE
         Phase_Dict = (Phase_Dict_type*)malloc(Solver_Dict.number_of_phases * sizeof(Phase_Dict_type));
@@ -256,34 +284,14 @@ void init_all(void)
 #endif
     }
 
-    /* D4. Tracer_Dict */
-    {
-#if RP_NODE
-        Tracer_Dict.random_walk = (short*)malloc(Solver_Dict.number_of_phases * sizeof(short));
-
-        rCFD_default_Tracer_Dict();
-
-        rCFD_user_set_Tracer_Dict();
-#endif
-    }
-
-    /* D5. Norm_Dict */
-    {
-#if RP_NODE
-        rCFD_default_Norm_Dict();
-
-        rCFD_user_set_Norm_Dict();
-#endif
-    }
-
-    /* D6. Rec_Dict */
+    /* 5. Rec_Dict */
     {
         rCFD_default_Rec_Dict();
 
         rCFD_user_set_Rec_Dict();
     }
 
-    /* D7. Data_Dict */
+    /* 6. Data_Dict */
     {
 #if RP_NODE
         int i_phase;
@@ -301,7 +309,7 @@ void init_all(void)
 #endif
     }
 
-    /* D8. Balance_Dict */
+    /* 7. Balance_Dict */
     {
 #if RP_NODE
         int i_phase;
@@ -319,7 +327,7 @@ void init_all(void)
 #endif
     }
 
-    /* D9. Topo_Dict */
+    /* 8. Topo_Dict */
     {
         rCFD_default_Topo_Dict();
 
@@ -349,7 +357,7 @@ void init_all(void)
 #endif
     }
 
-    /* G1. Topo */
+    /* 9. Topo */
     {
         rCFD_default_Topo();
 
@@ -362,17 +370,17 @@ void init_all(void)
 
         i_layer = 0;
 
-        /* T.1. allocate cells for L0 */
+        /* 9.1. allocate cells for L0 */
         {
             rCFD_allocate_layer(i_layer);
         }
 
-        /* T.2. set cell default values for L0 */
+        /* 9.2. set cell default values for L0 */
         {
             rCFD_default_Cell_L0();
         }
 
-        /* T.3. allocate faces for L0 */
+        /* 9.3. allocate faces for L0 */
         {
             _F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
 
@@ -381,12 +389,12 @@ void init_all(void)
             _F.area = malloc_r_2d(_Face_Dict.number_of_faces, 3);
         }
 
-        /* T.4. set face default values for L0 */
+        /* 9.4. set face default values for L0 */
         {
             rCFD_default_Face_L0();
         }
 
-        /* T.5. set pointers of upper grid layers to NULL */
+        /* 9.5. set pointers of upper grid layers to NULL */
         if(Solver_Dict.number_of_layers > 1){
 
             loop_layers_but_L0{
@@ -429,49 +437,7 @@ void init_all(void)
 #endif
     }
 
-    /* G3. Tracer */
-    {
-#if RP_NODE
-
-        Tracer.monitor_counter = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-
-        Tracer.number_of_shifts = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-
-        Tracer.shifts = (C2C_shift_type**)malloc(Solver_Dict.number_of_phases * sizeof(C2C_shift_type*));
-
-        rCFD_default_Tracer();
-
-#endif
-    }
-
-    /* G4. Norms */
-    {
-#if RP_NODE
-        Domain  *d=Get_Domain(1);
-        Thread  *t;
-        cell_t  i_cell;
-
-        int     number_of_norms = 0;
-
-        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell,t){
-
-            if((i_cell % Norm_Dict.coarse_graining) == 0){
-
-                number_of_norms++;
-            }
-
-        }end_c_loop_int(i_cell,t)}}
-
-        Norms.number_of_norms = number_of_norms;
-
-        Norms.norm = (double*)malloc(number_of_norms * sizeof(double));
-
-        rCFD_default_Norms();
-
-#endif
-    }
-
-    /* G5. Rec */
+    /* 10. Rec */
     {
         int     i_island;
 
@@ -488,7 +454,7 @@ void init_all(void)
         rCFD_default_Rec();
     }
 
-    /* G6. Balance (first initialization) */
+    /* 11. Balance (first initialization) */
     {
 #if RP_NODE
         int i_phase, i_data;
@@ -540,7 +506,7 @@ void init_all(void)
 #endif
     }
 
-    /* G1 + G6: Init data fields and update balances */
+    /* 12. Initialize data fields and update balances */
     {
 #if RP_NODE
         int i_layer, i_frame, i_phase, i_data, i_cell;
@@ -603,7 +569,7 @@ void init_all(void)
 #endif
     }
 
-    /* P: Parallel grid communication */
+    /* 13. Parallel grid communication */
     {
 #if RP_NODE
 
@@ -611,7 +577,7 @@ void init_all(void)
 #endif
     }
 
-    /* L: Initialize layers */
+    /* 14. Initialize layers */
     if(Solver_Dict.number_of_layers > 1){
 #if RP_NODE
 
@@ -654,7 +620,7 @@ void init_all(void)
         while(upper_layer < Solver_Dict.number_of_layers)
         {
 
-            /* L.1 create temporary faces_of_cell structure (tmp_faces_of_cell) */
+            /* 14.1 create temporary faces_of_cell structure (tmp_faces_of_cell) */
             {
 
                 tmp_faces_of_cell = malloc_i_2d(_Cell_Dict.number_of_cells, Solver_Dict.max_number_of_faces_per_cell);
@@ -735,7 +701,7 @@ void init_all(void)
                 }
             }
 
-            /* L.2 create cell clusters, set number of upper layer cells */
+            /* 14.2 create cell clusters, set number of upper layer cells */
             {
                 /* initialize _C.marked and _C.parent_cell */
                 loop_cells{
@@ -832,7 +798,7 @@ void init_all(void)
                 }
             }
 
-            /* L.3 allocate and initialize upper layer grid vars */
+            /* 14.3 allocate and initialize upper layer grid vars */
             {
                 rCFD_allocate_layer(upper_layer);
 
@@ -869,7 +835,7 @@ void init_all(void)
                 }
             }
 
-            /* L.4 fill upper layer grid vars (by first set of clusters) */
+            /* 14.4 fill upper layer grid vars (by first set of clusters) */
             {
                 max_number_of_children = 0;
                 min_number_of_children = 9999;
@@ -920,7 +886,7 @@ void init_all(void)
 
             }
 
-            /* L.5 add still unassigned cells */
+            /* 14.5 add still unassigned cells */
             {
                 i_tmp2 = 0;
 
@@ -1025,7 +991,7 @@ void init_all(void)
 
             }
 
-            /* L.5.a fill upper layer vof (TODO island id)*/
+            /* 14.5.a fill upper layer vof (TODO island id)*/
             {
                 /* init vof(upper_layer) */
                 loop_frames{
@@ -1078,7 +1044,7 @@ void init_all(void)
 
             }
 
-            /* L.6 fill upper layer list of child_index */
+            /* 14.6 fill upper layer list of child_index */
             {
                 /* allocate upper layer list of child_index */
                 loop_cells_of_upper_layer{
@@ -1170,7 +1136,7 @@ void init_all(void)
                 }
             }
 
-            /* L.6.a re-distribute upper-layer's children */
+            /* 14.6.a re-distribute upper-layer's children */
             {
                 i_redist = 0;
 
@@ -1352,7 +1318,7 @@ void init_all(void)
                 }
             }
 
-            /* L.7 create tmp_parent_xy vars for upper_layer faces */
+            /* 14.7 create tmp_parent_xy vars for upper_layer faces */
             {
                 tmp_parent_face_index = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
 
@@ -1388,7 +1354,7 @@ void init_all(void)
 
             }
 
-            /* L.8 fill tmp_parent_xy vars */
+            /* 14.8 fill tmp_parent_xy vars */
             {
                 parent_face_count = 0;
 
@@ -1468,7 +1434,7 @@ void init_all(void)
                 }
             }
 
-            /* L.9 create and fill upper faces */
+            /* 14.9 create and fill upper faces */
             {
                 Topo.Face[upper_layer].c0 = (int*)malloc(Topo_Dict.Face_Dict[upper_layer].number_of_faces * sizeof(int));
                 Topo.Face[upper_layer].c1 = (int*)malloc(Topo_Dict.Face_Dict[upper_layer].number_of_faces * sizeof(int));
@@ -1503,7 +1469,7 @@ void init_all(void)
 
             }
 
-            /* L.10 consistency checks */
+            /* 14.10 consistency checks */
             {
 
                 if(Topo_Dict.Cell_Dict[upper_layer].number_of_cells < Solver_Dict.min_number_of_cells_per_layer){
@@ -1533,7 +1499,7 @@ void init_all(void)
                 }
             }
 
-            /* L.11 free local vars */
+            /* 14.11 free local vars */
             {
                 free_i_2d(tmp_faces_of_cell);
 
@@ -1605,6 +1571,5 @@ void init_all(void)
     }
 
 }
-
 
 #endif

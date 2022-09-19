@@ -17,14 +17,14 @@
 
 void init_all_for_prep(void)
 {   
-    /* 1.1. Create dictionaries and define file names */
+    /* 1. Create dictionaries and define file names */
     {
         rCFD_default_File_Dict();
 
         rCFD_user_set_File_Dict();
     }
 
-    /* 1.2. Solver_Dict & Solver */
+    /* 2. Solver_Dict & Solver */
     {
         rCFD_default_Solver_Dict();
         
@@ -35,7 +35,7 @@ void init_all_for_prep(void)
         rCFD_default_Solver();
     }
     
-    /* 1.3. Start transcript file */
+    /* 3. Start transcript file */
     {
         char    file_name[80];
         
@@ -61,7 +61,7 @@ void init_all_for_prep(void)
         }
     }
 
-    /* 1.4. Phase_Dict */
+    /* 4. Phase_Dict */
     {
 #if RP_NODE
         Phase_Dict = (Phase_Dict_type*)malloc(Solver_Dict.number_of_phases * sizeof(Phase_Dict_type));
@@ -72,7 +72,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* 1.5. Tracer_Dict */
+    /* 5. Tracer_Dict */
     {
 #if RP_NODE
         Tracer_Dict.random_walk = (short*)malloc(Solver_Dict.number_of_phases * sizeof(short));
@@ -83,7 +83,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* 1.6. Norm_Dict */
+    /* 6. Norm_Dict */
     {
 #if RP_NODE
         rCFD_default_Norm_Dict();
@@ -92,14 +92,14 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* 1.7. Rec_Dict */
+    /* 7. Rec_Dict */
     {
         rCFD_default_Rec_Dict();
 
         rCFD_user_set_Rec_Dict();
     }
 
-    /* 1.8 Topo_Dict */
+    /* 8. Topo_Dict */
     {
         rCFD_default_Topo_Dict();
 
@@ -129,7 +129,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* 1.9. Topo */
+    /* 9. Topo */
     {
         rCFD_default_Topo();
 
@@ -148,17 +148,17 @@ void init_all_for_prep(void)
 
         i_layer = 0;
 
-        /* T.1. allocate cells for L0 */
+        /* 9.1. allocate cells for L0 */
         {
             rCFD_allocate_layer(i_layer);
         }
 
-        /* T.2. set cell default values for L0 */
+        /* 9.2. set cell default values for L0 */
         {
             rCFD_default_Cell_L0();
         }
 
-        /* T.3. allocate faces for L0 */
+        /* 9.3. allocate faces for L0 */
         {
             _F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
 
@@ -167,7 +167,7 @@ void init_all_for_prep(void)
             _F.area = malloc_r_2d(_Face_Dict.number_of_faces, 3);
         }
 
-        /* T.4. set face default values for L0 */
+        /* 9.4. set face default values for L0 */
         {
             rCFD_default_Face_L0();
         }
@@ -175,7 +175,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* 1.10. Tracers */
+    /* 10. Tracers */
     {
 #if RP_NODE
 
@@ -190,7 +190,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* 1.11. Norms */
+    /* 11. Norms */
     {
 #if RP_NODE
         Domain  *d=Get_Domain(1);
@@ -217,24 +217,7 @@ void init_all_for_prep(void)
 #endif
     }
 
-    /* 1.12. Rec */
-    {
-        int     i_island;
-
-        Rec.global_frame = (int*)malloc(Solver_Dict.number_of_islands * sizeof(int));
-
-        loop_islands{
-
-            Rec.global_frame[i_island] = 0;
-        }
-
-        Rec.jumps = malloc_i_4d(Solver_Dict.number_of_states, Solver_Dict.number_of_states,
-                                Solver_Dict.number_of_islands, Solver_Dict.number_of_frames);
-
-        rCFD_default_Rec();
-    }
-
-    /* 1.13. Parallel grid communication */
+    /* 12. Parallel grid communication */
     {
 #if RP_NODE
 

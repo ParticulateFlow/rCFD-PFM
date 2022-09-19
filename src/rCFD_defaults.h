@@ -752,27 +752,28 @@
 
         host_to_node_int_1(number_of_jump_files);
 
-        if(Transcript){
+        /* Message & Transcript */
+        if(myid == 0){
+            
+            FILE    *f_trn = NULL;
+            
+            char    file_name[80];
+            
+            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
 
-            FILE    *f_out = fopen("./Run.trn", "a");
+            f_trn = fopen(file_name, "a");
 
-            if(f_out){
+            if(f_trn){
 
-                fprintf(f_out,"\n\nrCFD_default_Rec");
+                fprintf(f_trn,"\n\nrCFD_default_Rec");
 
-                fprintf(f_out,"\n\n   Read %d jump files from %s\n", number_of_jump_files, File_Dict.Jump_filename);
+                fprintf(f_trn,"\n\n   Read %d jump files from %s\n", number_of_jump_files, File_Dict.Jump_filename);
 
-                fclose(f_out);
+                fclose(f_trn);
             }
 
+            Message("\n\n...rCFD_default_Rec: Read %d jump files from %s", number_of_jump_files, File_Dict.Jump_filename);
         }
-
-#if RP_HOST
-        if(number_of_jump_files > 0){
-
-            Message("\n\n...rCFD_default_Rec . Read %d jump files from %s", number_of_jump_files, File_Dict.Jump_filename);
-        }
-#endif
 
     }
 #endif

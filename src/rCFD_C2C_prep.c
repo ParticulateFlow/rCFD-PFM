@@ -1331,7 +1331,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                 {
                     loop_frames{
 
-                        if(i_frame < (Solver_Dict.number_of_frames - 2)){
+                        if(i_frame < (Solver_Dict.number_of_frames - 1)){
 
                             Rec_jump[i_frame] = i_frame + 1;
 

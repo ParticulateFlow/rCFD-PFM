@@ -13,8 +13,7 @@
     Johannes Kepler University, Linz, Austria
     www.particulate-flow.at
 */  
-    
-    /* Test version with only 49 frames and without reference data */
+
 
     /* user Names */
     /*************************************************************************************/ 
@@ -95,7 +94,7 @@
         
         Solver_Dict.time_steps_per_monitoring_interval =   2;
         
-        Solver_Dict.number_of_frames =                     49;
+        Solver_Dict.number_of_frames =                     (1480 / 2);
 
         Solver_Dict.number_of_runs =                       1;
         
@@ -362,21 +361,25 @@
 #if RP_NODE
 
 #if 1   /* local vars */
-        int     i_layer, i_phase, i_cell, i_data, i_frame, i_UDMI;
+        int     i_layer, i_phase, i_cell, i_data, i_face, i_frame, i_diff_loop, i_UDMI;
         
-        int     number_of_large_part, number_of_small_part;
+        int     c0, c1, c, i_frame_c0, i_frame_c1;
 
-        double  mass_of_large_part = 0.0, y_mean_of_large_part = 0.0;
+        double  mass_of_large_part = 0.0, y_mean_of_large_part = 0.0, mass_of_large_part_ref = 0.0, y_mean_of_large_part_ref = 0.0;
             
-        double  mass_of_small_part = 0.0, y_mean_of_small_part = 0.0;   
+        double  mass_of_small_part = 0.0, y_mean_of_small_part = 0.0, mass_of_small_part_ref = 0.0, y_mean_of_small_part_ref = 0.0;   
             
-        double  mass_of_part = 0.0, y_mean_of_part = 0.0;
+        double  mass_of_part = 0.0, y_mean_of_part = 0.0, mass_of_part_ref = 0.0, y_mean_of_part_ref = 0.0;
 
-        double  volume_large, volume_small;
+        double  number_of_large_part, number_of_small_part;
+            
+        double  volume_large, volume_small, vol_flip;
+        
+        double  *number_count_large = NULL, *number_count_small = NULL, *conc_large = NULL, *conc_small = NULL, *swap_large = NULL, *swap_small = NULL;
         
         Domain  *d=Get_Domain(1);
         
-        Thread  *t = NULL, *t_mix = NULL;
+        Thread  *t = NULL, *t_mix = NULL, *t_gas = NULL;
 #endif      
         
         i_layer = 0;
@@ -386,7 +389,55 @@
             rCFD_map_from_to_layer(Solver.current_layer, i_layer);
         }      
         
-        /* 1. eval y_mean_large/small (rCFD data) */
+        /* 1. allocate number_count_large/small, conc_large/small and corresponding swap vars */
+        {
+            number_count_small = (double*)malloc(_Cell_Dict.number_of_int_cells * sizeof(double));
+            number_count_large = (double*)malloc(_Cell_Dict.number_of_int_cells * sizeof(double));
+            conc_small = (double*)malloc(_Cell_Dict.number_of_int_cells * sizeof(double));
+            conc_large = (double*)malloc(_Cell_Dict.number_of_int_cells * sizeof(double));
+            swap_small = (double*)malloc(_Cell_Dict.number_of_int_cells * sizeof(double));
+            swap_large = (double*)malloc(_Cell_Dict.number_of_int_cells * sizeof(double));
+            
+            thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
+                
+                t_mix = t;
+                
+                t_gas = THREAD_SUB_THREAD(t, 0);
+            
+                begin_c_loop_int(i_cell, t){
+                        
+                    number_count_large[i_cell] = C_U(i_cell, t_gas);
+
+                    number_count_small[i_cell] = C_V(i_cell, t_gas);
+                    
+                    i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                    
+                    if((_C.volume[i_cell] * _C.vof[i_frame][i_cell][ph_solid]) > 0.0){
+                    
+                        conc_small[i_cell] = (number_count_small[i_cell] * diam_small * diam_small * diam_small * M_PI/6.0) /
+                        
+                            (_C.volume[i_cell] * _C.vof[i_frame][i_cell][ph_solid]);
+                    
+                        conc_large[i_cell] = (number_count_large[i_cell] * diam_large * diam_large * diam_large * M_PI/6.0) /
+                        
+                            (_C.volume[i_cell] * _C.vof[i_frame][i_cell][ph_solid]);
+                    }
+                    else{
+                        
+                        conc_small[i_cell] = 0.0;
+                        
+                        conc_large[i_cell] = 0.0;
+                    }                   
+
+                    swap_large[i_cell] = 0.0;
+                    
+                    swap_small[i_cell] = 0.0;
+                    
+                }end_c_loop_int(i_cell, t)
+            }}
+        }
+                
+        /* 3. eval y_mean_large/small (rCFD data and ref data) */
         {
             /* rCFD data */
             {
@@ -440,15 +491,61 @@
                     y_mean_of_part /= mass_of_part;
                 }
             }
-            
-            thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
-                
-                t_mix = t;
-                
-            }}
-        }       
 
-        /* 2. node-0 writes values to monitor file */
+            /* ref data */
+            {
+                loop_int_cells{
+                        
+                    mass_of_large_part_ref += number_count_large[i_cell] * diam_large * diam_large * diam_large * M_PI / 6.0 * Phase_Dict[i_phase].density;
+                    
+                    y_mean_of_large_part_ref += _C.x[i_cell][1] * number_count_large[i_cell] * diam_large * diam_large * diam_large * M_PI / 6.0 * Phase_Dict[i_phase].density;
+                    
+                    
+                    mass_of_small_part_ref += number_count_small[i_cell] * diam_small * diam_small * diam_small * M_PI / 6.0 * Phase_Dict[i_phase].density;
+                    
+                    y_mean_of_small_part_ref += _C.x[i_cell][1] * number_count_small[i_cell] * diam_small * diam_small * diam_small * M_PI / 6.0 * Phase_Dict[i_phase].density;
+
+                    
+                    mass_of_part_ref += M_PI / 6.0 * Phase_Dict[i_phase].density *
+                    
+                        (number_count_large[i_cell] * diam_large * diam_large * diam_large + number_count_small[i_cell] * diam_small * diam_small * diam_small);
+                    
+                    y_mean_of_part_ref += _C.x[i_cell][1] *  M_PI / 6.0 * Phase_Dict[i_phase].density *
+                    
+                        (number_count_large[i_cell] * diam_large * diam_large * diam_large + number_count_small[i_cell] * diam_small * diam_small * diam_small);
+                }
+                
+                mass_of_large_part_ref =    PRF_GRSUM1(mass_of_large_part_ref);
+                
+                y_mean_of_large_part_ref =  PRF_GRSUM1(y_mean_of_large_part_ref);
+
+                mass_of_small_part_ref =    PRF_GRSUM1(mass_of_small_part_ref);
+                
+                y_mean_of_small_part_ref =  PRF_GRSUM1(y_mean_of_small_part_ref);
+                
+                mass_of_part_ref =          PRF_GRSUM1(mass_of_part_ref);
+
+                y_mean_of_part_ref =        PRF_GRSUM1(y_mean_of_part_ref);     
+
+                if(mass_of_large_part_ref > 0.0){
+                    
+                    y_mean_of_large_part_ref /= mass_of_large_part_ref;
+                }
+                
+                if(mass_of_small_part_ref > 0.0){
+                    
+                    y_mean_of_small_part_ref /= mass_of_small_part_ref;
+                }
+                
+                if(mass_of_part_ref > 0.0){
+                    
+                    y_mean_of_part_ref /= mass_of_part_ref;
+                }
+            }
+            
+        }       
+               
+        /* 4. node-0 writes values to monitor file */
         if(myid == 0){
 
             FILE    *f_out = NULL;
@@ -470,14 +567,112 @@
                 return;
             }
                                     
-            fprintf(f_out, "%e %e %e %e\n", Solver.global_time, 
+            fprintf(f_out, "%e %e %e %e %e %e %e %e %e %e %e\n", Solver.global_time, 
             
-                y_mean_of_part, y_mean_of_large_part, y_mean_of_small_part);
+                y_mean_of_part, y_mean_of_large_part, y_mean_of_small_part,
+                
+                y_mean_of_part_ref, y_mean_of_large_part_ref, y_mean_of_small_part_ref,
+                
+                mass_of_part_ref, mass_of_large_part_ref, mass_of_small_part_ref, mass_of_part);
             
             fclose(f_out);
         }
         
-        /* 3. nodes write to UDMI */
+        /* 5. diffuse reference particle information to ref. vof field */
+        {
+            i_phase = ph_solid;
+            
+            for(i_diff_loop = 0; i_diff_loop < 5; i_diff_loop++){
+            
+                /* initialize swap's */
+                loop_int_cells{
+
+                    swap_large[i_cell] = 0;
+                        
+                    swap_small[i_cell] = 0;
+                }
+            
+                /* define swap masses */
+                loop_int_faces{
+
+                    c0 = _F.c0[i_face];
+                    c1 = _F.c1[i_face];
+                    
+                    if((c0 < _Cell_Dict.number_of_int_cells) && (c1 < _Cell_Dict.number_of_int_cells)){
+                        
+                        /* large reference particles */
+                        {
+
+                            if(conc_large[c0] > conc_large[c1]){
+
+                                c = c0; c0 = c1; c1 = c;
+                            }
+
+                            if(conc_large[c1] > conc_large[c0]){
+
+                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
+
+                                if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
+
+                                    vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
+                                }
+                                else{
+                                    vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
+                                }
+
+                                swap_large[c1] -= vol_flip * conc_large[c1] / 2. * (1./8.);
+
+                                swap_large[c0] += vol_flip * conc_large[c1] / 2. * (1./8.);
+                            }
+                        }
+
+                        /* small reference particles */
+                        {
+
+                            if(conc_small[c0] > conc_small[c1]){
+
+                                c = c0; c0 = c1; c1 = c;
+                            }
+                        
+                            if(conc_small[c1] > conc_small[c0]){
+
+                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
+
+                                if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
+
+                                    vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
+                                }
+                                else{
+                                    vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
+                                }
+
+                                swap_small[c1] -= vol_flip * conc_small[c1] / 2. * (1./8.);
+
+                                swap_small[c0] += vol_flip * conc_small[c1] / 2. * (1./8.);
+                            }
+                        }
+                    }                   
+                }
+
+                /* update data by swap's */
+                loop_int_cells{
+
+                    i_frame = Rec.global_frame[_C.island_id[i_cell]];
+
+                    if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
+                        
+                        conc_large[i_cell] += swap_large[i_cell] / (_C.volume[i_cell] * _C.vof[_i_vof]);
+                        
+                        conc_small[i_cell] += swap_small[i_cell] / (_C.volume[i_cell] * _C.vof[_i_vof]);
+                        
+                    }
+                }
+            }
+        }       
+
+        /* 6. nodes write to UDMI */
         { 
             volume_large = M_PI / 6.0 * diam_large * diam_large * diam_large;
         
@@ -527,11 +722,49 @@
                 else{
                     
                     C_UDMI(i_cell, t_mix, c_d23) = 0.0;
-                }               
+                }
+                
+                if((conc_large[i_cell] + conc_small[i_cell]) > 0.0){
+                    
+                    C_UDMI(i_cell, t_mix, c_vof_small_ref) = C_UDMI(i_cell, t_mix, c_vof) * 
+                    
+                        (conc_small[i_cell] / (conc_small[i_cell] + conc_large[i_cell]));
+                    
+                    C_UDMI(i_cell, t_mix, c_vof_large_ref) = C_UDMI(i_cell, t_mix, c_vof) * 
+                    
+                        (conc_large[i_cell] / (conc_small[i_cell] + conc_large[i_cell]));   
+
+                    number_of_large_part = conc_large[i_cell] * _C.volume[i_cell] * _C.vof[_i_vof] / volume_large;
+                    
+                    number_of_small_part = conc_small[i_cell] * _C.volume[i_cell] * _C.vof[_i_vof] / volume_small;
+                    
+                    if(_C.vof[_i_vof] > 0.1){
+                        
+                        C_UDMI(i_cell, t_mix, c_d23_ref) = 
+                    
+                            (number_of_large_part * diam_large * diam_large * diam_large +
+                        
+                             number_of_small_part * diam_small * diam_small * diam_small) / 
+                        
+                            (number_of_large_part * diam_large * diam_large + number_of_small_part * diam_small * diam_small);
+                    }
+                    else{
+                        
+                        C_UDMI(i_cell, t_mix, c_d23_ref) = 0.0;
+                    }
+                }
+                else{
+                    
+                    C_UDMI(i_cell, t_mix, c_vof_small_ref) = 0.0;
+                    
+                    C_UDMI(i_cell, t_mix, c_vof_large_ref) = 0.0;
+                    
+                    C_UDMI(i_cell, t_mix, c_d23_ref) = 0.0;
+                }
             }   
         }
 
-        /* 4. average vof and conc in between 4s and 7s */      
+        /* 2. average vof and conc in between 4s and 7s */      
         {
             if((Solver.global_time > 4.0) && (Solver.global_time < 7.0)){
                 
@@ -547,7 +780,11 @@
 
                     C_UDMI(i_cell, t_mix, c_vof_large_average) = (double)average_counter * C_UDMI(i_cell, t_mix, c_vof_large_average) + C_UDMI(i_cell, t_mix, c_vof_large);
                         
-                    for(i_UDMI = c_vof_average; i_UDMI <= c_vof_large_average; i_UDMI++){
+                    C_UDMI(i_cell, t_mix, c_vof_small_ref_average) = (double)average_counter * C_UDMI(i_cell, t_mix, c_vof_small_ref_average) + C_UDMI(i_cell, t_mix, c_vof_small_ref);
+                        
+                    C_UDMI(i_cell, t_mix, c_vof_large_ref_average) = (double)average_counter * C_UDMI(i_cell, t_mix, c_vof_large_ref_average) + C_UDMI(i_cell, t_mix, c_vof_large_ref);
+                    
+                    for(i_UDMI = c_vof_average; i_UDMI <= c_vof_large_ref_average; i_UDMI++){
                         
                         C_UDMI(i_cell, t_mix, i_UDMI) /= (double)(average_counter + 1);
                     }
@@ -556,6 +793,18 @@
                 average_counter++;
             }
         }   
+        
+        /* 7. free local vars */
+        {
+            free(number_count_large);
+            free(number_count_small);
+            
+            free(swap_large);
+            free(swap_small);
+            
+            free(conc_large);
+            free(conc_small);
+        }
         
         Message0("\n\n...rCFD_monitors\n");
 #endif

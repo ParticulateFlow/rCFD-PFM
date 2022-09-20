@@ -14,11 +14,11 @@
 (define number_of_Timesteps_for_fullCFD_analyse_CFD 2)
 (define number_of_Timesteps_for_rCFD_analyse_CFD 5)
 
-(define ANSYS_Fluent_number_of_CFD_episodes 101) ;; 1480 (> (2 * number_of_frames + 1))
+(define ANSYS_Fluent_number_of_CFD_episodes 1480) ;; 1480
 (define ANSYS_Fluent_simulation_timestep_width 0.005)
 (define ANSYS_Fluent_number_of_timesteps_per_episode 1)
 
-(define number_of_rCFD_episodes 48) ;; 735 (number_of_frames - 1)
+(define number_of_rCFD_episodes 735)
 
 (define i 0) 
 
@@ -32,7 +32,7 @@
     (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
     (ti-menu-load-string (format  #f "!cp ~a/~a.dat.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
     
-    (ti-menu-load-string (format  #f "!cp ~a/CFD_user_test.c ./CFD_user.c" rCFD_user_src_dir))
+    (ti-menu-load-string (format  #f "!cp ~a/CFD_user.c ."        rCFD_user_src_dir))
     
     (ti-menu-load-string "!rm -r libudf_cfd")
 )   
@@ -70,7 +70,7 @@
     
     (ti-menu-load-string "/define/user-defined/execute-on-demand \"CFD_convert_csv2ip::libudf_cfd\"")
 
-    ;;(ti-menu-load-string "/define/user-defined/execute-on-demand \"CFD_convert_csv2ip_for_ref_data::libudf_cfd\"")
+    (ti-menu-load-string "/define/user-defined/execute-on-demand \"CFD_convert_csv2ip_for_ref_data::libudf_cfd\"")
     
     ;; check if ip file can be loaded 
     
@@ -100,7 +100,7 @@
     ;;(CFD_conv1a)
     (CFD_conv2)
     (CFD_conv3) 
-    ;;(CFD_conv4)       
+    (CFD_conv4)     
 )   
 
 
@@ -111,7 +111,7 @@
     (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
     (ti-menu-load-string (format  #f "!cp ~a/~a.dat.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))    
             
-    (ti-menu-load-string (format  #f "!cp ~a/rCFD_user_test.h ./rCFD_user.h" rCFD_user_src_dir))
+    (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_user_src_dir))
     
     (ti-menu-load-string (format  #f "!cp ~a/rCFD_C2C_prep.c ."    rCFD_src_dir))
     (ti-menu-load-string (format  #f "!cp ~a/*.h ."                rCFD_src_dir))
@@ -319,7 +319,7 @@
     (rCFD_P6)       
     (rCFD_P7)
     (rCFD_P8) 
-    (rCFD_P9) 
+    ;;(rCFD_P9) 
     (rCFD_P10)      
     ;;(rCFD_P11)      
 )
@@ -339,7 +339,7 @@
 
     (ti-menu-load-string (format  #f "!cp ~a/*.c ." rCFD_src_dir))
     (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_src_dir))
-    (ti-menu-load-string (format  #f "!cp ~a/rCFD_user_test.h ./rCFD_user.h" rCFD_user_src_dir))
+    (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_user_src_dir))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -404,8 +404,8 @@
 
         (ti-menu-load-string "/define/user-defined/execute-on-demand \"rCFD_run::libudf_rcfd_run\"")
 
-        ;;(ti-menu-load-string (format #f "!cp ./data/ip/ref_~04d.ip ./data.ip" (* i 2)))
-        ;;(ti-menu-load-string "/file/interpolate/read-data yes data.ip")
+        (ti-menu-load-string (format #f "!cp ./data/ip/ref_~04d.ip ./data.ip" (* i 2)))
+        (ti-menu-load-string "/file/interpolate/read-data yes data.ip")
         
     )
 )
@@ -740,7 +740,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (rCFD_R1)
-    ;;(rCFD_R1a)
+    (rCFD_R1a)
     (rCFD_R2)
     (rCFD_R3)
     (rCFD_R4)

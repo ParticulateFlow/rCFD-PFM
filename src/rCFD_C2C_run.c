@@ -35,7 +35,7 @@
 DEFINE_ON_DEMAND(rCFD_init_all)
 /*************************************************************************************/
 {
-    init_all();
+    init_all_for_run();
 
     Message0("\n\n...rCFD_init_all\n");
 }

@@ -679,6 +679,35 @@ DEFINE_ON_DEMAND(rCFD_run)
                 }
             }
 
+            /* eventually, node-0 writes current frames into rec_frames.out monitor file */            
+            if((Rec_Dict.monitor_rec_frames_on) && (myid == 0)){
+                
+#if RP_NODE         
+                if(Solver.rec_frames_monitor_file_opened == 0){
+
+                    f_out = fopen(File_Dict.Rec_Frames_filename, "w");
+
+                    Solver.rec_frames_monitor_file_opened = 1;
+                }
+                else{
+                    
+                    f_out = fopen(File_Dict.Rec_Frames_filename, "a");
+                }
+
+                if(f_out){
+                    
+                    loop_islands{
+
+                        fprintf(f_out, "%d ", Rec.global_frame[i_island]);
+                    }
+                    
+                    fprintf(f_out, "\n");
+                    
+                    fclose(f_out);
+                }
+#endif              
+            }
+            
             if(Solver_Dict.verbose){
 
                 Message0("\n\nNext Frame: i_run %d, i_frame[0] %d", i_run, Rec.global_frame[0]);

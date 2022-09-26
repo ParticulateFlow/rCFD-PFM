@@ -135,6 +135,8 @@
         File_Dict.Matrix_filename =                    "./rec/matrix";
 
         File_Dict.Balance_filename =                   "./post/balance_monitor.out";
+        
+        File_Dict.Rec_Frames_filename =                "./post/rec_frames_monitor.out";
     }
 
     void rCFD_default_Phase_Dict(void)
@@ -212,6 +214,8 @@
     {
 
         Rec_Dict.format = quarter_jumps_format;
+        
+        Rec_Dict.monitor_rec_frames_on = 0;
 
         Rec_Dict.min_seq_length = (int)((double)Solver_Dict.number_of_frames/25.);
 
@@ -407,6 +411,8 @@
         Solver.global_time = 0.0;
 
         Solver.balance_file_opened = 0;
+        
+        Solver.rec_frames_monitor_file_opened = 0;
     }
 
     void rCFD_default_Topo(void)

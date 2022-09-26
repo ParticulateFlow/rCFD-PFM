@@ -85,6 +85,8 @@
         char    *Matrix_filename;
 
         char    *Balance_filename;
+        
+        char    *Rec_Frames_filename;
 
         char    *Dict_filename;
 
@@ -167,6 +169,8 @@
     typedef struct Rec_Dict_struct
     {
         short   format;
+        
+        short   monitor_rec_frames_on;
 
         short   min_seq_length;
         short   max_seq_length;
@@ -263,6 +267,8 @@
         int         global_run_counter;
 
         short       balance_file_opened;
+        
+        short       rec_frames_monitor_file_opened;
 
         double      global_time;
 

@@ -2,20 +2,21 @@
 
 ## Contents
 
-- Converts CFD-DEM based field information into Fluent *.ip format
+- Converts frames of CFD-DEM based field information into Fluent *.ip format
 - Generates rCFD database
 - Runs rCFD in replay mode, considering segregation of two particle fractions (small/large)
 
 ## Retrieve Ansys/Fluent cas and dat Files
 
 - switch to folder ./ansys_fluent
-- retriever files by following the links given in the local README file
+- retrieve files by following the links given in the local README file
 - switch back
 
-## Retrieve CFD-DEM based field data
+## Retrieve CFD-DEM data
 
 - switch to folder ./data/csv
-- retriever files by following the links given in the local README file
+- retrieve compressed zip-file by following the link given in the local README file
+- extract zip-file into this folder
 - switch back
 
 ## Convert CFD-DEM based field data
@@ -50,7 +51,6 @@
 
 - close Ansys/fluent
 
-
 - ./post/monitor.m post-processes monitor_rCFD.out
 - ./post/reference contains corresponding monitors of full CFD-DEM simulations
 
@@ -67,7 +67,6 @@
 
 - (rcfd_run) works only after (rcfd_prep)
 - Ansys/fluent has to be closed between *prepare rCFD* and *run rCFD*
-- fluent crashes after execution in batch mode - however, this does not affect the rCFD_run.
 
 ## License
 

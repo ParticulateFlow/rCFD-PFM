@@ -1,23 +1,27 @@
 # CFD_DEM based Field data
 
-Request data files by developers or generate them by yourself
+*Fetch a set of frames from:*
+
+    https://drive.jku.at/filr/public-link/file-download/0cce88f182e9c80901835ab825563107/42428/-7816482584872388284/csv_frames.zip
+
+    Unpack zip file to obtain a set of 99 frames (*.txt files)
 
 *Filename format:* 
 
-	number.txt (number: 1000 to 145000 by 1000; number stands for CFD-DEM time-step)
+    number.txt (number: 1000 to 99000 by 1000; number stands for CFD-DEM time-step)
 
 *Data Format:*
 
-	80.000 lines (one line for each cell)
-	10 columns of ascii scientific notation numbers stating
-	x, y, z, alpha, Ux, Uy, Uz, Usx, Usy, and Usz, 
+    80.000 lines (one line for each cell)
+    10 columns of ascii scientific notation numbers stating
+    x, y, z, alpha, Ux, Uy, Uz, Usx, Usy, and Usz, 
 
-	where
-	
-	(x,y,z) are the coordinate of the cell centers, 
-	(alpha) is the void fraction, 
-	(Ux, Uy, Uz) the fluid velocity and 
-	(Usx, Usy, Usz) is the mass-averaged solid velocity
+    where
+    
+    (x,y,z) are the coordinate of the cell centers, 
+    (alpha) is the void fraction, 
+    (Ux, Uy, Uz) the fluid velocity and 
+    (Usx, Usy, Usz) is the mass-averaged solid velocity
 
 ## License
 

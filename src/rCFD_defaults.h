@@ -39,7 +39,7 @@
         Solver_Dict.verbose =          Global_Verbose;
 
         Solver_Dict.mode = run_mode;
-        
+
         Solver_Dict.number_of_frames =     1;
         Solver_Dict.number_of_states =     1;
         Solver_Dict.number_of_phases =     1;
@@ -112,7 +112,7 @@
         File_Dict.Prep_Transscript_filename =          "./rCFD_prep.trn";
 
         File_Dict.Run_Transscript_filename =           "./rCFD_run.trn";
-        
+
         File_Dict.Norm_filename =                      "./data/tmp/norm";
 
         File_Dict.vof_filename =                       "./data/vof/vof";
@@ -426,7 +426,7 @@
                 }
 
                 _C.volume[i_cell] = C_VOLUME(i_cell, t);
-                
+
                 _C.grid_spacing[i_cell] = pow(C_VOLUME(i_cell, t), (1.0/3.0));
 
         }end_c_loop_all(i_cell,t)}}
@@ -470,9 +470,9 @@
                 }
             }
             else{
-                
+
                 if(Solver_Dict.mode == preparation_mode){
-                    
+
                     loop_phases{
 
                         loop_frames{
@@ -491,7 +491,7 @@
                         }
                     }
                 }
-                
+
                 else{   /* load vof files in rCFD_run mode */
 
                     short   vof_file_exisits = 1;
@@ -754,11 +754,11 @@
 
         /* Message & Transcript */
         if(myid == 0){
-            
+
             FILE    *f_trn = NULL;
-            
+
             char    file_name[80];
-            
+
             sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
 
             f_trn = fopen(file_name, "a");

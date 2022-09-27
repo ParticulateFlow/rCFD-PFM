@@ -16,7 +16,7 @@
 */
 
 void init_all_for_prep(void)
-{   
+{
     /* 1. Create dictionaries and define file names */
     {
         rCFD_default_File_Dict();
@@ -27,22 +27,22 @@ void init_all_for_prep(void)
     /* 2. Solver_Dict & Solver */
     {
         rCFD_default_Solver_Dict();
-        
+
         Solver_Dict.mode = preparation_mode;
 
         rCFD_user_set_Solver_Dict();
 
         rCFD_default_Solver();
     }
-    
+
     /* 3. Start transcript file */
     {
         char    file_name[80];
-        
+
         FILE    *f_trn = NULL;
-        
+
         sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-                    
+
         f_trn = fopen(file_name, "w" );
 
         if(f_trn){
@@ -136,15 +136,15 @@ void init_all_for_prep(void)
 #if RP_NODE
         int i_layer;
 
-        /*  TODO this might be changed in future, 
-            but at the moment we restrict ourselves to use 
+        /*  TODO this might be changed in future,
+            but at the moment we restrict ourselves to use
             just the base cell layer for the generation of c2c patterns */
-            
+
         const short number_of_layers_for_preparation = 1;
-        
+
         Topo.Cell = (Cell_type*)malloc(number_of_layers_for_preparation * sizeof(Cell_type));
 
-        Topo.Face = (Face_type*)malloc(number_of_layers_for_preparation * sizeof(Face_type));        
+        Topo.Face = (Face_type*)malloc(number_of_layers_for_preparation * sizeof(Face_type));
 
         i_layer = 0;
 
@@ -239,9 +239,9 @@ void init_all_for_run(void)
     /* 2. Solver_Dict & Solver */
     {
         rCFD_default_Solver_Dict();
-       
+
         Solver_Dict.mode = run_mode;
-        
+
         rCFD_user_set_Solver_Dict();
 
         rCFD_default_Solver();
@@ -250,11 +250,11 @@ void init_all_for_run(void)
     /* 3. Start transcript file */
     {
         char    file_name[80];
-        
+
         FILE    *f_trn = NULL;
-        
+
         sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-                    
+
         f_trn = fopen(file_name, "w" );
 
         if(f_trn){
@@ -272,7 +272,7 @@ void init_all_for_run(void)
             fclose(f_trn);
         }
     }
-    
+
     /* 4. Phase_Dict */
     {
 #if RP_NODE

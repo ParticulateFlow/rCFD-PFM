@@ -38,6 +38,8 @@
 
         Solver_Dict.verbose =          Global_Verbose;
 
+        Solver_Dict.mode = run_mode;
+        
         Solver_Dict.number_of_frames =     1;
         Solver_Dict.number_of_states =     1;
         Solver_Dict.number_of_phases =     1;
@@ -80,25 +82,6 @@
         Solver_Dict.balance_correction_update = 1;
         Solver_Dict.control_conc_sum_on = 1;
 
-        if(Transcript){
-
-            FILE    *f_out = fopen("./Run.trn", "w");
-
-            if(f_out){
-
-                fprintf(f_out,"rCFD_default_Solver_Dict");
-
-                fprintf(f_out,"\n\n   Version: %4d.%02d", Solver_Dict.version_year, Solver_Dict.version_month);
-
-                time_t      current_time = time(NULL);
-
-                char        *c_time_string = ctime(&current_time);
-
-                fprintf(f_out,"\n\n   Run start @ %s", c_time_string);
-
-                fclose(f_out);
-            }
-        }
     }
 
     void rCFD_default_File_Dict(void)
@@ -126,6 +109,10 @@
 
         File_Dict.C2C_filename =                       "./data/c2c/c2c";
 
+        File_Dict.Prep_Transscript_filename =          "./rCFD_prep.trn";
+
+        File_Dict.Run_Transscript_filename =           "./rCFD_run.trn";
+        
         File_Dict.Norm_filename =                      "./data/tmp/norm";
 
         File_Dict.vof_filename =                       "./data/vof/vof";
@@ -445,6 +432,8 @@
                 }
 
                 _C.volume[i_cell] = C_VOLUME(i_cell, t);
+                
+                _C.grid_spacing[i_cell] = pow(C_VOLUME(i_cell, t), (1.0/3.0));
 
         }end_c_loop_all(i_cell,t)}}
 
@@ -467,6 +456,7 @@
         }
 
         if(_C.vof != NULL){
+        /* TODO: check, if _C.vof is needed in prep. mode */
 
             FILE    *f_in = NULL;
             char    file_name[80];
@@ -486,18 +476,10 @@
                 }
             }
             else{
-
-                short   vof_file_exisits = 1;
-
-                i_state = 0;
-
-                loop_phases{
-
-                    sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
-
-                    f_in = fopen(file_name, "r");
-
-                    if(f_in == NULL){
+                
+                if(Solver_Dict.mode == preparation_mode){
+                    
+                    loop_phases{
 
                         loop_frames{
 
@@ -513,44 +495,76 @@
                                 }
                             }
                         }
-
-                        vof_file_exisits = 0;
                     }
-                    else{
+                }
+                
+                else{   /* load vof files in rCFD_run mode */
 
-                        loop_frames{
+                    short   vof_file_exisits = 1;
 
-                            fscanf(f_in,"%d\n", &i_tmp);
+                    i_state = 0;
 
-                            if(i_tmp != _Cell_Dict.number_of_cells){
+                    loop_phases{
 
-                                Message("\nERROR: rCFD_default_Cell: _C.vof: i_tmp != _Cell_Dict.number_of_cells ...\n");
+                        sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
 
-                                return;
+                        f_in = fopen(file_name, "r");
+
+                        if(f_in == NULL){
+
+                            loop_frames{
+
+                                loop_cells{
+
+                                    if(i_phase == 0){
+
+                                        _C.vof[_i_vof] = 1.0;
+                                    }
+                                    else{
+
+                                        _C.vof[_i_vof] = 0.0;
+                                    }
+                                }
                             }
 
-                            loop_cells{
+                            vof_file_exisits = 0;
+                        }
+                        else{
 
-                                fscanf(f_in,"%le\n", &_C.vof[_i_vof]);
+                            loop_frames{
 
-                                if((_C.vof[_i_vof] < 0.0) || (_C.vof[_i_vof] > 1.0)){
+                                fscanf(f_in,"%d\n", &i_tmp);
 
-                                    Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, _C.vof[_i_vof]);
+                                if(i_tmp != _Cell_Dict.number_of_cells){
+
+                                    Message("\nERROR: rCFD_default_Cell: _C.vof: i_tmp != _Cell_Dict.number_of_cells ...\n");
 
                                     return;
                                 }
+
+                                loop_cells{
+
+                                    fscanf(f_in,"%le\n", &_C.vof[_i_vof]);
+
+                                    if((_C.vof[_i_vof] < 0.0) || (_C.vof[_i_vof] > 1.0)){
+
+                                        Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, _C.vof[_i_vof]);
+
+                                        return;
+                                    }
+                                }
                             }
+
+                            fclose(f_in);
                         }
-
-                        fclose(f_in);
                     }
-                }
 
-                vof_file_exisits = PRF_GILOW1(vof_file_exisits);
+                    vof_file_exisits = PRF_GILOW1(vof_file_exisits);
 
-                if( ! vof_file_exisits){
+                    if( ! vof_file_exisits){
 
-                    Message0("\nWARNING rCFD_default_Cell_L0: at least one vof file doesn't exist (for the preparation phase, this is normal)\n");
+                        Message0("\nWARNING rCFD_default_Cell_L0: at least one vof file doesn't exist\n");
+                    }
                 }
             }
         }
@@ -590,160 +604,6 @@
 #endif
     }
 
-#if 0
-    void rCFD_default_Cell(const short i_layer)
-    {
-#if RP_NODE
-        if(i_layer == 0){
-
-            int i_phase, i_cell, i_frame, i_user, i_data, i_dim;
-
-            Domain  *d=Get_Domain(1);
-            Thread  *t;
-            double  x[3];
-
-            thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_all(i_cell,t){
-
-                    C_CENTROID(x, i_cell, t);
-
-                    loop_dim{
-
-                        C.x[i_cell][i_dim] = x[i_dim];
-                    }
-
-                    C.volume[i_cell] = C_VOLUME(i_cell, t);
-
-            }end_c_loop_all(i_cell,t)}}
-
-            loop_phases{
-
-                loop_cells{
-
-                    C.average_velocity[i_phase][i_cell] =  0.0;
-                    C.crossing_time[i_phase][i_cell] =     0.0;
-                }
-            }
-
-            loop_cells{
-
-                C.hit_by_other_cell[i_cell] = 0;
-                C.island_id[i_cell] = 0;
-
-                C.weight_after_shift[i_cell] = 0.0;
-                C.weight_after_swap[i_cell] =  0.0;
-            }
-
-            if(C.vof != NULL){
-
-                FILE    *f_in = NULL;
-                char    file_name[80];
-
-                int     i_state = 0, i_tmp;
-
-                loop_phases{
-
-                    if(Solver_Dict.number_of_phases == 1){
-
-                        loop_frames{
-
-                            loop_int_cells{
-
-                                C.vof[i_frame][i_cell][i_phase] = 1.0;
-                            }
-                        }
-                    }
-                    else{
-
-                        sprintf(file_name,"%s_%d_%d_%d", File_Dict.vof_filename, i_state, i_phase, myid);
-
-                        f_in = fopen(file_name, "r");
-
-                        if(f_in == NULL){
-
-                            loop_frames{
-
-                                loop_int_cells{
-
-                                    if(i_phase == 0){
-
-                                        C.vof[i_frame][i_cell][i_phase] = 1.0;
-                                    }
-                                    else{
-
-                                        C.vof[i_frame][i_cell][i_phase] = 0.0;
-                                    }
-                                }
-                            }
-
-                            Message0("\nWARNING: rCFD_default_Cell: C.vof: f_in == NULL for i_phase %d ...\n", i_phase);
-                        }
-                        else{
-
-                            loop_frames{
-
-                                fscanf(f_in,"%d\n", &i_tmp);
-
-                                if(i_tmp != _Cell_Dict.number_of_int_cells){
-
-                                    Message("\nERROR: rCFD_default_Cell: C.vof: i_tmp != _Cell_Dict.number_of_int_cells ...\n");
-
-                                    return;
-                                }
-
-                                loop_int_cells{
-
-                                    fscanf(f_in,"%le\n", &C.vof[_i_vof]);
-
-                                    if((C.vof[_i_vof] < 0.0) || (C.vof[_i_vof] > 1.0)){
-
-                                        Message("\nERROR myid %d i_frame %d i_cell %d i_phase %d vof %e", myid, i_frame, i_cell, i_phase, C.vof[_i_vof]);
-
-                                        return;
-                                    }
-                                }
-                            }
-
-                            fclose(f_in);
-                        }
-                    }
-                }
-            }
-
-            loop_phases{
-
-                loop_cells{
-
-                    loop_data{
-
-                        C.data[i_phase][i_cell][i_data] =      0.0;
-                        C.data_shift[i_phase][i_cell][i_data] = 0.0;
-                        C.data_swap[i_phase][i_cell][i_data] =     0.0;
-                    }
-                }
-            }
-
-            if(C.drift_exchange != NULL){
-
-                loop_cells{
-
-                    C.drift_exchange[i_cell] = 0.0;
-                }
-            }
-
-            if(C.user != NULL){
-
-                loop_cells{
-
-                    for(i_user = 0; i_user < Topo_Dict.Cell_Dict[i_layer].number_of_user_vars; i_user++){
-
-                        C.user[i_cell][i_user] = 0.0;
-                    }
-                }
-            }
-        }
-#endif
-    }
-#endif
     void rCFD_default_Face_L0(void)
     {
 #if RP_NODE
@@ -811,75 +671,6 @@
 #endif
     }
 
-#if 0
-    void rCFD_default_Face(const short i_layer)
-    {
-#if RP_NODE
-        if(i_layer == 0){
-
-            Domain  *d=Get_Domain(1);
-            Thread  *t;
-            int     f, i_face, c0, c1, i_dim;
-
-            double  A[3];
-
-            i_face = 0;
-
-            thread_loop_f(t,d){if(THREAD_TYPE(t)==THREAD_F_INTERIOR){
-
-                begin_f_loop(f,t){
-
-                    c0 = (int)F_C0(f, t);
-
-                    c1 = (int)F_C1(f, t);
-
-                    if((c0 >= 0)&&(c1 >= 0)){
-
-                        F.c0[i_face] = c0;
-
-                        F.c1[i_face] = c1;
-
-                        F_AREA(A, f, t);
-
-                        loop_dim{
-
-                            F.area[i_face][i_dim] = A[i_dim];
-                        }
-
-                        i_face++;
-                    }
-
-                }end_f_loop(f,t)
-
-                begin_f_loop_ext(f,t){
-
-                    c0 = (int)F_C0(f, t);
-
-                    c1 = (int)F_C1(f, t);
-
-                    if((c0 >= 0)&&(c1 >= 0)){
-
-                        F.c0[i_face] = c0;
-
-                        F.c1[i_face] = c1;
-
-                        F_AREA(A, f, t);
-
-                        loop_dim{
-
-                            F.area[i_face][i_dim] = A[i_dim];
-                        }
-
-                        i_face++;
-                    }
-
-                }end_f_loop_ext(f,t)
-
-            }}
-        }
-#endif
-    }
-#endif
     void rCFD_default_Tracer(void)
     {
 #if RP_NODE
@@ -967,27 +758,28 @@
 
         host_to_node_int_1(number_of_jump_files);
 
-        if(Transcript){
+        /* Message & Transcript */
+        if(myid == 0){
+            
+            FILE    *f_trn = NULL;
+            
+            char    file_name[80];
+            
+            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
 
-            FILE    *f_out = fopen("./Run.trn", "a");
+            f_trn = fopen(file_name, "a");
 
-            if(f_out){
+            if(f_trn){
 
-                fprintf(f_out,"\n\nrCFD_default_Rec");
+                fprintf(f_trn,"\n\nrCFD_default_Rec");
 
-                fprintf(f_out,"\n\n   Read %d jump files from %s\n", number_of_jump_files, File_Dict.Jump_filename);
+                fprintf(f_trn,"\n\n   Read %d jump files from %s\n", number_of_jump_files, File_Dict.Jump_filename);
 
-                fclose(f_out);
+                fclose(f_trn);
             }
 
+            Message("\n\n...rCFD_default_Rec: Read %d jump files from %s", number_of_jump_files, File_Dict.Jump_filename);
         }
-
-#if RP_HOST
-        if(number_of_jump_files > 0){
-
-            Message("\n\n...rCFD_default_Rec . Read %d jump files from %s", number_of_jump_files, File_Dict.Jump_filename);
-        }
-#endif
 
     }
 #endif

@@ -22,6 +22,7 @@
         _C.x = malloc_r_2d(_Cell_Dict.number_of_cells, 3);
 
         _C.volume = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+        _C.grid_spacing = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
 
         _C.average_velocity = malloc_r_2d(Solver_Dict.number_of_phases, _Cell_Dict.number_of_cells);
         _C.crossing_time    = malloc_r_2d(Solver_Dict.number_of_phases, _Cell_Dict.number_of_cells);

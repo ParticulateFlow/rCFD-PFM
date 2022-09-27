@@ -16,8 +16,21 @@ col_data = 3;
 col_value = 4;
 col_target = 5;
 
-ntimesteps = max(balancemonitor(:,col_t))-min(balancemonitor(:,col_t))+1;
-stepsize = size(balancemonitor,1)/ntimesteps;
+runfile = [casedir,'/run_batch.scm'];
+filestr = fileread(runfile);
+linestr = regexp(filestr, '[^\n\r]+([ \t]*define[ \t]+number_of_rCFD_episodes[ \t]+\d+)[^\n\r]+', 'match');
+
+if isempty(linestr)
+    % definition of number_of_rCFD_episodes not found in run_batch file,
+    % try to deduce from min/max time in balance_monitor file
+    % assuming write interval = 1
+    nrCFDepisodes = max(balancemonitor(:,col_t))-min(balancemonitor(:,col_t))+1;
+else
+    nrCFDepisodes = extractBetween(linestr{1,1}, 'number_of_rCFD_episodes', ')');
+    nrCFDepisodes = cellfun(@str2double, nrCFDepisodes);
+end
+
+stepsize = size(balancemonitor,1)/nrCFDepisodes;
 nfigures = stepsize;
 confidence = 1;
 

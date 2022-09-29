@@ -81,6 +81,27 @@ else
                 fi
 
                 popd >/dev/null
+
+                if [ -f "data/csv/README.md" ]; then
+                    pushd "data/csv" >/dev/null
+
+                    CSVFILE=`sed -n 's/^[ \t]*//;/.zip$/ p' README.md`
+
+                    echo "Downloading CSV files for case ${d%/} ..."
+                    wget -nv -N ${CSVFILE}
+
+                    if [ $? -ne 0 ]; then
+                        echo -e "Download of csv zip file for case ${d%/} ${BRED}FAILED${NC}" | tee >(decolorize >> ../../${LOGFILE})
+                        ((NFAILED++))
+                    else
+                        echo -e "Download of csv zip file for case ${d%/} ${BGREEN}OK${NC}" | tee >(decolorize >> ../../${LOGFILE})
+                        unzip -o -q '*.zip'
+                        ((NOK++))
+                    fi
+
+                    popd >/dev/null
+
+                fi
             else
                 echo -e "Download of files for case ${d%/} ${BYELLOW}SKIPPED${NC}" | tee >(decolorize >> ../${LOGFILE})
                 ((NSKIPPED++))

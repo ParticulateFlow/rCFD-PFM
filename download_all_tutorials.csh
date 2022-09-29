@@ -74,10 +74,31 @@ else
                     @ NOK++
                 endif
 
-               popd >/dev/null
+                popd >/dev/null
+
+                if ( -f "data/csv/README.md" ) then
+                    pushd "data/csv" >/dev/null
+
+                    set CSVFILE=`sed -n 's/^[ \t]*//;/.zip$/ p' README.md`
+
+                    echo "Downloading CSV files for case ${d} ..."
+                    wget -nv -N ${CSVFILE}
+
+                    if ( $status != 0 ) then
+                        echo "Download of csv zip file for case ${d} FAILED" | tee -a ../../${LOGFILE}
+                        @ NFAILED++
+                    else
+                        echo "Download of csv zip file for case ${d} OK" | tee -a ../../${LOGFILE}
+                        unzip -o -q '*.zip'
+                        @ NOK++
+                    endif
+
+                    popd >/dev/null
+
+                endif
             else
-               echo "Download of files for case ${d} SKIPPED" | tee -a ../${LOGFILE}
-               @ NSKIPPED++
+                echo "Download of files for case ${d} SKIPPED" | tee -a ../${LOGFILE}
+                @ NSKIPPED++
             endif
         else
             echo "Download of files for case ${d} SKIPPED" | tee -a ../${LOGFILE}

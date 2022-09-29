@@ -37,11 +37,11 @@ if [ "${RUN_IN_PLACE}" = false ]; then
         if [ -f "${d}run_batch.scm" ]; then
             if [[ "${TARGETDIR}" = /* ]]; then
                 # absolute path
-                cp -r "${d}user_src" "${TARGETDIR}/tutorials/${d}user_src"
+                cp -r "${d}user_src/." "${TARGETDIR}/tutorials/${d}user_src/"
                 cp -f "${d}run_batch.scm" "${TARGETDIR}/tutorials/${d}run_batch.scm" 2>/dev/null
             else
                 # relative path
-                cp -r "${d}user_src" "../${TARGETDIR}/tutorials/${d}user_src"
+                cp -r "${d}user_src/." "../${TARGETDIR}/tutorials/${d}user_src/"
                 cp -f "${d}run_batch.scm" "../${TARGETDIR}/tutorials/${d}run_batch.scm" 2>/dev/null
             fi
         fi

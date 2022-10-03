@@ -32,6 +32,20 @@ void init_all_for_prep(void)
 
         rCFD_user_set_Solver_Dict();
 
+        /*  TODO this might be changed in future,
+            but at the moment we restrict ourselves to use
+            just the base cell layer for the generation of c2c patterns */
+
+        const short number_of_layers_for_preparation = 1;
+
+        if(Solver_Dict.number_of_layers > number_of_layers_for_preparation){
+
+            Solver_Dict.number_of_layers = number_of_layers_for_preparation;
+
+            Message0("\nWARNING: reducing number of layers to %d for preparation step\n",number_of_layers_for_preparation);
+
+        }
+
         rCFD_default_Solver();
     }
 
@@ -136,15 +150,9 @@ void init_all_for_prep(void)
 #if RP_NODE
         int i_layer;
 
-        /*  TODO this might be changed in future,
-            but at the moment we restrict ourselves to use
-            just the base cell layer for the generation of c2c patterns */
+        Topo.Cell = (Cell_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_type));
 
-        const short number_of_layers_for_preparation = 1;
-
-        Topo.Cell = (Cell_type*)malloc(number_of_layers_for_preparation * sizeof(Cell_type));
-
-        Topo.Face = (Face_type*)malloc(number_of_layers_for_preparation * sizeof(Face_type));
+        Topo.Face = (Face_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_type));
 
         i_layer = 0;
 

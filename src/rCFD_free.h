@@ -16,6 +16,8 @@
     {
         free(Rec.global_frame);
 
+        free(Rec.prev_global_frame);
+        
         free_i_4d(Rec.jumps);
 
         free(Solver.timestep_width);
@@ -48,7 +50,9 @@
                 free(_C.weight_after_swap);
 
                 free_r_3d(_C.vof);
-
+                
+                free_r_2d(_C.vof_changed);
+                
                 if(_C.data != NULL){
 
                     loop_phases{

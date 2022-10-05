@@ -561,12 +561,12 @@ DEFINE_ON_DEMAND(rCFD_run)
     int         prev_layer, i_rec_max;
 
 #if RP_NODE
-    int         i_frame, i_data, i_shift, i_node, i_node2, i_cell, i_face, i_drift, i_dim, i_while;
+    int         i_frame, i_data, i_shift, i_node, i_node2, i_cell, i_face, i_drift, i_dim, i_while, i_adapt;
 
     int         loop_offset0, loop_offset1;
     int         number_of_fill_loops, number_of_unhit_cells;
     int         c, c0, c1;
-    int         i_frame_c0, i_frame_c1;
+    int         i_frame_c0, i_frame_c1, i_frame_prev;
     int         i_tmp;
 
     int         i_warning_fill_1, i_warning_drift_1;
@@ -577,6 +577,9 @@ DEFINE_ON_DEMAND(rCFD_run)
     double      drift_volume, local_drift_exchange, local_mass_c0, local_mass_c1, local_mass, hindering_factor, available_c1_mass;
     double      sum_of_conc, flux_in, flux_out, data_in_mean, data_out_mean, flux_mean;
     double      available_exchange, exchange_ratio;
+
+    double      mixing_mass_before_stitching, mixing_mass_after_stitching, available_data_change, relax_adaption;
+    double      *data_min_of_neighbors = NULL, *data_max_of_neighbors = NULL;
 
     FILE        *f_out = NULL;
 #else
@@ -619,8 +622,19 @@ DEFINE_ON_DEMAND(rCFD_run)
         }
 
         /* N+1: Get next frames[islands] for all phases */
-        {
-
+        {   
+            Rec.jumped_at_last_frame = 0;
+            
+            loop_islands{
+                
+                Rec.prev_global_frame[i_island] = Rec.global_frame[i_island];
+                
+                if (Rec.global_frame[i_island] == (Solver_Dict.number_of_frames - 1)){
+                    
+                    Rec.jumped_at_last_frame = 1;
+                }
+            }
+            
             if(Solver_Dict.recurrence_process_on){
 
 #if RP_HOST     /* init rand. gen */
@@ -685,6 +699,291 @@ DEFINE_ON_DEMAND(rCFD_run)
                 }
             }
 
+            /* eventually, redistribute data on stitched vof fields */
+            if(Rec_Dict.adapt_vof_stitching_on){
+                
+#if RP_NODE     
+                if((Solver.global_run_counter > 0) && ((Rec.frame_in_sequence == 0) || (Rec.jumped_at_last_frame))){
+
+                    loop_phases{
+
+                        /* calc. _C.vof_changed */
+                        {                               
+                            loop_cells{     // all cells, because of subsequent face loop
+                            
+                                i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                
+                                i_frame_prev = Rec.prev_global_frame[_C.island_id[i_cell]];
+                                
+                                _C.vof_changed[i_phase][i_cell] = _C.vof[i_frame][i_cell][i_phase] - _C.vof[i_frame_prev][i_cell][i_phase];                             
+                            }
+                        }
+                    
+                        loop_data{
+                            
+                            /* sum up mixing data before/after stitching */
+                            {   
+                                mixing_mass_before_stitching = 0.0;
+
+                                mixing_mass_after_stitching = 0.0;
+                                
+                                loop_int_cells{
+                                    
+                                    i_frame_prev = Rec.prev_global_frame[_C.island_id[i_cell]];
+                                    
+                                    i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                
+                                    mixing_mass_before_stitching += _C.data[i_phase][i_cell][i_data] * 
+                                    
+                                        _C.vof[i_frame_prev][i_cell][i_phase] * _C.volume[i_cell] * Phase_Dict[i_phase].density;
+                    
+                                    mixing_mass_after_stitching += _C.data[i_phase][i_cell][i_data] * 
+            
+                                        _C.vof[i_frame][i_cell][i_phase] * _C.volume[i_cell] * Phase_Dict[i_phase].density;
+                                }
+
+                                mixing_mass_before_stitching = PRF_GRSUM1(mixing_mass_before_stitching);
+                                
+                                mixing_mass_after_stitching = PRF_GRSUM1(mixing_mass_after_stitching);
+                                
+                                Message0("\nDEBUG sequence stitching mixing mass before/after %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
+                            }
+                    
+                            /* if data gain, reduce data in vof_gaining cells */
+                            {
+                                if(mixing_mass_after_stitching > mixing_mass_before_stitching){
+                                    
+                                    /* calc available data change */
+                                    {
+                                        available_data_change = 0.0;
+                                        
+                                        loop_int_cells{
+                                            
+                                            if(_C.vof_changed[i_phase][i_cell] > 0.0){
+                                                
+                                                available_data_change += _C.data[_i_data] * 
+                                                
+                                                    _C.vof_changed[i_phase][i_cell] * _C.volume[i_cell] * Phase_Dict[i_phase].density;
+                                            }
+                                        }
+                                        
+                                        available_data_change = PRF_GRSUM1(available_data_change);
+                                        
+                                        Message0("\nDEBUG sequence stitching available change for mass GAIN %e\n", available_data_change);
+                                    }
+                                    
+                                    /* adapt data */
+                                    {
+                                        if(available_data_change > 0.0){
+                                            
+                                            relax_adaption =  (mixing_mass_after_stitching - mixing_mass_before_stitching) / available_data_change;
+                                            
+                                            if(relax_adaption > 1.0){
+                                                
+                                                relax_adaption = 1.0;
+                                            }
+                                        }
+                                        else{
+                                            relax_adaption = 0.0;
+                                        }
+                                        
+                                        loop_int_cells{
+                                            
+                                            i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                            
+                                            if(_C.vof_changed[i_phase][i_cell] > 0.0){
+                                                    
+                                                _C.data[_i_data] *= 1.0 + relax_adaption *((_C.vof[_i_vof] - _C.vof_changed[i_phase][i_cell]) / _C.vof[_i_vof] - 1.0);
+                                            }
+                                        }
+                                    }
+                                    
+                                    /* calc. mixing_after_adaption */
+                                    {
+                                        mixing_mass_after_stitching = 0.0;
+                                        
+                                        i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                        
+                                        loop_int_cells{
+                                            
+                                            mixing_mass_after_stitching += _C.data[i_phase][i_cell][i_data] * 
+                    
+                                                _C.vof[i_frame][i_cell][i_phase] * _C.volume[i_cell] * Phase_Dict[i_phase].density;
+                                        }
+
+                                        mixing_mass_after_stitching = PRF_GRSUM1(mixing_mass_after_stitching);
+                                        
+                                        Message0("\nDEBUG sequence stitching GAIN mixing mass corrected %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
+                                    }
+                                }
+                            }
+                            
+                            /* if data loss, increase data in vof_gaining cells by neighboring data values */
+                            {
+                                if(mixing_mass_after_stitching < (1.0 - Balance_Dict[i_phase][i_data].accuracy_level) * mixing_mass_before_stitching){
+                                    
+                                    /* allocate  min/max of neighbors */
+                                    {
+                                        
+                                        data_min_of_neighbors = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+
+                                        data_max_of_neighbors = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
+                                    }
+                                                        
+                                    for(i_adapt = 0; i_adapt < Rec_Dict.number_of_adapt_vof_loops; i_adapt++){
+                                        
+                                        /* calc. min/max of neighbors */
+                                        {
+                                            loop_cells{
+                                                
+                                                data_min_of_neighbors[i_cell] = 1.0e10;
+
+                                                data_max_of_neighbors[i_cell] = -1.0e10;
+                                            }
+                                            
+                                            loop_faces{
+                                                
+                                                c0 = _F.c0[i_face];
+                                                
+                                                c1 = _F.c1[i_face];
+                                                
+                                                if(_C.data[_c1_data] > _C.data[_c0_data]){
+
+                                                    if(_C.data[_c1_data] > data_max_of_neighbors[c0]){
+                                                        
+                                                        data_max_of_neighbors[c0] = _C.data[_c1_data];                                                       
+                                                    }
+                                                    
+                                                    if(_C.data[_c0_data] < data_min_of_neighbors[c1]){
+                                                        
+                                                        data_min_of_neighbors[c1] = _C.data[_c0_data];
+                                                    }
+                                                }
+                                                else if(_C.data[_c1_data] < _C.data[_c0_data]){
+
+                                                    if(_C.data[_c0_data] > data_max_of_neighbors[c1]){
+                                                        
+                                                        data_max_of_neighbors[c1] = _C.data[_c0_data];
+                                                    }
+                                                    
+                                                    if(_C.data[_c1_data] < data_min_of_neighbors[c0]){
+                                                        
+                                                        data_min_of_neighbors[c0] = _C.data[_c1_data];
+                                                    }
+                                                }
+                                                else{
+                                                    
+                                                    if(_C.data[_c0_data] > data_max_of_neighbors[c1]){
+                                                        
+                                                        data_max_of_neighbors[c1] = _C.data[_c0_data];
+                                                    }
+                                                    
+                                                    if(_C.data[_c0_data] < data_min_of_neighbors[c1]){
+                                                        
+                                                        data_min_of_neighbors[c1] = _C.data[_c0_data];
+                                                    }
+                                                    
+                                                    if(_C.data[_c1_data] > data_max_of_neighbors[c0]){
+                                                        
+                                                        data_max_of_neighbors[c0] = _C.data[_c1_data];
+                                                    }
+                                                    
+                                                    if(_C.data[_c1_data] < data_min_of_neighbors[c0]){
+                                                        
+                                                        data_min_of_neighbors[c0] = _C.data[_c1_data];
+                                                    }                               
+                                                }   
+                                            }
+                                        }
+
+                                        /* calc available change */
+                                        {
+                                            available_data_change = 0.0;
+                                            
+                                            loop_int_cells{
+                                                
+                                                i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                                
+                                                if(_C.vof_changed[i_phase][i_cell] > 0.0){
+                                                    
+                                                    if(mixing_mass_after_stitching < mixing_mass_before_stitching){
+                                                        
+                                                        available_data_change += (data_max_of_neighbors[i_cell] - _C.data[_i_data]) *
+                                                        
+                                                            _C.vof[_i_vof] * _C.volume[i_cell] * Phase_Dict[i_phase].density;
+                                                    }
+                                                }
+                                            }
+                                            
+                                            available_data_change = PRF_GRSUM1(available_data_change);
+                                            
+                                            Message0("\nDEBUG sequence stitching available change %e\n", available_data_change);
+                                        }
+                                        
+                                        /* adapt data */
+                                        {
+                                            if(available_data_change > 0.0){
+                                                
+                                                relax_adaption =  fabs(mixing_mass_before_stitching - mixing_mass_after_stitching) / available_data_change;
+                                                
+                                                if(relax_adaption > 1.0){
+                                                    
+                                                    relax_adaption = 1.0;
+                                                }
+                                            }
+                                            else{
+                                                relax_adaption = 0.0;
+                                            }
+
+                                            loop_int_cells{
+                                                
+                                                i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                                
+                                                if(_C.vof_changed[i_phase][i_cell] > 0.0){
+                                                    
+                                                    if(mixing_mass_after_stitching < mixing_mass_before_stitching){
+                                                        
+                                                        _C.data[_i_data] = _C.data[_i_data] + relax_adaption * (data_max_of_neighbors[i_cell] - _C.data[_i_data]);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        /* calc. mixing_after_stitching */
+                                        {
+                                            mixing_mass_after_stitching = 0.0;
+                                            
+                                            i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                            
+                                            loop_int_cells{
+                                                
+                                                mixing_mass_after_stitching += _C.data[i_phase][i_cell][i_data] * 
+                        
+                                                    _C.vof[i_frame][i_cell][i_phase] * _C.volume[i_cell] * Phase_Dict[i_phase].density;
+                                            }
+
+                                            mixing_mass_after_stitching = PRF_GRSUM1(mixing_mass_after_stitching);
+                                            
+                                            Message0("\nDEBUG sequence stitching mixing mass before/after corrected %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
+                                        }
+                                    
+                                    }
+                                                    
+                                    /* free local vars */
+                                    {
+                                        
+                                        free(data_min_of_neighbors);
+                                        
+                                        free(data_max_of_neighbors);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }               
+#endif
+            }
+            
             /* eventually, node-0 writes current frames into rec_frames.out monitor file */            
             if((Rec_Dict.monitor_rec_frames_on) && (myid == 0)){
                 

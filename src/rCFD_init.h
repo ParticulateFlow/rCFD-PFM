@@ -443,9 +443,13 @@ void init_all_for_run(void)
 
         Rec.global_frame = (int*)malloc(Solver_Dict.number_of_islands * sizeof(int));
 
+        Rec.prev_global_frame = (int*)malloc(Solver_Dict.number_of_islands * sizeof(int));
+
         loop_islands{
 
             Rec.global_frame[i_island] = 0;
+            
+            Rec.prev_global_frame[i_island] = 0;
         }
 
         Rec.jumps = malloc_i_4d(Solver_Dict.number_of_states, Solver_Dict.number_of_states,

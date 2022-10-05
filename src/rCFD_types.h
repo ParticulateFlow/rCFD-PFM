@@ -181,12 +181,15 @@
     {
         short   format;
         
-        short   monitor_rec_frames_on;
+        short   monitor_rec_frames_on;       
+        short   adapt_vof_stitching_on;
 
         short   min_seq_length;
         short   max_seq_length;
 
         short   off_diagonal_band_width;
+        
+        short   number_of_adapt_vof_loops;
 
     } Rec_Dict_type;
 
@@ -305,6 +308,8 @@
         double      *weight_after_swap;
 
         double      ***vof;             /* [i_frame][i_cell][i_phase] */
+        
+        double      **vof_changed;      /* [i_phase][i_cell] */
 
         double      ***data;            /* [i_phase][i_cell][i_data] */
         double      ***data_shift;
@@ -445,7 +450,13 @@
     typedef struct Rec_struct
     {
         int     *global_frame;              /* [i_island] */
+        
+        int     *prev_global_frame; 
+        
         int     frame_in_sequence;
+        
+        short   jumped_at_last_frame;
+        
         int     sequence_length;
 
         int     ****jumps;                  /* [state, state2, island, frame] */

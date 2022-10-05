@@ -35,6 +35,14 @@
         _C.weight_after_swap =   (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
 
         _C.vof = malloc_r_3d(Solver_Dict.number_of_frames, _Cell_Dict.number_of_cells, Solver_Dict.number_of_phases);
+        
+        if(Rec_Dict.adapt_vof_stitching_on){
+            
+            _C.vof_changed = malloc_r_2d(Solver_Dict.number_of_phases, _Cell_Dict.number_of_cells);
+        }
+        else{
+            _C.vof_changed = NULL;
+        }           
 
         _C.data =       (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));
         _C.data_shift = (double***)malloc(Solver_Dict.number_of_phases * sizeof(double**));

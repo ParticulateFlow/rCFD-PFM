@@ -755,13 +755,7 @@
         /* Message & Transcript */
         if(myid == 0){
 
-            FILE    *f_trn = NULL;
-
-            char    file_name[80];
-
-            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-
-            f_trn = fopen(file_name, "a");
+            FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "a");
 
             if(f_trn){
 

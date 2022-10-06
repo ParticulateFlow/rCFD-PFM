@@ -53,11 +53,7 @@ void init_all_for_prep(void)
     {
         char    file_name[80];
 
-        FILE    *f_trn = NULL;
-
-        sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-
-        f_trn = fopen(file_name, "w" );
+        FILE    *f_trn = fopen(File_Dict.Prep_Transscript_filename, "w" );
 
         if(f_trn){
 
@@ -259,11 +255,7 @@ void init_all_for_run(void)
     {
         char    file_name[80];
 
-        FILE    *f_trn = NULL;
-
-        sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-
-        f_trn = fopen(file_name, "w" );
+        FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "w" );
 
         if(f_trn){
 

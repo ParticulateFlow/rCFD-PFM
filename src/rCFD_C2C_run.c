@@ -485,13 +485,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 
         if(myid == 0){
 
-            FILE    *f_trn = NULL;
-
-            char    file_name[80];
-
-            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-
-            f_trn = fopen(file_name, "a");
+            FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "a");
 
             if(f_trn){
 
@@ -1968,13 +1962,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 #if RP_NODE
         if(myid == 0){
 
-            FILE    *f_trn = NULL;
-
-            char    file_name[80];
-
-            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-
-            f_trn = fopen(file_name, "a");
+            FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "a");
 
             if(f_trn){
 
@@ -2026,20 +2014,7 @@ DEFINE_ON_DEMAND(rCFD_free_all)
     /* Transcript and Message */
     if(myid == 0){
 #if RP_NODE
-        FILE    *f_trn = NULL;
-
-        char    file_name[80];
-
-        if(Solver_Dict.mode == preparation_mode){
-
-            sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-        }
-        else{
-
-            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-        }
-
-        f_trn = fopen(file_name, "a" );
+        FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "a" );
 
         if(f_trn){
 

@@ -399,7 +399,7 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
 
     int         i_phase;
 
-    int         number_of_valid_tracers[Solver_Dict.number_of_phases], number_of_invalid_tracers[Solver_Dict.number_of_phases];
+    int         *number_of_valid_tracers = NULL, *number_of_invalid_tracers = NULL;
 
     double      rand_real;
 
@@ -409,6 +409,10 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
     {
         int number_of_initialized_particles = 0;
 
+        number_of_valid_tracers = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
+        
+        number_of_invalid_tracers = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
+        
         loop_phases{
 
             number_of_valid_tracers[i_phase] = 0;
@@ -553,6 +557,13 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
         }
     }
 
+    /* 4. free local vars */
+    {
+        free(number_of_valid_tracers);
+        
+        free(number_of_invalid_tracers);
+    }
+    
 #endif
 }
 

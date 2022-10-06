@@ -690,8 +690,6 @@ DEFINE_ON_DEMAND(rCFD_run)
             /* I: Initialization (weights, data_shift, data_swap, mass_drift) */
             {
 #if RP_NODE
-                i_phase = rCFD_user_phase_switch(i_phase);
-
                 loop_cells{
 
                     _C.weight_after_shift[i_cell] =  0.0;

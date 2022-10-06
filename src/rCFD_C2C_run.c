@@ -569,7 +569,7 @@ DEFINE_ON_DEMAND(rCFD_run)
     int         i_frame_c0, i_frame_c1, i_frame_prev;
     int         i_tmp;
 
-    int         i_warning_fill_1, i_warning_drift_1;
+    int         i_warn_next_frame_1, i_warn_fill_1, i_warn_drift_1;
 
     short       balance_error_exists;
 
@@ -591,12 +591,13 @@ DEFINE_ON_DEMAND(rCFD_run)
 
     Solver.clock = clock();
 
-    /* W: initialize i_warning's */
+    /* W: initialize i_warn's */
     {
 #if RP_NODE
 
-        i_warning_fill_1    = 0;
-        i_warning_drift_1   = 0;
+        i_warn_next_frame_1 = 0;
+        i_warn_fill_1    = 0;
+        i_warn_drift_1   = 0;
 #endif
     }
 
@@ -746,7 +747,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                 
                                 mixing_mass_after_stitching = PRF_GRSUM1(mixing_mass_after_stitching);
                                 
-                                Message0("\nDEBUG sequence stitching mixing mass before/after %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
+                                //Message0("\nDEBUG sequence stitching mixing mass before/after %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
                             }
                     
                             /* if data gain, reduce data in vof_gaining cells */
@@ -769,7 +770,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                         
                                         available_data_change = PRF_GRSUM1(available_data_change);
                                         
-                                        Message0("\nDEBUG sequence stitching available change for mass GAIN %e\n", available_data_change);
+                                        //Message0("\nDEBUG sequence stitching available change for mass GAIN %e\n", available_data_change);
                                     }
                                     
                                     /* adapt data */
@@ -813,7 +814,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                         mixing_mass_after_stitching = PRF_GRSUM1(mixing_mass_after_stitching);
                                         
-                                        Message0("\nDEBUG sequence stitching GAIN mixing mass corrected %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
+                                        //Message0("\nDEBUG sequence stitching GAIN mixing mass corrected %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
                                     }
                                 }
                             }
@@ -917,7 +918,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             
                                             available_data_change = PRF_GRSUM1(available_data_change);
                                             
-                                            Message0("\nDEBUG sequence stitching available change %e\n", available_data_change);
+                                            //Message0("\nDEBUG sequence stitching available change %e\n", available_data_change);
                                         }
                                         
                                         /* adapt data */
@@ -964,7 +965,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                             mixing_mass_after_stitching = PRF_GRSUM1(mixing_mass_after_stitching);
                                             
-                                            Message0("\nDEBUG sequence stitching mixing mass before/after corrected %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
+                                            //Message0("\nDEBUG sequence stitching mixing mass before/after corrected %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
                                         }
                                     
                                     }
@@ -976,6 +977,26 @@ DEFINE_ON_DEMAND(rCFD_run)
                                         
                                         free(data_max_of_neighbors);
                                     }
+                                }
+                            }
+                        
+                            /* node-0 checks for warnings & message */
+                            if(myid == 0){
+                                
+                                if( fabs(mixing_mass_after_stitching - mixing_mass_before_stitching) > 
+                                
+                                    Balance_Dict[i_phase][i_data].accuracy_level * mixing_mass_before_stitching){
+                                
+                                    i_warn_next_frame_1 ++;
+                                    
+                                    if(Solver_Dict.verbose){
+
+                                        Message0("\n\nWARNING Next Frame: vof patch beyond accuracy level !");
+                                    }
+                                }
+                                else if(Solver_Dict.verbose){
+
+                                    Message0("\n\nNext Frame: vof patch within accuracy level");
                                 }
                             }
                         }
@@ -1197,7 +1218,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                             }
                         }
 
-                        i_warning_fill_1 = PRF_GISUM1(number_of_unhit_cells);
+                        i_warn_fill_1 = PRF_GISUM1(number_of_unhit_cells);
                     }
                 }
 
@@ -1205,9 +1226,9 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                     Message0("\n\nC2C shifts: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
 
-                    if(i_warning_fill_1){
+                    if(i_warn_fill_1){
 
-                        Message0("\n\nWARNING rCFD_run, c2c shifts, fill holes: %d unvisited cells exist", i_warning_fill_1);
+                        Message0("\n\nWARNING rCFD_run, c2c shifts, fill holes: %d unvisited cells exist", i_warn_fill_1);
                     }
                 }
 #endif
@@ -1412,7 +1433,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                                         drift_volume = _C.volume[c0];
 
-                                                        i_warning_drift_1 ++;
+                                                        i_warn_drift_1 ++;
                                                     }
 
                                                     local_drift_exchange = _C.data[i_phase][c0][i_data] * drift_volume * _C.vof[i_frame_c0][c0][i_phase] *
@@ -1610,11 +1631,11 @@ DEFINE_ON_DEMAND(rCFD_run)
 #if RP_NODE
                     Message0("\n\nFace swaps: i_run %d, i_phase %d, i_layer %d", i_run, i_phase, i_layer);
 
-                    i_warning_drift_1 = PRF_GISUM1(i_warning_drift_1);
+                    i_warn_drift_1 = PRF_GISUM1(i_warn_drift_1);
 
-                    if(i_warning_drift_1){
+                    if(i_warn_drift_1){
 
-                        Message0("\n\nWARNING rCFD_run, face swap, data drifting: limited drift by c0-volume at %d faces", i_warning_drift_1);
+                        Message0("\n\nWARNING rCFD_run, face swap, data drifting: limited drift by c0-volume at %d faces", i_warn_drift_1);
                     }
 #endif
                 }
@@ -2311,15 +2332,20 @@ DEFINE_ON_DEMAND(rCFD_run)
                 fprintf(f_trn,"\n\n   %d Runs @ global run counter %d",
 
                     Solver_Dict.number_of_runs, Solver.global_run_counter);
+                
+                if(i_warn_next_frame_1){
 
-                if(i_warning_fill_1){
-
-                    fprintf(f_trn,"\n\n   WARNING: %d fill cell warnings exist, consider increasing fill loops", i_warning_fill_1);
+                    fprintf(f_trn,"\n\n   WARNING: %d next frame warnings exist", i_warn_next_frame_1);
                 }
 
-                if(i_warning_drift_1){
+                if(i_warn_fill_1){
 
-                    fprintf(f_trn,"\n\n   WARNING: %d drift warnings exist, consider increasing number of drift loops", i_warning_drift_1);
+                    fprintf(f_trn,"\n\n   WARNING: %d fill cell warnings exist, consider increasing fill loops", i_warn_fill_1);
+                }
+
+                if(i_warn_drift_1){
+
+                    fprintf(f_trn,"\n\n   WARNING: %d drift warnings exist, consider increasing number of drift loops", i_warn_drift_1);
                 }
 
                 fprintf(f_trn,"\n\n   %f seconds real world time took %f seconds compute time",

@@ -831,7 +831,13 @@ DEFINE_ON_DEMAND(rCFD_run)
                                         data_max_of_neighbors = (double*)malloc(_Cell_Dict.number_of_cells * sizeof(double));
                                     }
                                                         
-                                    for(i_adapt = 0; i_adapt < Rec_Dict.number_of_adapt_vof_loops; i_adapt++){
+                                    i_adapt = 0;
+                                    
+                                    while((i_adapt < Rec_Dict.number_of_adapt_vof_loops) &&
+                                    
+                                            (fabs(mixing_mass_after_stitching - mixing_mass_before_stitching) > 
+                                          
+                                            Balance_Dict[i_phase][i_data].accuracy_level * mixing_mass_before_stitching)){
                                         
                                         /* calc. min/max of neighbors */
                                         {
@@ -968,6 +974,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                                             //Message0("\nDEBUG sequence stitching mixing mass before/after corrected %e/%e\n", mixing_mass_before_stitching, mixing_mass_after_stitching);
                                         }
                                     
+                                        i_adapt ++;
                                     }
                                                     
                                     /* free local vars */

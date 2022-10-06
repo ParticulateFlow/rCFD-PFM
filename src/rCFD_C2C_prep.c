@@ -330,10 +330,9 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
 
         if (myid == 0){
 
-            int i_node, number_of_lines, i_line;
-            FILE    *f_out = NULL;
-
-            f_out = fopen(File_Dict.tracer_start_position_filename,"w");
+            int     i_node, number_of_lines, i_line;
+            
+            FILE    *f_out = fopen(File_Dict.tracer_start_position_filename, "w");
 
             if(f_out == NULL){
 
@@ -533,13 +532,7 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
 
         if((Transcript) && (Solver_Dict.verbose == high_verbose)){
 
-            FILE    *f_trn = NULL;
-
-            char    file_name[80];
-
-            sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-
-            f_trn = fopen(file_name, "a" );
+            FILE    *f_trn = fopen(File_Dict.Prep_Transscript_filename, "a");
 
             if(f_trn){
 
@@ -1056,9 +1049,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 
                     Message0("\n... wrote C2C frame # %d for phase %d with %d shifts ...", Tracer.frame_counter, i_phase, total_number_of_stored_C2Cs);
 
-                    sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-
-                    f_trn = fopen(file_name, "a" );
+                    f_trn = fopen(File_Dict.Prep_Transscript_filename, "a" );
 
                     if(f_trn){
 
@@ -1155,8 +1146,6 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
 
         /* 2. write norms */
         {
-
-
             i_state = Solver.current_state;
 
             sprintf(file_name,"%s_%d_%d", File_Dict.Norm_filename, i_state, myid);
@@ -1188,9 +1177,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
 
             if(Transcript){
 
-                sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-
-                f_trn = fopen(file_name, "a" );
+                f_trn = fopen(File_Dict.Prep_Transscript_filename, "a" );
 
                 if(f_trn){
 
@@ -1254,9 +1241,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
 
                 if(Transcript){
 
-                    sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-
-                    f_trn = fopen(file_name, "a" );
+                    f_trn = fopen(File_Dict.Prep_Transscript_filename, "a" );
 
                     if(f_trn){
 
@@ -1652,20 +1637,7 @@ DEFINE_ON_DEMAND(rCFD_free_all)
     /* Transcript and Message */
     if(myid == 0){
 #if RP_NODE
-        FILE    *f_trn = NULL;
-
-        char    file_name[80];
-
-        if(Solver_Dict.mode == preparation_mode){
-
-            sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-        }
-        else{
-
-            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-        }
-
-        f_trn = fopen(file_name, "a" );
+        FILE    *f_trn = fopen(File_Dict.Prep_Transscript_filename, "a" );
 
         if(f_trn){
 

@@ -51,8 +51,6 @@ void init_all_for_prep(void)
 
     /* 3. Start transcript file */
     {
-        char    file_name[80];
-
         FILE    *f_trn = fopen(File_Dict.Prep_Transscript_filename, "w" );
 
         if(f_trn){

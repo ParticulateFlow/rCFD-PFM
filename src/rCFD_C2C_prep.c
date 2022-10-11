@@ -53,9 +53,9 @@
 DEFINE_ON_DEMAND(rCFD_init_all)
 /*************************************************************************************/
 {
-    init_all();
+    init_all_for_prep();
 
-    Message0("\n\n...rCFD_init_all\n");
+    Message0("\n\n...rCFD_init_all_for_prep\n");
 }
 
 /*************************************************************************************/
@@ -73,7 +73,7 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 
     int         time_steps_per_monitoring_interval, number_of_monitoring_steps;
 
-    double      v_mag, grid_spacing;
+    double      v_mag;
 
     double      *dt_cross_min, *dt_cross_max, dt_cross_min_global;
 
@@ -126,11 +126,9 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 
                     (double)(number_of_monitoring_steps + 1);
 
-                grid_spacing = pow(C_VOLUME(i_cell, t), 1./3.);
-
                 if(_C.average_velocity[i_phase][i_cell] > 0.0){
 
-                    _C.crossing_time[i_phase][i_cell] = grid_spacing/_C.average_velocity[i_phase][i_cell];
+                    _C.crossing_time[i_phase][i_cell] = _C.grid_spacing[i_cell]/_C.average_velocity[i_phase][i_cell];
                 }
                 else{
 
@@ -332,10 +330,9 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
 
         if (myid == 0){
 
-            int i_node, number_of_lines, i_line;
-            FILE    *f_out = NULL;
-
-            f_out = fopen(File_Dict.tracer_start_position_filename,"w");
+            int     i_node, number_of_lines, i_line;
+            
+            FILE    *f_out = fopen(File_Dict.tracer_start_position_filename, "w");
 
             if(f_out == NULL){
 
@@ -389,50 +386,109 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
 /*************************************************************************************/
 {
 #if RP_NODE
+
+#if 1   /* local vars */
+
     Particle    *p;
+
     Domain      *d=Get_Domain(1);
+
     Thread      *t = NULL, *t_phase = NULL;
+
     cell_t      c;
 
     int         i_phase;
 
-    /* A. init particle vars */
+    int         *number_of_valid_tracers = NULL, *number_of_invalid_tracers = NULL;
+
+    double      rand_real;
+
+#endif
+
+    /* 1. initialize particle vars */
     {
         int number_of_initialized_particles = 0;
 
-        loop(p,I->p_init){
+        number_of_valid_tracers = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
+        
+        number_of_invalid_tracers = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
+        
+        loop_phases{
 
-            p->user[p_just_started] =   1.;
+            number_of_valid_tracers[i_phase] = 0;
+
+            number_of_invalid_tracers[i_phase] = 0;
+        }
+
+        loop(p, I->p_init){
+
+            p->user[p_just_started] =   1.0;
+
             p->user[p_start_time] =     CURRENT_TIME - CURRENT_TIMESTEP;
-            p->user[p_just_killed] =    0.;
 
-            i_phase = (number_of_initialized_particles % Solver_Dict.number_of_phases);
+            p->user[p_invalid] =        0.0;
 
-            if(Solver_Dict.number_of_phases == 1){
+            /* set phase_id, phase_vof, in case vof==0 set tracer invalid */
+            {
+                i_phase = (number_of_initialized_particles % Solver_Dict.number_of_phases);
 
-                p->user[p_phase_fraction] = 1.0;
+                p->user[p_phase_id] = (double)i_phase;
+
+                p->state.rho = Phase_Dict[i_phase].density;
+
+                if(Solver_Dict.number_of_phases == 1){
+
+                    p->user[p_phase_fraction] = 1.0;
+                }
+                else{
+
+                    c = P_CELL(p);
+
+                    t = P_CELL_THREAD(p);
+
+                    t_phase = THREAD_SUB_THREAD(t, i_phase);
+
+                    if(C_VOF(c, t_phase) > 0.0){
+
+                        p->user[p_phase_fraction] = C_VOF(c, t_phase);
+                    }
+                    else{
+
+                        p->user[p_phase_fraction] = 0.0;
+
+                        p->user[p_invalid] = 1.0;
+                    }
+                }
             }
-            else{
 
-                c = P_CELL(p);
+            /* in some cases (e.g. coarse graining, full database, monitoring hasn't started yet, ...),
+               set tracers invalid */
+            {
+                rand_real = (double)rand()/(double)RAND_MAX;
 
-                t = P_CELL_THREAD(p);
+                if((not_Tracer_start_interval) || (too_early_to_start_Tracers) || (Tracer_Database_full) || (kill_Tracer_by_coarse_graining)){
 
-                t_phase = THREAD_SUB_THREAD(t, i_phase);
-
-                p->user[p_phase_fraction] = C_VOF(c, t_phase);
+                    p->user[p_invalid] = 1.0;
+                }
             }
 
-            p->user[p_phase_id] = (double)i_phase;
+            /* count valid and invalid tracers */
+            {
+                if(p->user[p_invalid] > 0.0){
 
-            p->state.rho = Phase_Dict[i_phase].density;
+                    number_of_invalid_tracers[i_phase]++;
+                }
+                else{
+
+                    number_of_valid_tracers[i_phase]++;
+                }
+            }
 
             number_of_initialized_particles++;
         }
     }
 
-
-    /* B. upon first call, allocate Tracer.shifts */
+    /* 2. upon first call, allocate Tracer.shifts */
     {
 
         int number_of_cells_in_partition;
@@ -469,7 +525,46 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
         }
     }
 
-    #endif
+    /* 3. Transcript */
+    {
+        loop_phases{
+
+            number_of_valid_tracers[i_phase] = PRF_GISUM1(number_of_valid_tracers[i_phase]);
+
+            number_of_invalid_tracers[i_phase] = PRF_GISUM1(number_of_invalid_tracers[i_phase]);
+        }
+
+        if((Transcript) && (Solver_Dict.verbose == high_verbose)){
+
+            FILE    *f_trn = fopen(File_Dict.Prep_Transscript_filename, "a");
+
+            if(f_trn){
+
+                loop_phases{
+
+                    if(i_phase == 0){
+
+                        fprintf(f_trn, "\n\nrcfd_init_tracers @ time-step %ld", N_TIME);
+                    }
+
+                    fprintf(f_trn, "\n\n    i_phase = %d: initialized %d valid and %d invalid tracers",
+
+                        i_phase, number_of_valid_tracers[i_phase], number_of_invalid_tracers[i_phase]);
+                }
+
+                fclose(f_trn);
+            }
+        }
+    }
+
+    /* 4. free local vars */
+    {
+        free(number_of_valid_tracers);
+        
+        free(number_of_invalid_tracers);
+    }
+    
+#endif
 }
 
 /*************************************************************************************/
@@ -477,13 +572,25 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 /*************************************************************************************/
 {
 #if RP_NODE
-    double  rand_real = 0., time_ratio, random_walk_velocity, v_mag, grid_spacing;
+
+#if 1  /*local vars */
+    double  rand_real = 0., time_ratio, random_walk_velocity, v_mag;
 
     int     i_phase, i_tracer, i_layer = 0;
 
     Thread  *t_phase = NULL;
 
-    /* U.0 Multiphase settings */
+#endif
+
+    /* 1. Remove invalid tracers & exit */
+    if(Tracer_invalid){
+
+        MARK_TP(p, P_FL_REMOVED);
+
+        return;
+    }
+
+    /* 2. Multiphase settings */
     {
         if(Solver_Dict.number_of_phases == 1){
 
@@ -499,125 +606,107 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
         }
     }
 
-    /* U.1: Initialize Tracers */
-
+    /* 3. Initialize Tracers */
     if(Tracer_just_started){
 
-        rand_real = (double)rand()/(double)RAND_MAX;
+        Tracer.monitoring_started = 1;
 
-        if((not_Tracer_start_interval) || (too_early_to_start_Tracers) || (Tracer_Database_full) || (kill_Tracer_by_coarse_graining)){
+        p->user[p_c0]       = (double)i_cell;
+        p->user[p_node0]    = (double)myid;
+        p->user[p_w0]       = C_VOLUME(i_cell,t) * p->user[p_phase_fraction];
+        p->user[p_c_old]    = (double)i_cell;
+        p->state.rho        = C_R(i_cell, t_phase);
 
-            p->user[p_just_killed] = 1.;
-            p->state.mass = 0.;
-            p->type = 2;        /* kill tracer (evaporates particle) */
+        /* tracer_splitting in slow cells */
+        {
+            v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) +
+                          C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
+                          C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
 
-            MARK_TP(p, P_FL_REMOVED);
-        }
-        else{
+            if(v_mag < _C.grid_spacing[i_cell] / (100. * Solver_Dict.global_time_step)){
 
-            Tracer.monitoring_started = 1;
-
-            p->user[p_c0]       = (double)i_cell;
-            p->user[p_node0]    = (double)myid;
-            p->user[p_w0]       = C_VOLUME(i_cell,t) * p->user[p_phase_fraction];
-            p->user[p_c_old]    = (double)i_cell;
-            p->state.rho        = C_R(i_cell, t_phase);
-
-            /* tracer_splitting in slow cells */
-            {
-                v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) +
-                              C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
-                              C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
-
-                grid_spacing = pow(C_VOLUME(i_cell,t), (1./3.));
-
-                if(v_mag < grid_spacing / (100. * Solver_Dict.global_time_step)){
-
-                    _C.crossing_time[i_phase][i_cell] = 100. * Solver_Dict.global_time_step;
-                }
-                else{
-
-                    _C.crossing_time[i_phase][i_cell] = grid_spacing / v_mag;
-                }
-
-                if(excess_Tracer_cell_crossing_time){
-
-                    time_ratio = _C.crossing_time[i_phase][i_cell] / (2. * Phase_Dict[i_phase].time_step);  /* (time_ratio > 1.) */
-
-                    p->user[p_time_ratio] = time_ratio;
-
-                    /* store c0_c0_tracer */
-                    if((Tracer_Database_not_full) && (p->user[p_w0] > 0.0)){
-
-                        i_tracer = Tracer.monitor_counter[i_phase];
-
-                        if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
-
-                            Tracer.shifts[i_phase][i_tracer].c0 =       i_cell;
-                            Tracer.shifts[i_phase][i_tracer].node0 =    myid;
-                            Tracer.shifts[i_phase][i_tracer].w0 =       (1.-1./time_ratio) * p->user[p_w0];
-                            Tracer.shifts[i_phase][i_tracer].c1 =       i_cell;
-                            Tracer.shifts[i_phase][i_tracer].node1 =    myid;
-
-                            Tracer.monitor_counter[i_phase]++;
-                        }
-                    }
-
-                    /* init c0_c1_tracer */
-                    {
-                        p->user[p_w0] = (1./time_ratio) * p->user[p_w0];
-
-                        p->state.V[0] = time_ratio * C_U(i_cell,t_phase);
-                        p->state.V[1] = time_ratio * C_V(i_cell,t_phase);
-                        p->state.V[2] = time_ratio * C_W(i_cell,t_phase);
-                    }
-                }
-                else{
-
-                    /* normal tracer initialization */
-                    {
-                        p->state.V[0] = C_U(i_cell,t_phase);
-                        p->state.V[1] = C_V(i_cell,t_phase);
-                        p->state.V[2] = C_W(i_cell,t_phase);
-
-                        p->user[p_time_ratio] = 1.0;
-                    }
-                }
-            }
-
-            if(Tracer_Dict.random_walk[i_phase]){
-
-                random_walk_velocity = rCFD_user_set_random_walk_velocity();
-
-                rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
-                p->user[p_u_rwm] =  rand_real * random_walk_velocity;
-
-                rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
-                p->user[p_v_rwm] =  rand_real * random_walk_velocity;
-
-                rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
-                p->user[p_w_rwm] =  rand_real * random_walk_velocity;
-
-                p->state.V[0] += p->user[p_u_rwm];
-                p->state.V[1] += p->user[p_v_rwm];
-                p->state.V[2] += p->user[p_w_rwm];
-
-                p->user[p_vel_rwm_old] = random_walk_velocity;
+                _C.crossing_time[i_phase][i_cell] = 100. * Solver_Dict.global_time_step;
             }
             else{
 
-                p->user[p_u_rwm] = 0.0;
-                p->user[p_v_rwm] = 0.0;
-                p->user[p_w_rwm] = 0.0;
+                _C.crossing_time[i_phase][i_cell] = _C.grid_spacing[i_cell] / v_mag;
             }
+
+            if(excess_Tracer_cell_crossing_time){
+
+                time_ratio = _C.crossing_time[i_phase][i_cell] / (2. * Phase_Dict[i_phase].time_step);  /* (time_ratio > 1.) */
+
+                p->user[p_time_ratio] = time_ratio;
+
+                /* store c0_c0_tracer */
+                if((Tracer_Database_not_full) && (p->user[p_w0] > 0.0)){
+
+                    i_tracer = Tracer.monitor_counter[i_phase];
+
+                    if(i_tracer < (Tracer.number_of_shifts[i_phase] - 1)){
+
+                        Tracer.shifts[i_phase][i_tracer].c0 =       i_cell;
+                        Tracer.shifts[i_phase][i_tracer].node0 =    myid;
+                        Tracer.shifts[i_phase][i_tracer].w0 =       (1.-1./time_ratio) * p->user[p_w0];
+                        Tracer.shifts[i_phase][i_tracer].c1 =       i_cell;
+                        Tracer.shifts[i_phase][i_tracer].node1 =    myid;
+
+                        Tracer.monitor_counter[i_phase]++;
+                    }
+                }
+
+                /* init c0_c1_tracer */
+                {
+                    p->user[p_w0] = (1./time_ratio) * p->user[p_w0];
+
+                    p->state.V[0] = time_ratio * C_U(i_cell,t_phase);
+                    p->state.V[1] = time_ratio * C_V(i_cell,t_phase);
+                    p->state.V[2] = time_ratio * C_W(i_cell,t_phase);
+                }
+            }
+            else{
+
+                /* normal tracer initialization */
+                {
+                    p->state.V[0] = C_U(i_cell,t_phase);
+                    p->state.V[1] = C_V(i_cell,t_phase);
+                    p->state.V[2] = C_W(i_cell,t_phase);
+
+                    p->user[p_time_ratio] = 1.0;
+                }
+            }
+        }
+
+        if(Tracer_Dict.random_walk[i_phase]){
+
+            random_walk_velocity = rCFD_user_set_random_walk_velocity();
+
+            rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
+            p->user[p_u_rwm] =  rand_real * random_walk_velocity;
+
+            rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
+            p->user[p_v_rwm] =  rand_real * random_walk_velocity;
+
+            rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
+            p->user[p_w_rwm] =  rand_real * random_walk_velocity;
+
+            p->state.V[0] += p->user[p_u_rwm];
+            p->state.V[1] += p->user[p_v_rwm];
+            p->state.V[2] += p->user[p_w_rwm];
+
+            p->user[p_vel_rwm_old] = random_walk_velocity;
+        }
+        else{
+
+            p->user[p_u_rwm] = 0.0;
+            p->user[p_v_rwm] = 0.0;
+            p->user[p_w_rwm] = 0.0;
         }
 
         p->user[p_just_started] = 0.;
     }
 
-
-    /* U.2: Consider (i) RWM changes across cells  (ii) fast Tracer from slow cells */
-
+    /* 4. Consider (i) RWM changes across cells  (ii) fast Tracer from slow cells */
     if(Tracer_has_crossed_cell_border){
 
         p->user[p_c_old] = (double)i_cell;
@@ -635,7 +724,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 
         if((Tracer_from_slow_cell) && (Tracer_Database_not_full) && (Tracer_not_stored_yet)){
 
-            p->user[p_just_killed] = 1.;
+            p->user[p_invalid] = 1.;
             p->state.mass = 0.;
             p->type = 2;
 
@@ -656,12 +745,10 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
         }
     }
 
+    /* 5. store and kill tracers after lifetime */
+    if((Tracer_lifetime_expired) && (Tracer_Database_not_full)){
 
-    /* U.3: store and kill tracers after lifetime */
-
-    if((Tracer_lifetime_expired) && (Tracer_Database_not_full) && (Tracer_not_stored_yet)){
-
-        p->user[p_just_killed] = 2.;
+        p->user[p_invalid] = 2.;
         p->state.mass = 0.;
         p->type = 2;
 
@@ -700,7 +787,7 @@ DEFINE_DPM_BODY_FORCE(rCFD_guide_Tracers,p,i)
 #if RP_NODE
 
     /* in case particle is declared dead: V[i], f[i] = 0 */
-    if(p->user[p_just_killed] > 0){
+    if(p->user[p_invalid] > 0){
 
         p->state.V[i] = 0.0;
 
@@ -811,15 +898,27 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 
     if((Tracer.ready2write == 1) && (Tracer_Database_not_full)){
 
-        int     i_phase, i_layer = 0, i_state, i_cell, i_tracer;
+#if 1   /* local vars */
 
-        int     c0, node0, c1, node1, number_of_lock_cells;
+        int     i_phase, i_state, i_tracer, i_cell, i_layer = 0, i_face;
+
+        int     total_number_of_stored_C2Cs, number_of_unhit_cells, number_of_fill_loops, c0, c1, c;
+
+        FILE    *f_out = NULL, *f_trn = NULL;
+
+        char    file_name[80];
 
         Domain  *d = Get_Domain(1);
-        Thread  *t;
 
-        FILE    *f_out = NULL;
-        char    file_name[80];
+        Thread  *t, *t_mix = NULL, *t_phase;
+
+#endif
+
+        /* get ANSYS fluid thread */
+        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
+
+            t_mix = t;
+        }}
 
         loop_phases{
 
@@ -846,54 +945,18 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                 }
             }
 
-            if(Tracer.monitor_counter[i_phase] > 0){
+            /* write C2C shifts */
+            {
+                loop_int_cells{
 
-                /* avoid lock cells (i.e. cells which only point to themselves) */
-                {
-                    thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){
-
-                        begin_c_loop(i_cell,t){
-
-                            _C.hit_by_other_cell[i_cell] = 0;
-
-                        }end_c_loop(i_cell,t);
-                    }}
-
-                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
-
-                        c0 =        Tracer.shifts[i_phase][i_tracer].c0;
-                        node0 =     Tracer.shifts[i_phase][i_tracer].node0;
-                        c1 =        Tracer.shifts[i_phase][i_tracer].c1;
-                        node1 =     Tracer.shifts[i_phase][i_tracer].node1;
-
-                        if((c0 != c1) || (node0 != node1)){
-
-                            _C.hit_by_other_cell[c1] += 1;
-                        }
-                    }
-
-                    /* loop Tracers and count lock cells */
-
-                    number_of_lock_cells = 0;
-
-                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
-
-                        c1 = Tracer.shifts[i_phase][i_tracer].c1;
-
-                        if(_C.hit_by_other_cell[c1] == 0){
-
-                            number_of_lock_cells++;
-                        }
-                    }
+                    _C.weight_after_shift[i_cell] = 0.0;
                 }
 
-                fprintf(f_out,"%d \n", (Tracer.monitor_counter[i_phase] - number_of_lock_cells));
+                if(Tracer.monitor_counter[i_phase] > 0){
 
-                for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
+                    fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
 
-                    c1 = Tracer.shifts[i_phase][i_tracer].c1;
-
-                    if(_C.hit_by_other_cell[c1] > 0){
+                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
 
                         fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c0);
                         fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node0);
@@ -901,25 +964,123 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                         fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node1);
                         fprintf(f_out,"%e ",Tracer.shifts[i_phase][i_tracer].w0);
 
-                        fprintf(f_out,"\n");
+                        _C.weight_after_shift[Tracer.shifts[i_phase][i_tracer].c1] += Tracer.shifts[i_phase][i_tracer].w0;
+
+                    }
+
+                    total_number_of_stored_C2Cs = Tracer.monitor_counter[i_phase];
+
+                    Tracer.monitor_counter[i_phase] = 0;
+                }
+                else{
+
+                    fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
+
+                    total_number_of_stored_C2Cs = 0;
+                }
+
+                fclose(f_out);
+            }
+
+            /* Message & Transcript */
+            {
+                /* check for large regions of unhit cells, which cannot be repaired by fill_holes */
+                {
+
+                    /* C3: adapted version of fill holes */
+                    {
+                        number_of_unhit_cells = 1;
+
+                        number_of_fill_loops = 0;
+
+                        loop_int_cells{
+
+                            _C.weight_after_swap[i_cell] = 0.0;
+                        }
+
+                        while((number_of_unhit_cells > 0) && (number_of_fill_loops < Solver_Dict.max_fill_loops)){
+
+                            number_of_fill_loops++;
+
+                            /* fill holes by face swaps */
+                            loop_faces{
+
+                                c0 = _F.c0[i_face];
+                                c1 = _F.c1[i_face];
+
+                                if((_C.weight_after_shift[c0] > 0.)&&(_C.weight_after_shift[c1] == 0.0)){
+
+                                    c = c0; c0 = c1; c1 = c;
+                                }
+
+                                if((_C.weight_after_shift[c1] > 0.)&&(_C.weight_after_shift[c0] == 0.0)){
+
+                                     _C.weight_after_swap[c0] += _C.weight_after_shift[c1];
+                                }
+                            }
+
+                            number_of_unhit_cells = 0;
+
+                            loop_int_cells{
+
+                                if(_C.weight_after_swap[i_cell] > 0.0){
+
+                                    _C.weight_after_shift[i_cell] = _C.weight_after_swap[i_cell];
+
+                                    _C.weight_after_swap[i_cell] = 0.0;
+                                }
+
+                                if(Solver_Dict.number_of_phases == 1){
+
+                                    if(_C.weight_after_shift[i_cell] == 0.0){
+
+                                        number_of_unhit_cells++;
+                                    }
+                                }
+                                else{
+
+                                    t_phase = THREAD_SUB_THREAD(t_mix, i_phase);
+
+                                    if((_C.weight_after_shift[i_cell] == 0.0) && (C_VOF(i_cell, t_phase) > 0.0)){
+
+                                        number_of_unhit_cells++;
+                                    }
+                                }
+                            }
+                        }
+
+                        number_of_unhit_cells = PRF_GISUM1(number_of_unhit_cells);
+
                     }
                 }
 
-                Tracer.monitor_counter[i_phase] = 0;
+                total_number_of_stored_C2Cs = PRF_GISUM1(total_number_of_stored_C2Cs);
+
+                if(Transcript){
+
+                    Message0("\n... wrote C2C frame # %d for phase %d with %d shifts ...", Tracer.frame_counter, i_phase, total_number_of_stored_C2Cs);
+
+                    f_trn = fopen(File_Dict.Prep_Transscript_filename, "a" );
+
+                    if(f_trn){
+
+                        if(i_phase == 0){
+
+                            fprintf(f_trn, "\n\nrCFD_write_C2Cs");
+                        }
+
+                        fprintf(f_trn, "\n\n    wrote C2C frame # %d of phase %d with %d shifts", Tracer.frame_counter, i_phase, total_number_of_stored_C2Cs);
+
+                        if(number_of_unhit_cells > 0){
+
+                            fprintf(f_trn, "\n\n    WARNING: %d unhit cells after filling the holes, ", number_of_unhit_cells);
+                            fprintf(f_trn,   "\n             consider increasing Solver_Dict.max_fill_loops (current value = %d)", Solver_Dict.max_fill_loops);
+                        }
+
+                        fclose(f_trn);
+                    }
+                }
             }
-            else{
-
-                fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
-
-                number_of_lock_cells = 0;
-            }
-
-            fclose(f_out);
-
-            Message0("\n... rCFD_write_C2Cs: identified %d lock cells\n", PRF_GISUM1(number_of_lock_cells));
-
-            Message0("\n... wrote C2C frame # %d for phase %d ...", Tracer.frame_counter, i_phase);
-
         }
 
         Tracer.frame_counter++;
@@ -934,19 +1095,30 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 }
 
 /*************************************************************************************/
-DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
+DEFINE_EXECUTE_AT_END(rCFD_write_fields)
 /*************************************************************************************/
 {
 #if RP_NODE
 
-    Domain  *d=Get_Domain(1);
-    Thread  *t, *t_mix, *t_phase;
+#if 1   /*local vars */
 
     int     i_state, i_norm, i_phase, i_cell, i_layer = 0;
 
+    Domain  *d=Get_Domain(1);
+
+    Thread  *t, *t_mix, *t_phase;
+
+    FILE    *f_out = NULL, *f_trn = NULL;
+
+    char    file_name[80];
+
+    int     total_number_of_norms = PRF_GISUM1(Norms.number_of_norms), total_number_of_cells = PRF_GISUM1(_Cell_Dict.number_of_cells);
+
+#endif
+
     if ((Tracer.monitoring_started) && (Norms_write_interval) && (Norm_Database_not_full)){
 
-        /* N.1 calc norms */
+        /* 1. calc norms */
         {
             i_norm = 0;
 
@@ -983,11 +1155,8 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
             }
         }
 
-        /* N.2 write norms */
+        /* 2. write norms */
         {
-            FILE    *f_out;
-            char    file_name[80];
-
             i_state = Solver.current_state;
 
             sprintf(file_name,"%s_%d_%d", File_Dict.Norm_filename, i_state, myid);
@@ -1017,14 +1186,25 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
 
             fclose(f_out);
 
+            if(Transcript){
+
+                f_trn = fopen(File_Dict.Prep_Transscript_filename, "a" );
+
+                if(f_trn){
+
+                    fprintf(f_trn, "\n\nrCFD_write_fields");
+
+                    fprintf(f_trn, "\n\n    wrote norm frame # %d with %d values", Norms.frame_counter, total_number_of_norms);
+
+                    fclose(f_trn);
+                }
+            }
+
             Message0("\n... Norm frame # %d written ...\n", Norms.frame_counter);
         }
 
-        /* N.3 in case of multiphase, write vof Files */
+        /* 3. in case of multiphase, write vof Files */
         if(Solver_Dict.number_of_phases > 1){
-
-            FILE    *f_out;
-            char    file_name[80];
 
             i_state = Solver.current_state;
 
@@ -1069,6 +1249,18 @@ DEFINE_EXECUTE_AT_END(rCFD_write_Norms)
                 fclose(f_out);
 
                 Message0("\n... vof frame # %d written for phase %d ...", Norms.frame_counter, i_phase);
+
+                if(Transcript){
+
+                    f_trn = fopen(File_Dict.Prep_Transscript_filename, "a" );
+
+                    if(f_trn){
+
+                        fprintf(f_trn, "\n\n    wrote vof frame # %d of phase %d with %d values (incl. corona cells)", Norms.frame_counter, i_phase, total_number_of_cells);
+
+                        fclose(f_trn);
+                    }
+                }
             }
         }
 
@@ -1453,5 +1645,30 @@ DEFINE_ON_DEMAND(rCFD_free_all)
     free_all_parallel();
 #endif
 
-    Message0("\n\n...rCFD_free_all");
+    /* Transcript and Message */
+    if(myid == 0){
+#if RP_NODE
+        FILE    *f_trn = fopen(File_Dict.Prep_Transscript_filename, "a" );
+
+        if(f_trn){
+
+            time_t      current_time = time(NULL);
+
+            char        *c_time_string = ctime(&current_time);
+
+            if(Solver_Dict.mode == preparation_mode){
+
+                fprintf(f_trn,"\n\nrCFD_prep ends @ %s", c_time_string);
+            }
+            else{
+
+                fprintf(f_trn,"\n\nrCFD_run ends @ %s", c_time_string);
+            }
+
+            fclose(f_trn);
+        }
+
+        Message0("\n\n...rCFD_free_all");
+#endif
+    }
 }

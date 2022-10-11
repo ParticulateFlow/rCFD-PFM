@@ -90,7 +90,7 @@
 )
 ;;
 (ti-menu-load-string "/define/user-defined/function-hooks/execute-at-end
-    \"rCFD_write_Norms::libudf_rcfd_prep\"
+    \"rCFD_write_fields::libudf_rcfd_prep\"
     \"rCFD_write_C2Cs::libudf_rcfd_prep\"
     \"\""
 )

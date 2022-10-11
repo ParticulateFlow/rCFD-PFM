@@ -485,13 +485,7 @@ DEFINE_ON_DEMAND(rCFD_read_C2Cs)
 
         if(myid == 0){
 
-            FILE    *f_trn = NULL;
-            
-            char    file_name[80];
-            
-            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-
-            f_trn = fopen(file_name, "a");
+            FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "a");
 
             if(f_trn){
 
@@ -1052,8 +1046,6 @@ DEFINE_ON_DEMAND(rCFD_run)
             /* I: Initialization (weights, data_shift, data_swap, mass_drift) */
             {
 #if RP_NODE
-                i_phase = rCFD_user_phase_switch(i_phase);
-
                 loop_cells{
 
                     _C.weight_after_shift[i_cell] =  0.0;
@@ -2324,13 +2316,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 #if RP_NODE
         if(myid == 0){
 
-            FILE    *f_trn = NULL;
-            
-            char    file_name[80];
-            
-            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-
-            f_trn = fopen(file_name, "a");
+            FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "a");
 
             if(f_trn){
 
@@ -2363,7 +2349,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                 fclose(f_trn);
             }
-            
+
             Message("\n...rCFD_run -> %d Runs in %f seconds @ global run counter %d and global time %f\n",
 
                 Solver_Dict.number_of_runs, (double)(clock() - Solver.clock)/(double)CLOCKS_PER_SEC,
@@ -2386,41 +2372,28 @@ DEFINE_ON_DEMAND(rCFD_free_all)
 
     /* Transcript and Message */
     if(myid == 0){
-#if RP_NODE 
-        FILE    *f_trn = NULL;
-        
-        char    file_name[80];
-        
-        if(Solver_Dict.mode == preparation_mode){
-            
-            sprintf(file_name,"%s", File_Dict.Prep_Transscript_filename);
-        }
-        else{
-            
-            sprintf(file_name,"%s", File_Dict.Run_Transscript_filename);
-        }
-                    
-        f_trn = fopen(file_name, "a" );
+#if RP_NODE
+        FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "a" );
 
         if(f_trn){
 
             time_t      current_time = time(NULL);
 
             char        *c_time_string = ctime(&current_time);
-            
+
             if(Solver_Dict.mode == preparation_mode){
-                
+
                 fprintf(f_trn,"\n\nrCFD_prep ends @ %s", c_time_string);
             }
             else{
-                
+
                 fprintf(f_trn,"\n\nrCFD_run ends @ %s", c_time_string);
             }
 
             fclose(f_trn);
         }
-        
+
         Message0("\n\n...rCFD_free_all");
-#endif      
+#endif
     }
 }

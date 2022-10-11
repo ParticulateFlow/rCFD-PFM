@@ -316,29 +316,6 @@
     {
         return 0;
     }
-
-    short rCFD_user_phase_switch(const short i_phase)
-    {
-#if RP_NODE
-
-        short   i_phase_new = i_phase;
-        
-        if(i_phase == ph_gas){
-            
-            i_phase_new = ph_solid;
-        }
-        
-        if((i_phase_new < 0) || (i_phase_new >= Solver_Dict.number_of_phases)){
-            
-            i_phase_new = i_phase;
-        }
-        
-        return i_phase_new;
-#else
-
-        return 0;   /* just to avoid compiler complains */
-#endif
-    }       
     
     void rCFD_user_access_data_before_shift(const short i_phase, const short i_layer)
     {

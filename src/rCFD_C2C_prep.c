@@ -331,7 +331,7 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
         if (myid == 0){
 
             int     i_node, number_of_lines, i_line;
-            
+
             FILE    *f_out = fopen(File_Dict.tracer_start_position_filename, "w");
 
             if(f_out == NULL){
@@ -410,9 +410,9 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
         int number_of_initialized_particles = 0;
 
         number_of_valid_tracers = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-        
+
         number_of_invalid_tracers = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-        
+
         loop_phases{
 
             number_of_valid_tracers[i_phase] = 0;
@@ -560,10 +560,10 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
     /* 4. free local vars */
     {
         free(number_of_valid_tracers);
-        
+
         free(number_of_invalid_tracers);
     }
-    
+
 #endif
 }
 

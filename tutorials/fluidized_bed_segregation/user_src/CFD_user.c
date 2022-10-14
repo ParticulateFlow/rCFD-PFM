@@ -248,9 +248,13 @@ DEFINE_ON_DEMAND(CFD_convert_csv2ip)
 
                     ip_file_number++;
                 }
+                else{
+                    Message("\n\n...CFD_convert_csv2ip: failed to open %s\n", ip_filename);
+                }
             }
         }
         else{
+            Message("\n\n...CFD_convert_csv2ip: failed to open %s\n", csv_filename);
             csv_file_exist = 0;
         }
 

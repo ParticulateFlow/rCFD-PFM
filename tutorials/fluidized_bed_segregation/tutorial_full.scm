@@ -32,7 +32,7 @@
     (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))
     (ti-menu-load-string (format  #f "!cp ~a/~a.dat.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))
 
-    (ti-menu-load-string (format  #f "!cp ~a/CFD_user_extt.c ./CFD_user.c" rCFD_user_src_dir))
+    (ti-menu-load-string (format  #f "!cp ~a/CFD_user_ext.c ./CFD_user.c" rCFD_user_src_dir))
 
     (ti-menu-load-string "!rm -r libudf_cfd")
 )

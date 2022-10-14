@@ -14,9 +14,7 @@
 (define ANSYS_Fluent_simulation_timestep_width 0.005)
 (define ANSYS_Fluent_number_of_timesteps_per_episode 1)
 (define i 0)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; CFD_convert
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))
 (ti-menu-load-string (format  #f "!cp ~a/~a.dat.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))
 (ti-menu-load-string (format  #f "!cp ~a/CFD_user.c ." rCFD_user_src_dir))
@@ -67,34 +65,10 @@
     \"\" "
 )
 ;;
-;;;(ti-menu-load-string (format #f "/file/read-case-data ./~a.cas.h5 OK" ANSYS_Fluent_case_file))
 (ti-menu-load-string "/define/user-defined/user-defined-memory 30 q" )
 (ti-menu-load-string "/define/user-defined/compiled-functions load \"libudf_rcfd_prep\"")
 (ti-menu-load-string "/define/user-defined/execute-on-demand \"rCFD_init_all::libudf_rcfd_prep\"")
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(define (rCFD_P4)       ;; prep.4:  run fluent simulations for analyzing time-scales
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;      (ti-menu-load-string "/define/user-defined/function-hooks/execute-at-end
-;;        \"rCFD_analyse_CFD::libudf_rcfd_prep\"
-;;        \"\"")
-;;
-;;    (do  ((i  0 (+ i  1)))
-;;        ((= i  number_of_Timesteps_for_rCFD_analyse_CFD))
-;;
-;;        (ti-menu-load-string (format #f "!cp ./data/ip/~04d.ip ./data.ip" i))
-;;        (ti-menu-load-string "/file/interpolate/read-data yes data.ip")
-;;
-;;        (ti-menu-load-string (format #f "/solve/set/time-step ~d" ANSYS_Fluent_simulation_timestep_width))
-;;        (ti-menu-load-string "/solve/dual-time-iterate 1 1")
-;;    )
-;;)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(define (rCFD_P5)       ;; prep.5:  write intermediate fluent case
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;    (ti-menu-load-string (format #f "/file/write-case-data ./data/tmp/~a_After_Analyzing.cas.h5 OK" ANSYS_Fluent_case_file))
-;;)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (ti-menu-load-string "/define/user-defined/execute-on-demand \"rCFD_write_Tracer_Positions::libudf_rcfd_prep\"")
 (ti-menu-load-string "/define/models/dpm/unsteady-tracking yes yes")
 (ti-menu-load-string "/define/models/dpm/injections/create-injection

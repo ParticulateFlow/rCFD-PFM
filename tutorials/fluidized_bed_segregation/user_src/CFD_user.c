@@ -1,4 +1,5 @@
 #include <udf.h>
+#include <sys/stat.h>
 
 /* (C)  2022
     Stefan Pirker
@@ -37,6 +38,9 @@ DEFINE_ON_DEMAND(CFD_convert_csv2ip)
     FILE    *f_csv = NULL, *f_ip = NULL;
 
 #endif
+
+    /* create output directory */
+    mkdir("./data/ip",0777);
 
     csv_file_number = _csv_file_number_start;
 

@@ -555,10 +555,10 @@ DEFINE_ON_DEMAND(rCFD_run)
     int         prev_layer, i_rec_max;
 
 #if RP_NODE
-    int         i_frame, i_data, i_shift, i_node, i_node2, i_cell, i_face, i_drift, i_dim, i_while, i_adapt;
+    int         i_frame, i_data, i_shift, i_node, i_node2, i_cell, i_face, i_diff, i_drift, i_dim, i_while, i_adapt;
 
     int         loop_offset0, loop_offset1;
-    int         number_of_fill_loops, number_of_unhit_cells;
+    int         number_of_fill_loops, number_of_unhit_cells, number_of_diff_loops;
     int         c, c0, c1;
     int         i_frame_c0, i_frame_c1, i_frame_prev;
     int         i_tmp;
@@ -567,7 +567,7 @@ DEFINE_ON_DEMAND(rCFD_run)
 
     short       balance_error_exists;
 
-    double      w0, data0, vol_flip;
+    double      w0, data0, vol_flip, swap_per_loop;
     double      drift_volume, local_drift_exchange, local_mass_c0, local_mass_c1, local_mass, hindering_factor, available_c1_mass;
     double      sum_of_conc, flux_in, flux_out, data_in_mean, data_out_mean, flux_mean;
     double      available_exchange, exchange_ratio;
@@ -1494,67 +1494,80 @@ DEFINE_ON_DEMAND(rCFD_run)
                 /* D.2 Physical diffusion */
                 if(Solver_Dict.face_diffusion_on){
 #if RP_NODE
-                    /* TODO: allow for more diff. loops, account for heterogeneous diffusion */
-
                     loop_data{
 
                         switch (Data_Dict[i_phase][i_data].type){
 
                             case concentration_data:
                             {
-                                /* Init data_swap */
-                                loop_int_cells{
+                                if(Data_Dict[i_phase][i_data].physical_diff > Solver_Dict.face_swap_max_per_loop){
+									
+									number_of_diff_loops = (int)(Data_Dict[i_phase][i_data].physical_diff / Solver_Dict.face_swap_max_per_loop);	// ( > 1)
+									
+									swap_per_loop = Data_Dict[i_phase][i_data].physical_diff / (double)number_of_diff_loops;
+								}
+								else{								
+								
+									number_of_diff_loops = 1;
+									
+									swap_per_loop = Data_Dict[i_phase][i_data].physical_diff;
+								}
+								
+								for(i_diff = 0; i_diff < number_of_diff_loops; i_diff++){
+									
+									/* init. data_swap */
+									loop_int_cells{
 
-                                    _C.data_swap[_i_data] = 0.0;
-                                }
+										_C.data_swap[_i_data] = 0.0;
+									}
 
-                                /* define swap masses */
-                                loop_faces{
+									/* define swap masses */
+									loop_faces{
 
-                                    c0 = _F.c0[i_face];
-                                    c1 = _F.c1[i_face];
+										c0 = _F.c0[i_face];
+										c1 = _F.c1[i_face];
 
-                                    if(_C.data[_c0_data] > _C.data[_c1_data]){
+										if(_C.data[_c0_data] > _C.data[_c1_data]){
 
-                                        c = c0; c0 = c1; c1 = c;
-                                    }
+											c = c0; c0 = c1; c1 = c;
+										}
 
-                                    if(_C.data[_c1_data] > _C.data[_c0_data]){
+										if(_C.data[_c1_data] > _C.data[_c0_data]){
 
-                                        i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
-                                        i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
+											i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+											i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
 
-                                        if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
+											if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
 
-                                            vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
-                                        }
-                                        else{
-                                            vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
-                                        }
+												vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
+											}
+											else{
+												vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
+											}
 
-                                        _C.data_swap[i_phase][c1][i_data] -= vol_flip *
+											_C.data_swap[i_phase][c1][i_data] -= vol_flip *
 
-                                            (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
+												(_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * swap_per_loop;
 
-                                        _C.data_swap[i_phase][c0][i_data] += vol_flip *
+											_C.data_swap[i_phase][c0][i_data] += vol_flip *
 
-                                            (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * Data_Dict[i_phase][i_data].physical_diff;
-                                    }
-                                }
+												(_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2. * swap_per_loop;
+										}
+									}
 
-                                /* update data by data_swap */
-                                loop_int_cells{
+									/* update data by data_swap */
+									loop_int_cells{
 
-                                    i_frame = Rec.global_frame[_C.island_id[i_cell]];
+										i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-                                    if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
+										if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
 
-                                        _C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
-                                    }
-
-                                    _C.data_swap[_i_data] = 0.0;
-                                }
-
+											_C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
+										}
+									}
+								
+								}
+								
                                 break;
                             }
 

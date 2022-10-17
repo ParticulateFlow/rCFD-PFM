@@ -28,6 +28,7 @@
     rCFD_layer.h
     rCFD_memory.h
     rCFD_free.h
+    rCFD_user_defaults.h
     \"\" ")
 ;;
 (ti-menu-load-string (format #f "/file/read-case-data ./~a.cas.h5 OK" "quad_80k"))

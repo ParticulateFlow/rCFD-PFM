@@ -62,6 +62,7 @@
     rCFD_layer.h
     rCFD_memory.h
     rCFD_free.h
+    rCFD_user_defaults.h
     \"\" "
 )
 ;;

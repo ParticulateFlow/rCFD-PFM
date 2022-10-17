@@ -679,8 +679,9 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 
         if(Tracer_Dict.random_walk[i_phase]){
 
-            random_walk_velocity = rCFD_user_set_random_walk_velocity();
-
+//random_walk_velocity = rCFD_user_set_random_walk_velocity();
+            random_walk_velocity = Tracer_Dict.random_walk_velocity_ratio[i_phase] * v_mag;
+            
             rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
             p->user[p_u_rwm] =  rand_real * random_walk_velocity;
 
@@ -712,9 +713,16 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
         p->user[p_c_old] = (double)i_cell;
 
         if(Tracer_Dict.random_walk[i_phase]){
+            
+            v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) +
+                          C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
+                          C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
 
-            random_walk_velocity = rCFD_user_set_random_walk_velocity();
+//random_walk_velocity = rCFD_user_set_random_walk_velocity();
+            random_walk_velocity = Tracer_Dict.random_walk_velocity_ratio[i_phase] * v_mag;
 
+            // this keeps the direction of fluctuation, just scales its magnitude,
+            // most probably, this results in large diffusion
             p->user[p_u_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
             p->user[p_v_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
             p->user[p_w_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];

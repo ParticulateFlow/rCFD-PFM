@@ -150,6 +150,8 @@
         int     coarse_graining;        /* 1: take every Tracer, 2: take every second Tracer, .... */
 
         short   *random_walk;           /* [i_phase] */
+        
+        double  *random_walk_velocity_ratio;
 
         short   C2C_format;
 

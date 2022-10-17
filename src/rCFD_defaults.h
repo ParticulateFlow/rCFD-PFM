@@ -180,6 +180,8 @@
         loop_phases{
 
             Tracer_Dict.random_walk[i_phase] = 0;
+
+            Tracer_Dict.random_walk_velocity_ratio[i_phase] = 0.1;
         }
 
         Tracer_Dict.C2C_format = c0_n0_c1_n1_w0;

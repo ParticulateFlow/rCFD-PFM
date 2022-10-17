@@ -85,6 +85,8 @@ void init_all_for_prep(void)
 #if RP_NODE
         Tracer_Dict.random_walk = (short*)malloc(Solver_Dict.number_of_phases * sizeof(short));
 
+        Tracer_Dict.random_walk_velocity_ratio = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+
         rCFD_default_Tracer_Dict();
 
         rCFD_user_set_Tracer_Dict();

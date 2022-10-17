@@ -29,6 +29,8 @@
 
         free(Tracer_Dict.random_walk);
 
+        free(Tracer_Dict.random_walk_velocity_ratio);
+
         if(Topo.Cell != NULL){
 
             loop_layers{

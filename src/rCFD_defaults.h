@@ -135,6 +135,8 @@
 
             Phase_Dict[i_phase].number_of_data = 1;
 
+            Phase_Dict[i_phase].number_of_concentration_data = 1;
+
             Phase_Dict[i_phase].time_step = Solver_Dict.global_time_step;
 
             Phase_Dict[i_phase].shift_probability = 1.0;

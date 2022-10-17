@@ -2263,25 +2263,28 @@ DEFINE_ON_DEMAND(rCFD_run)
                 if(Solver_Dict.control_conc_sum_on){
 
 #if RP_NODE
-                    loop_cells{
+                    if(Phase_Dict[i_phase].number_of_concentration_data > 1){
+                        
+                        loop_cells{
 
-                        sum_of_conc = 0.0;
+                            sum_of_conc = 0.0;
 
-                        loop_data{
+                            loop_data{
 
-                            if(Data_Dict[i_phase][i_data].type == concentration_data){
+                                if(Data_Dict[i_phase][i_data].type == concentration_data){
 
-                                sum_of_conc += _C.data[_i_data];
+                                    sum_of_conc += _C.data[_i_data];
+                                }
                             }
-                        }
 
-                        loop_data{
+                            loop_data{
 
-                            if(Data_Dict[i_phase][i_data].type == concentration_data){
+                                if(Data_Dict[i_phase][i_data].type == concentration_data){
 
-                                if(sum_of_conc > 0.0){
+                                    if(sum_of_conc > 0.0){
 
-                                    _C.data[_i_data] /= sum_of_conc;
+                                        _C.data[_i_data] /= sum_of_conc;
+                                    }
                                 }
                             }
                         }

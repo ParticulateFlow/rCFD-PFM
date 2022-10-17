@@ -107,6 +107,8 @@
     {
         int         number_of_data;
 
+        int         number_of_concentration_data;
+
         double      time_step;
 
         double      shift_probability;

@@ -193,7 +193,7 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 
     Solver_Dict.analyse_CFD_count++;
 
-    rCFD_user_pre_proc();
+    rCFD_UDF._rCFD_user_pre_proc();
 
 #endif
 }
@@ -679,7 +679,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 
         if(Tracer_Dict.random_walk[i_phase]){
 
-            random_walk_velocity = rCFD_user_set_random_walk_velocity();
+            random_walk_velocity = rCFD_UDF._rCFD_user_set_random_walk_velocity();
 
             rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
             p->user[p_u_rwm] =  rand_real * random_walk_velocity;
@@ -713,7 +713,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 
         if(Tracer_Dict.random_walk[i_phase]){
 
-            random_walk_velocity = rCFD_user_set_random_walk_velocity();
+            random_walk_velocity = rCFD_UDF._rCFD_user_set_random_walk_velocity();
 
             p->user[p_u_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
             p->user[p_v_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
@@ -1151,7 +1151,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
             }
             else{
 
-                rCFD_user_set_Norm();
+                rCFD_UDF._rCFD_user_set_Norm();
             }
         }
 

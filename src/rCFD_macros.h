@@ -139,4 +139,7 @@
     #define     p_vel_rwm_old                   (13 + p_vars_used_by_others)
 #endif
 
+    #define     REGISTER_RCFD_UDF(funcName)         rCFD_UDF._##funcName = funcName;
+    #define     REGISTER_RCFD_UDF_DEFAULT(funcName) rCFD_UDF._##funcName = funcName##_default;
+
 #endif

@@ -730,8 +730,6 @@
 
                     if(fi!=NULL){
 
-                        fopen(filename,"r");
-
                         loop_frames{
 
                             fscanf(fi,"%d \n", &Rec.jumps[i_state][i_state2][i_island][i_frame]);

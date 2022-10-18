@@ -1501,92 +1501,92 @@ DEFINE_ON_DEMAND(rCFD_run)
                             case concentration_data:
                             {
                                 if(fabs(Data_Dict[i_phase][i_data].physical_diff) > Solver_Dict.face_swap_max_per_loop){
-									
-									number_of_diff_loops = (int)(fabs(Data_Dict[i_phase][i_data].physical_diff) / Solver_Dict.face_swap_max_per_loop);	// ( > 1)
-									
-									swap_per_loop = Data_Dict[i_phase][i_data].physical_diff / (double)number_of_diff_loops;
-								}
-								else{								
-								
-									number_of_diff_loops = 1;
-									
-									swap_per_loop = Data_Dict[i_phase][i_data].physical_diff;
-								}
-								
-								for(i_diff = 0; i_diff < number_of_diff_loops; i_diff++){
-									
-									/* init. data_swap */
-									loop_int_cells{
+                                    
+                                    number_of_diff_loops = (int)(fabs(Data_Dict[i_phase][i_data].physical_diff) / Solver_Dict.face_swap_max_per_loop);  // ( > 1)
+                                    
+                                    swap_per_loop = Data_Dict[i_phase][i_data].physical_diff / (double)number_of_diff_loops;
+                                }
+                                else{                               
+                                
+                                    number_of_diff_loops = 1;
+                                    
+                                    swap_per_loop = Data_Dict[i_phase][i_data].physical_diff;
+                                }
+                                
+                                for(i_diff = 0; i_diff < number_of_diff_loops; i_diff++){
+                                    
+                                    /* init. data_swap */
+                                    loop_int_cells{
 
-										_C.data_swap[_i_data] = 0.0;
-									}
+                                        _C.data_swap[_i_data] = 0.0;
+                                    }
 
-									/* define swap masses */
-									loop_faces{
+                                    /* define swap masses */
+                                    loop_faces{
 
-										c0 = _F.c0[i_face];
-										c1 = _F.c1[i_face];
+                                        c0 = _F.c0[i_face];
+                                        c1 = _F.c1[i_face];
 
-										if(_C.data[_c0_data] > _C.data[_c1_data]){
+                                        if(_C.data[_c0_data] > _C.data[_c1_data]){
 
-											c = c0; c0 = c1; c1 = c;
-										}
+                                            c = c0; c0 = c1; c1 = c;
+                                        }
 
-										if(_C.data[_c1_data] > _C.data[_c0_data]){
+                                        if(_C.data[_c1_data] > _C.data[_c0_data]){
 
-											// flip volume
-											{
-												i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
-												i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
+                                            // flip volume
+                                            {
+                                                i_frame_c0 = Rec.global_frame[_C.island_id[c0]];
+                                                i_frame_c1 = Rec.global_frame[_C.island_id[c1]];
 
-												if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
+                                                if((_C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase]) < (_C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase])){
 
-													vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
-												}
-												else{
-													vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
-												}
-											}
-											
-											// data_exchange
-											{
-												data_exchange = (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
-												
-												if(swap_per_loop < 0.0){	// neg. diff.
-													
-													if((1.0 - _C.data[i_phase][c1][i_data]) < _C.data[i_phase][c0][i_data]){
-													
-														data_exchange = 1.0 - _C.data[i_phase][c1][i_data];
-													}
-													else{
-													
-														data_exchange = _C.data[i_phase][c0][i_data];
-													}
-												}
-											}
-											
-											// _C.data_swap
-											{
-												_C.data_swap[i_phase][c1][i_data] -= vol_flip * data_exchange * swap_per_loop;
+                                                    vol_flip = _C.volume[c0] * _C.vof[i_frame_c0][c0][i_phase];
+                                                }
+                                                else{
+                                                    vol_flip = _C.volume[c1] * _C.vof[i_frame_c1][c1][i_phase];
+                                                }
+                                            }
+                                            
+                                            // data_exchange
+                                            {
+                                                data_exchange = (_C.data[i_phase][c1][i_data] - _C.data[i_phase][c0][i_data]) / 2.;
+                                                
+                                                if(swap_per_loop < 0.0){    // neg. diff.
+                                                    
+                                                    if((1.0 - _C.data[i_phase][c1][i_data]) < _C.data[i_phase][c0][i_data]){
+                                                    
+                                                        data_exchange = 1.0 - _C.data[i_phase][c1][i_data];
+                                                    }
+                                                    else{
+                                                    
+                                                        data_exchange = _C.data[i_phase][c0][i_data];
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // _C.data_swap
+                                            {
+                                                _C.data_swap[i_phase][c1][i_data] -= vol_flip * data_exchange * swap_per_loop;
 
-												_C.data_swap[i_phase][c0][i_data] += vol_flip * data_exchange * swap_per_loop;
-											}
-										}
-									}
+                                                _C.data_swap[i_phase][c0][i_data] += vol_flip * data_exchange * swap_per_loop;
+                                            }
+                                        }
+                                    }
 
-									/* update data by data_swap */
-									loop_int_cells{
+                                    /* update data by data_swap */
+                                    loop_int_cells{
 
-										i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                        i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-										if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
+                                        if((_C.volume[i_cell] * _C.vof[_i_vof]) > 0.0){
 
-											_C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
-										}
-									}
-								
-								}
-								
+                                            _C.data[_i_data] += _C.data_swap[_i_data] / (_C.volume[i_cell] * _C.vof[_i_vof]);
+                                        }
+                                    }
+                                
+                                }
+                                
                                 break;
                             }
 

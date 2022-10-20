@@ -49,7 +49,7 @@
 
         Solver_Dict.recurrence_process_on =    1;
         Solver_Dict.data_convection_on =       1;
-        Solver_Dict.face_swap_diffusion_on =        1;
+        Solver_Dict.face_swap_diffusion_on =   1;
         Solver_Dict.data_binarization_on =     0;
         Solver_Dict.data_drifting_on =         0;
         Solver_Dict.balance_correction_on =    1;

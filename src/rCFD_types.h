@@ -79,25 +79,25 @@
 
     typedef struct File_Dict_struct
     {
-        char    *tracer_start_position_filename;
+        const char    *tracer_start_position_filename;
 
-        char    *Prep_Transscript_filename;
+        const char    *Prep_Transscript_filename;
 
-        char    *Run_Transscript_filename;
+        const char    *Run_Transscript_filename;
 
-        char    *C2C_filename;
+        const char    *C2C_filename;
 
-        char    *Norm_filename;
+        const char    *Norm_filename;
 
-        char    *vof_filename;
+        const char    *vof_filename;
 
-        char    *Jump_filename;
+        const char    *Jump_filename;
 
-        char    *Matrix_filename;
+        const char    *Matrix_filename;
 
-        char    *Balance_filename;
+        const char    *Balance_filename;
 
-        char    *Dict_filename;
+        const char    *Dict_filename;
 
     } File_Dict_type;
 

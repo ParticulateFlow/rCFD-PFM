@@ -121,9 +121,9 @@
 #if RP_NODE     
         Tracer_Dict.format = guide_by_value_format;
         
-        Tracer_Dict.random_walk[gas] = 1;
+        //Tracer_Dict.random_walk[gas] = 1;
 
-        Tracer_Dict.random_walk_velocity_ratio[gas] = 0.1;      
+        //Tracer_Dict.random_walk_velocity_ratio[gas] = 0.1;      
 #endif
     }
 

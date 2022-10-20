@@ -605,7 +605,7 @@ DEFINE_ON_DEMAND(rCFD_run)
             {
                 prev_layer = Solver.current_layer;
 
-                i_layer = rCFD_user_set_layer(Solver.current_layer);
+                i_layer = rCFD_UDF._rCFD_user_set_layer(Solver.current_layer);
 
                 if(i_layer != prev_layer){
 
@@ -1086,7 +1086,7 @@ DEFINE_ON_DEMAND(rCFD_run)
             /* AD1: Access data before shift */
             {
 #if RP_NODE
-                rCFD_user_access_data_before_shift(i_phase, i_layer);
+                rCFD_UDF._rCFD_user_access_data_before_shift(i_phase, i_layer);
 #endif
             }
 
@@ -1675,7 +1675,7 @@ DEFINE_ON_DEMAND(rCFD_run)
             /* AD2: Access data after swap */
             {
 #if RP_NODE
-                rCFD_user_access_data_after_swap(i_phase, i_layer);
+                rCFD_UDF._rCFD_user_access_data_after_swap(i_phase, i_layer);
 #endif
             }
 
@@ -2340,7 +2340,7 @@ DEFINE_ON_DEMAND(rCFD_run)
         {
 #if RP_NODE
 
-            rCFD_user_post();
+            rCFD_UDF._rCFD_user_post();
 #endif
         }
 

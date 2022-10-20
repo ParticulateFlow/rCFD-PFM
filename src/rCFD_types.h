@@ -467,4 +467,46 @@
 
     } Rec_type;
 
+    typedef struct rCFD_UDF_struct
+    {
+        void (*_rCFD_user_set_Solver_Dict)(void);
+
+        void (*_rCFD_user_set_File_Dict)(void);
+
+        void (*_rCFD_user_set_Phase_Dict)(void);
+
+        void (*_rCFD_user_set_Tracer_Dict)(void);
+
+        void (*_rCFD_user_set_Norm_Dict)(void);
+
+        void (*_rCFD_user_set_Rec_Dict)(void);
+
+        void (*_rCFD_user_set_Data_Dict)(void);
+
+        void (*_rCFD_user_set_Balance_Dict)(void);
+
+        void (*_rCFD_user_set_Topo_Dict)(void);
+
+        void (*_rCFD_user_set_Cell_Dict)(const short i_layer);
+
+        void (*_rCFD_user_set_Face_Dict)(const short i_layer);
+
+        void (*_rCFD_user_pre_proc)(void);
+
+        void (*_rCFD_user_init_Data)(const short i_layer);
+
+        short (*_rCFD_user_set_layer)(const short current_layer);
+
+        void (*_rCFD_user_access_data_before_shift)(const short i_phase, const short i_layer);
+
+        void (*_rCFD_user_access_data_after_swap)(const short i_phase, const short i_layer);
+
+        void (*_rCFD_user_post)(void);
+
+        double (*_rCFD_user_set_random_walk_velocity)(void);
+
+        void (*_rCFD_user_set_Norm)(void);
+
+    } rCFD_UDF_type;
+
 #endif

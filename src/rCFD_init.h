@@ -5,6 +5,7 @@
 #include "rCFD_globals.h"
 #include "rCFD_macros.h"
 #include "rCFD_parallel.h"
+#include "rCFD_user_defaults.h"
 #include "rCFD_user.h"
 #include "rCFD_layer.h"
 
@@ -17,11 +18,14 @@
 
 void init_all_for_prep(void)
 {
+    rCFD_user_register_default_functions();
+    rCFD_user_register_functions();
+
     /* 1. Create dictionaries and define file names */
     {
         rCFD_default_File_Dict();
 
-        rCFD_user_set_File_Dict();
+        rCFD_UDF._rCFD_user_set_File_Dict();
     }
 
     /* 2. Solver_Dict & Solver */
@@ -30,7 +34,7 @@ void init_all_for_prep(void)
 
         Solver_Dict.mode = preparation_mode;
 
-        rCFD_user_set_Solver_Dict();
+        rCFD_UDF._rCFD_user_set_Solver_Dict();
 
         /*  TODO this might be changed in future,
             but at the moment we restrict ourselves to use
@@ -76,7 +80,7 @@ void init_all_for_prep(void)
 
         rCFD_default_Phase_Dict();
 
-        rCFD_user_set_Phase_Dict();
+        rCFD_UDF._rCFD_user_set_Phase_Dict();
 #endif
     }
 
@@ -89,7 +93,7 @@ void init_all_for_prep(void)
 
         rCFD_default_Tracer_Dict();
 
-        rCFD_user_set_Tracer_Dict();
+        rCFD_UDF._rCFD_user_set_Tracer_Dict();
 #endif
     }
 
@@ -98,7 +102,7 @@ void init_all_for_prep(void)
 #if RP_NODE
         rCFD_default_Norm_Dict();
 
-        rCFD_user_set_Norm_Dict();
+        rCFD_UDF._rCFD_user_set_Norm_Dict();
 #endif
     }
 
@@ -106,14 +110,14 @@ void init_all_for_prep(void)
     {
         rCFD_default_Rec_Dict();
 
-        rCFD_user_set_Rec_Dict();
+        rCFD_UDF._rCFD_user_set_Rec_Dict();
     }
 
     /* 8. Topo_Dict */
     {
         rCFD_default_Topo_Dict();
 
-        rCFD_user_set_Topo_Dict();
+        rCFD_UDF._rCFD_user_set_Topo_Dict();
 
 #if RP_NODE
 
@@ -125,7 +129,7 @@ void init_all_for_prep(void)
 
         loop_layers{
 
-            rCFD_user_set_Cell_Dict(i_layer);
+            rCFD_UDF._rCFD_user_set_Cell_Dict(i_layer);
         }
 
         Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_Dict_type));
@@ -134,7 +138,7 @@ void init_all_for_prep(void)
 
         loop_layers{
 
-            rCFD_user_set_Face_Dict(i_layer);
+            rCFD_UDF._rCFD_user_set_Face_Dict(i_layer);
         }
 #endif
     }
@@ -233,11 +237,14 @@ void init_all_for_prep(void)
 
 void init_all_for_run(void)
 {
+    rCFD_user_register_default_functions();
+    rCFD_user_register_functions();
+
     /* 1. Create dictionaries and define file names */
     {
         rCFD_default_File_Dict();
 
-        rCFD_user_set_File_Dict();
+        rCFD_UDF._rCFD_user_set_File_Dict();
     }
 
     /* 2. Solver_Dict & Solver */
@@ -246,7 +253,7 @@ void init_all_for_run(void)
 
         Solver_Dict.mode = run_mode;
 
-        rCFD_user_set_Solver_Dict();
+        rCFD_UDF._rCFD_user_set_Solver_Dict();
 
         rCFD_default_Solver();
     }
@@ -278,7 +285,7 @@ void init_all_for_run(void)
 
         rCFD_default_Phase_Dict();
 
-        rCFD_user_set_Phase_Dict();
+        rCFD_UDF._rCFD_user_set_Phase_Dict();
 #endif
     }
 
@@ -286,7 +293,7 @@ void init_all_for_run(void)
     {
         rCFD_default_Rec_Dict();
 
-        rCFD_user_set_Rec_Dict();
+        rCFD_UDF._rCFD_user_set_Rec_Dict();
     }
 
     /* 6. Data_Dict */
@@ -303,7 +310,7 @@ void init_all_for_run(void)
 
         rCFD_default_Data_Dict();
 
-        rCFD_user_set_Data_Dict();  
+        rCFD_UDF._rCFD_user_set_Data_Dict();  
         
         /* adapt Phase_Dict because of user Data_Dict input */
         loop_phases{
@@ -318,7 +325,6 @@ void init_all_for_run(void)
                 }
             }
         }
-        
 #endif
     }
 
@@ -336,7 +342,7 @@ void init_all_for_run(void)
 
         rCFD_default_Balance_Dict();
 
-        rCFD_user_set_Balance_Dict();
+        rCFD_UDF._rCFD_user_set_Balance_Dict();
 #endif
     }
     
@@ -344,7 +350,7 @@ void init_all_for_run(void)
     {
         rCFD_default_Topo_Dict();
 
-        rCFD_user_set_Topo_Dict();
+        rCFD_UDF._rCFD_user_set_Topo_Dict();
 
 #if RP_NODE
 
@@ -356,7 +362,7 @@ void init_all_for_run(void)
 
         loop_layers{
 
-            rCFD_user_set_Cell_Dict(i_layer);
+            rCFD_UDF._rCFD_user_set_Cell_Dict(i_layer);
         }
 
         Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_Dict_type));
@@ -365,7 +371,7 @@ void init_all_for_run(void)
 
         loop_layers{
 
-            rCFD_user_set_Face_Dict(i_layer);
+            rCFD_UDF._rCFD_user_set_Face_Dict(i_layer);
         }
 #endif
     }
@@ -530,7 +536,7 @@ void init_all_for_run(void)
 
         i_layer = 0;    /* user initialization just for base layer of grid, might be changed to loop_layers in future */
 
-        rCFD_user_init_Data(i_layer);
+        rCFD_UDF._rCFD_user_init_Data(i_layer);
 
         i_frame = 0;
 
@@ -582,7 +588,7 @@ void init_all_for_run(void)
             }
         }
 
-        rCFD_user_post();    /* post-process initialization */
+        rCFD_UDF._rCFD_user_post();    /* post-process initialization */
 #endif
     }
 
@@ -1581,7 +1587,7 @@ void init_all_for_run(void)
 
             i_layer = 0;
 
-            rCFD_user_post();
+            rCFD_UDF._rCFD_user_post();
             /* data[0] should visualize clusters */
         }
 #endif

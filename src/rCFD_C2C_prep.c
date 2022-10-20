@@ -193,7 +193,7 @@ DEFINE_EXECUTE_AT_END(rCFD_analyse_CFD)
 
     Solver_Dict.analyse_CFD_count++;
 
-    rCFD_user_pre_proc();
+    rCFD_UDF._rCFD_user_pre_proc();
 
 #endif
 }
@@ -331,7 +331,7 @@ DEFINE_ON_DEMAND(rCFD_write_Tracer_Positions)
         if (myid == 0){
 
             int     i_node, number_of_lines, i_line;
-            
+
             FILE    *f_out = fopen(File_Dict.tracer_start_position_filename, "w");
 
             if(f_out == NULL){
@@ -410,9 +410,9 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
         int number_of_initialized_particles = 0;
 
         number_of_valid_tracers = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-        
+
         number_of_invalid_tracers = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-        
+
         loop_phases{
 
             number_of_valid_tracers[i_phase] = 0;
@@ -560,10 +560,10 @@ DEFINE_DPM_INJECTION_INIT(rcfd_init_tracers,I)
     /* 4. free local vars */
     {
         free(number_of_valid_tracers);
-        
+
         free(number_of_invalid_tracers);
     }
-    
+
 #endif
 }
 
@@ -679,7 +679,6 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 
         if(Tracer_Dict.random_walk[i_phase]){
 
-//random_walk_velocity = rCFD_user_set_random_walk_velocity();
             random_walk_velocity = Tracer_Dict.random_walk_velocity_ratio[i_phase] * v_mag;
             
             rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
@@ -718,7 +717,6 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
                           C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
                           C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
 
-//random_walk_velocity = rCFD_user_set_random_walk_velocity();
             random_walk_velocity = Tracer_Dict.random_walk_velocity_ratio[i_phase] * v_mag;
 
             // this keeps the direction of fluctuation, just scales its magnitude,
@@ -1159,7 +1157,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_fields)
             }
             else{
 
-                rCFD_user_set_Norm();
+                rCFD_UDF._rCFD_user_set_Norm();
             }
         }
 

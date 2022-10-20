@@ -40,7 +40,7 @@
 
         short   recurrence_process_on;
         short   data_convection_on;
-        short   face_diffusion_on;
+        short   face_swap_diffusion_on;
         short   data_binarization_on;
         short   data_drifting_on;
         short   balance_correction_on;
@@ -209,7 +209,7 @@
     {
         short       type;
 
-        double      physical_diff;
+        double      face_swap_diffusion;
 
         double      binarization_art_diff;
 

@@ -49,7 +49,7 @@
 
         Solver_Dict.recurrence_process_on =    1;
         Solver_Dict.data_convection_on =       1;
-        Solver_Dict.face_diffusion_on =        1;
+        Solver_Dict.face_swap_diffusion_on =        1;
         Solver_Dict.data_binarization_on =     0;
         Solver_Dict.data_drifting_on =         0;
         Solver_Dict.balance_correction_on =    1;
@@ -252,7 +252,7 @@
 
                 Data_Dict[i_phase][i_data].type = generic_data;
 
-                Data_Dict[i_phase][i_data].physical_diff = 1./8.;
+                Data_Dict[i_phase][i_data].face_swap_diffusion = 1./8.;
 
                 Data_Dict[i_phase][i_data].binarization_art_diff = 1./8.;
 

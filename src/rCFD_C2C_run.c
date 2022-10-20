@@ -1492,7 +1492,7 @@ DEFINE_ON_DEMAND(rCFD_run)
                 }
 
                 /* D.2 Physical diffusion */
-                if(Solver_Dict.face_diffusion_on){
+                if(Solver_Dict.face_swap_diffusion_on){
 #if RP_NODE
                     loop_data{
 
@@ -1500,17 +1500,17 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                             case concentration_data:
                             {
-                                if(fabs(Data_Dict[i_phase][i_data].physical_diff) > Solver_Dict.face_swap_max_per_loop){
+                                if(fabs(Data_Dict[i_phase][i_data].face_swap_diffusion) > Solver_Dict.face_swap_max_per_loop){
                                     
-                                    number_of_diff_loops = (int)(fabs(Data_Dict[i_phase][i_data].physical_diff) / Solver_Dict.face_swap_max_per_loop);  // ( > 1)
+                                    number_of_diff_loops = (int)(fabs(Data_Dict[i_phase][i_data].face_swap_diffusion) / Solver_Dict.face_swap_max_per_loop);  // ( > 1)
                                     
-                                    swap_per_loop = Data_Dict[i_phase][i_data].physical_diff / (double)number_of_diff_loops;
+                                    swap_per_loop = Data_Dict[i_phase][i_data].face_swap_diffusion / (double)number_of_diff_loops;
                                 }
                                 else{                               
                                 
                                     number_of_diff_loops = 1;
                                     
-                                    swap_per_loop = Data_Dict[i_phase][i_data].physical_diff;
+                                    swap_per_loop = Data_Dict[i_phase][i_data].face_swap_diffusion;
                                 }
                                 
                                 for(i_diff = 0; i_diff < number_of_diff_loops; i_diff++){

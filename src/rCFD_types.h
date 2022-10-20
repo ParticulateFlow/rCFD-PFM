@@ -79,27 +79,27 @@
 
     typedef struct File_Dict_struct
     {
-        char    *tracer_start_position_filename;
+        const char    *tracer_start_position_filename;
 
-        char    *Prep_Transscript_filename;
+        const char    *Prep_Transscript_filename;
 
-        char    *Run_Transscript_filename;
+        const char    *Run_Transscript_filename;
 
-        char    *C2C_filename;
+        const char    *C2C_filename;
 
-        char    *Norm_filename;
+        const char    *Norm_filename;
 
-        char    *vof_filename;
+        const char    *vof_filename;
 
-        char    *Jump_filename;
+        const char    *Jump_filename;
 
-        char    *Matrix_filename;
+        const char    *Matrix_filename;
 
-        char    *Balance_filename;
-        
-        char    *Rec_Frames_filename;
+        const char    *Balance_filename;
 
-        char    *Dict_filename;
+        const char    *Rec_Frames_filename;
+
+        const char    *Dict_filename;
 
     } File_Dict_type;
 
@@ -152,7 +152,7 @@
         int     coarse_graining;        /* 1: take every Tracer, 2: take every second Tracer, .... */
 
         short   *random_walk;           /* [i_phase] */
-        
+
         double  *random_walk_velocity_ratio;
 
         short   C2C_format;
@@ -184,15 +184,15 @@
     typedef struct Rec_Dict_struct
     {
         short   format;
-        
-        short   monitor_rec_frames_on;       
+
+        short   monitor_rec_frames_on;
         short   adapt_vof_stitching_on;
 
         short   min_seq_length;
         short   max_seq_length;
 
         short   off_diagonal_band_width;
-        
+
         short   number_of_adapt_vof_loops;
 
     } Rec_Dict_type;
@@ -285,7 +285,7 @@
         int         global_run_counter;
 
         short       balance_file_opened;
-        
+
         short       rec_frames_monitor_file_opened;
 
         double      global_time;
@@ -312,7 +312,7 @@
         double      *weight_after_swap;
 
         double      ***vof;             /* [i_frame][i_cell][i_phase] */
-        
+
         double      **vof_changed;      /* [i_phase][i_cell] */
 
         double      ***data;            /* [i_phase][i_cell][i_data] */
@@ -454,13 +454,13 @@
     typedef struct Rec_struct
     {
         int     *global_frame;              /* [i_island] */
-        
-        int     *prev_global_frame; 
-        
+
+        int     *prev_global_frame;
+
         int     frame_in_sequence;
-        
+
         short   jumped_at_last_frame;
-        
+
         int     sequence_length;
 
         int     ****jumps;                  /* [state, state2, island, frame] */

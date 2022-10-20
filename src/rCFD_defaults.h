@@ -122,7 +122,7 @@
         File_Dict.Matrix_filename =                    "./rec/matrix";
 
         File_Dict.Balance_filename =                   "./post/balance_monitor.out";
-        
+
         File_Dict.Rec_Frames_filename =                "./post/rec_frames_monitor.out";
     }
 
@@ -205,15 +205,15 @@
     {
 
         Rec_Dict.format = quarter_jumps_format;
-        
+
         Rec_Dict.monitor_rec_frames_on = 0;
-        
+
         if(Solver_Dict.number_of_phases == 1){
-            
+
             Rec_Dict.adapt_vof_stitching_on = 0;
         }
         else{
-            
+
             Rec_Dict.adapt_vof_stitching_on = 1;
         }
 
@@ -237,7 +237,7 @@
 
             Rec_Dict.off_diagonal_band_width = 1;
         }
-        
+
         Rec_Dict.number_of_adapt_vof_loops = 1;
     }
 
@@ -413,7 +413,7 @@
         Solver.global_time = 0.0;
 
         Solver.balance_file_opened = 0;
-        
+
         Solver.rec_frames_monitor_file_opened = 0;
     }
 
@@ -729,7 +729,7 @@
         Rec.frame_in_sequence = 0;
 
         Rec.sequence_length = Rec_Dict.min_seq_length;
-        
+
         Rec.jumped_at_last_frame = 0;
 
         loop_states{

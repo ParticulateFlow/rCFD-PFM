@@ -310,17 +310,17 @@ void init_all_for_run(void)
 
         rCFD_default_Data_Dict();
 
-        rCFD_UDF._rCFD_user_set_Data_Dict();  
-        
+        rCFD_UDF._rCFD_user_set_Data_Dict();
+
         /* adapt Phase_Dict because of user Data_Dict input */
         loop_phases{
-            
+
             Phase_Dict[i_phase].number_of_concentration_data = 0;
-            
+
             loop_data{
-                
+
                 if(Data_Dict[i_phase][i_data].type == concentration_data){
-                    
+
                     Phase_Dict[i_phase].number_of_concentration_data ++;
                 }
             }
@@ -345,7 +345,7 @@ void init_all_for_run(void)
         rCFD_UDF._rCFD_user_set_Balance_Dict();
 #endif
     }
-    
+
     /* 8. Topo_Dict */
     {
         rCFD_default_Topo_Dict();
@@ -467,7 +467,7 @@ void init_all_for_run(void)
         loop_islands{
 
             Rec.global_frame[i_island] = 0;
-            
+
             Rec.prev_global_frame[i_island] = 0;
         }
 

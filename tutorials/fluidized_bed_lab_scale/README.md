@@ -15,7 +15,7 @@
 
 - start Ansys/fluent by e.g. *fluent 3ddp -t4 &* from this folder
 - read FB_tutorial.scm
-- type into fluent console (rcfd_p1), followed by (rcfd_p1), ..., (rcfd_p11); or simply (rcfd_prep)
+- type into fluent console (rcfd_p1), followed by (rcfd_p2), ..., (rcfd_p11); or simply (rcfd_prep)
 
 - c2c patterns will be stored into ./data/c2c
 - vof fields will be stored into ./data/vof

@@ -124,6 +124,8 @@
         //Tracer_Dict.random_walk[gas] = 1;
 
         //Tracer_Dict.random_walk_velocity_ratio[gas] = 0.1;
+
+        Tracer_Dict.avoid_information_lock_cells_on = 1;        
 #endif
     }
 

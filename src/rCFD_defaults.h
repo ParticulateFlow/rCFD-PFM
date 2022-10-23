@@ -187,6 +187,8 @@
         }
 
         Tracer_Dict.C2C_format = c0_n0_c1_n1_w0;
+        
+        Tracer_Dict.avoid_information_lock_cells_on = 0;
 #endif
     }
 

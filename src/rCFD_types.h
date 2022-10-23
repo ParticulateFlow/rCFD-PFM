@@ -157,6 +157,8 @@
 
         short   C2C_format;
 
+        short   avoid_information_lock_cells_on;
+
     } Tracer_Dict_type;
 
     enum{ /* norm_types */

@@ -621,9 +621,10 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                 if(Solver.global_run_counter == 0){
 
-                    srand(time(0));
+                    unsigned int seed = (unsigned int)time(0);
+                    srand(seed);
 
-                    Message("\n\nInitialized random generator");
+                    Message("\n\nInitialized random generator with seed %u", seed);
                 }
 #endif
 

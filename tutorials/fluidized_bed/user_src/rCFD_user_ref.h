@@ -73,7 +73,7 @@
 
         Solver_Dict.data_drifting_on =                     1;
 
-        Solver_Dict.face_diffusion_on =                    0;
+        Solver_Dict.face_swap_diffusion_on =               0;
 
         Solver_Dict.recurrence_process_on =                1;
 

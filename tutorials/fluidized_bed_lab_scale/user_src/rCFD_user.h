@@ -329,20 +329,20 @@
     {
 #if RP_NODE
 
-#if 1   // local vars
-
-    int     i_cell, i_frame;
-
-    double  volume_in, volume_in_global, volume_in2, volume_in2_global, volume_out, volume_out_global;
-
-    double  mean_conc_out_A, mean_conc_out_B, sum_of_outgoing_conc;
-
-    double  primary_inflow, secondary_inflow;
-
-#endif
-
         if(i_phase == gas){
 
+#if 1       // local vars
+
+            int     i_cell, i_frame;
+
+            double  volume_in, volume_in_global, volume_in2, volume_in2_global, volume_out, volume_out_global;
+
+            double  mean_conc_out_A, mean_conc_out_B, sum_of_outgoing_conc;
+
+            double  primary_inflow, secondary_inflow;
+
+#endif
+        
             // initializations
             {
                 volume_in = 0.0; volume_in2 = 0.0; volume_out = 0.0;

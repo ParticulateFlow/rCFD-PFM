@@ -776,18 +776,15 @@ DEFINE_ON_DEMAND(rCFD_run)
 
                                             relax_adaption = 1.0;
                                         }
-                                    }
-                                    else{
-                                        relax_adaption = 0.0;
-                                    }
 
-                                    loop_int_cells{
+                                        loop_int_cells{
 
-                                        i_frame = Rec.global_frame[_C.island_id[i_cell]];
+                                            i_frame = Rec.global_frame[_C.island_id[i_cell]];
 
-                                        if(_C.vof_changed[i_phase][i_cell] > 0.0){
+                                            if(_C.vof_changed[i_phase][i_cell] > 0.0){
 
-                                            _C.data[_i_data] *= 1.0 + relax_adaption *((_C.vof[_i_vof] - _C.vof_changed[i_phase][i_cell]) / _C.vof[_i_vof] - 1.0);
+                                                _C.data[_i_data] *= 1.0 + relax_adaption *((_C.vof[_i_vof] - _C.vof_changed[i_phase][i_cell]) / _C.vof[_i_vof] - 1.0);
+                                            }
                                         }
                                     }
                                 }

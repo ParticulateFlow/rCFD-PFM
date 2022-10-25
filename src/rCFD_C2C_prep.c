@@ -679,7 +679,7 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 
         if(Tracer_Dict.random_walk[i_phase]){
 
-            random_walk_velocity = rCFD_UDF._rCFD_user_set_random_walk_velocity();
+            random_walk_velocity = Tracer_Dict.random_walk_velocity_ratio[i_phase] * v_mag;
 
             rand_real =         2.*((double)rand()/(double)RAND_MAX-0.5);
             p->user[p_u_rwm] =  rand_real * random_walk_velocity;
@@ -713,8 +713,14 @@ DEFINE_DPM_SCALAR_UPDATE(rCFD_update_Tracers,i_cell,t,initialize,p)
 
         if(Tracer_Dict.random_walk[i_phase]){
 
-            random_walk_velocity = rCFD_UDF._rCFD_user_set_random_walk_velocity();
+            v_mag = sqrt( C_U(i_cell, t_phase) * C_U(i_cell, t_phase) +
+                          C_V(i_cell, t_phase) * C_V(i_cell, t_phase) +
+                          C_W(i_cell, t_phase) * C_W(i_cell, t_phase) );
 
+            random_walk_velocity = Tracer_Dict.random_walk_velocity_ratio[i_phase] * v_mag;
+
+            // this keeps the direction of fluctuation, just scales its magnitude,
+            // most probably, this results in large diffusion
             p->user[p_u_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
             p->user[p_v_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
             p->user[p_w_rwm] *= random_walk_velocity / p->user[p_vel_rwm_old];
@@ -902,7 +908,11 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 
         int     i_phase, i_state, i_tracer, i_cell, i_layer = 0, i_face;
 
-        int     total_number_of_stored_C2Cs, number_of_unhit_cells, number_of_fill_loops, c0, c1, c;
+        int     total_number_of_stored_C2Cs, number_of_unhit_cells, number_of_fill_loops, number_of_lock_cells = 0;
+
+        int     c0, c1, c, node0, node1;
+        
+        double  w0;
 
         FILE    *f_out = NULL, *f_trn = NULL;
 
@@ -911,7 +921,6 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
         Domain  *d = Get_Domain(1);
 
         Thread  *t, *t_mix = NULL, *t_phase;
-
 #endif
 
         /* get ANSYS fluid thread */
@@ -947,27 +956,86 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
 
             /* write C2C shifts */
             {
-                loop_int_cells{
-
-                    _C.weight_after_shift[i_cell] = 0.0;
-                }
-
                 if(Tracer.monitor_counter[i_phase] > 0){
+                    
+                    // avoid cells which point to themselves but do not receive information from other cells)
+                    if(Tracer_Dict.avoid_information_lock_cells_on){
+                        
+                        // initialize _C.hit_by_other_cell = 0 (all cells)
+                        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop(i_cell,t){
 
-                    fprintf(f_out,"%d \n", Tracer.monitor_counter[i_phase]);
+                                _C.hit_by_other_cell[i_cell] = 0;
 
-                    for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
+                        }end_c_loop(i_cell,t)}};
 
-                        fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c0);
-                        fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node0);
-                        fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].c1);
-                        fprintf(f_out,"%d ",Tracer.shifts[i_phase][i_tracer].node1);
-                        fprintf(f_out,"%e ",Tracer.shifts[i_phase][i_tracer].w0);
+                        // loop tracers and event. set _C.hit_by_other_cell = 1
+                        for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
 
-                        _C.weight_after_shift[Tracer.shifts[i_phase][i_tracer].c1] += Tracer.shifts[i_phase][i_tracer].w0;
+                            c0 =        Tracer.shifts[i_phase][i_tracer].c0;
+                            node0 =     Tracer.shifts[i_phase][i_tracer].node0;
+                            c1 =        Tracer.shifts[i_phase][i_tracer].c1;
+                            node1 =     Tracer.shifts[i_phase][i_tracer].node1;
 
+                            if((c0 != c1) || (node0 != node1)){
+
+                                _C.hit_by_other_cell[c1] += 1;
+                            }
+                        }
+
+                        // loop tracers and count lock cells
+                        {
+                            number_of_lock_cells = 0;
+
+                            for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
+
+                                c1 = Tracer.shifts[i_phase][i_tracer].c1;
+
+                                if(_C.hit_by_other_cell[c1] == 0){
+
+                                    number_of_lock_cells++;
+                                }
+                            }
+                        }                       
+                    }
+                    else{
+                        
+                        // initialize _C.hit_by_other_cell = 1 (all cells)
+                        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop(i_cell,t){
+
+                                _C.hit_by_other_cell[i_cell] = 1;
+
+                        }end_c_loop(i_cell,t)}};
                     }
 
+                    /* set _C.weight_after_shift = 0 (per phase, used for identifying unhit cells)*/
+                    {
+                        loop_cells{
+
+                            _C.weight_after_shift[i_cell] = 0.0;
+                        }
+                    }               
+                    
+                    /* write valid c2c shifts */
+                    {
+                        fprintf(f_out,"%d \n", (Tracer.monitor_counter[i_phase] - number_of_lock_cells));
+
+                        for(i_tracer = 0; i_tracer < Tracer.monitor_counter[i_phase]; i_tracer++){
+
+                            c0 =        Tracer.shifts[i_phase][i_tracer].c0;
+                            node0 =     Tracer.shifts[i_phase][i_tracer].node0;
+                            c1 =        Tracer.shifts[i_phase][i_tracer].c1;
+                            node1 =     Tracer.shifts[i_phase][i_tracer].node1;
+                            w0 =        Tracer.shifts[i_phase][i_tracer].w0;
+
+                            if(_C.hit_by_other_cell[c1]){
+                            
+                                fprintf(f_out,"%d %d %d %d %e\n", c0, node0, c1, node1, w0);
+
+                                _C.weight_after_shift[c1] += w0; // set per phase
+                            }
+                        }
+                    }
+                    
                     total_number_of_stored_C2Cs = Tracer.monitor_counter[i_phase];
 
                     Tracer.monitor_counter[i_phase] = 0;
@@ -980,9 +1048,9 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                 }
 
                 fclose(f_out);
-            }
+            }       
 
-            /* Message & Transcript */
+            /* check for unhit cells, message & transcript */
             {
                 /* check for large regions of unhit cells, which cannot be repaired by fill_holes */
                 {
@@ -1081,6 +1149,7 @@ DEFINE_EXECUTE_AT_END(rCFD_write_C2Cs)
                     }
                 }
             }
+
         }
 
         Tracer.frame_counter++;
@@ -1523,7 +1592,7 @@ DEFINE_ON_DEMAND(rCFD_write_Rec)
                 {
                     loop_frames{
 
-                        if(i_frame < (Solver_Dict.number_of_frames - 2)){
+                        if(i_frame < (Solver_Dict.number_of_frames - 1)){
 
                             Rec_jump[i_frame] = i_frame + 1;
 

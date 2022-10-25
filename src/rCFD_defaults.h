@@ -49,7 +49,7 @@
 
         Solver_Dict.recurrence_process_on =    1;
         Solver_Dict.data_convection_on =       1;
-        Solver_Dict.face_diffusion_on =        1;
+        Solver_Dict.face_swap_diffusion_on =   1;
         Solver_Dict.data_binarization_on =     0;
         Solver_Dict.data_drifting_on =         0;
         Solver_Dict.balance_correction_on =    1;
@@ -122,6 +122,8 @@
         File_Dict.Matrix_filename =                    "./rec/matrix";
 
         File_Dict.Balance_filename =                   "./post/balance_monitor.out";
+
+        File_Dict.Rec_Frames_filename =                "./post/rec_frames_monitor.out";
     }
 
     void rCFD_default_Phase_Dict(void)
@@ -132,6 +134,8 @@
         for(i_phase = 0; i_phase < Solver_Dict.number_of_phases; i_phase++){
 
             Phase_Dict[i_phase].number_of_data = 1;
+
+            Phase_Dict[i_phase].number_of_concentration_data = 1;
 
             Phase_Dict[i_phase].time_step = Solver_Dict.global_time_step;
 
@@ -178,9 +182,13 @@
         loop_phases{
 
             Tracer_Dict.random_walk[i_phase] = 0;
+
+            Tracer_Dict.random_walk_velocity_ratio[i_phase] = 0.1;
         }
 
         Tracer_Dict.C2C_format = c0_n0_c1_n1_w0;
+        
+        Tracer_Dict.avoid_information_lock_cells_on = 0;
 #endif
     }
 
@@ -199,6 +207,17 @@
     {
 
         Rec_Dict.format = quarter_jumps_format;
+
+        Rec_Dict.monitor_rec_frames_on = 0;
+
+        if(Solver_Dict.number_of_phases == 1){
+
+            Rec_Dict.adapt_vof_stitching_on = 0;
+        }
+        else{
+
+            Rec_Dict.adapt_vof_stitching_on = 1;
+        }
 
         Rec_Dict.min_seq_length = (int)((double)Solver_Dict.number_of_frames/25.);
 
@@ -220,6 +239,8 @@
 
             Rec_Dict.off_diagonal_band_width = 1;
         }
+
+        Rec_Dict.number_of_adapt_vof_loops = 1;
     }
 
     void rCFD_default_Data_Dict(void)
@@ -233,7 +254,7 @@
 
                 Data_Dict[i_phase][i_data].type = generic_data;
 
-                Data_Dict[i_phase][i_data].physical_diff = 1./8.;
+                Data_Dict[i_phase][i_data].face_swap_diffusion = 1./8.;
 
                 Data_Dict[i_phase][i_data].binarization_art_diff = 1./8.;
 
@@ -394,6 +415,8 @@
         Solver.global_time = 0.0;
 
         Solver.balance_file_opened = 0;
+
+        Solver.rec_frames_monitor_file_opened = 0;
     }
 
     void rCFD_default_Topo(void)
@@ -708,6 +731,8 @@
         Rec.frame_in_sequence = 0;
 
         Rec.sequence_length = Rec_Dict.min_seq_length;
+
+        Rec.jumped_at_last_frame = 0;
 
         loop_states{
 

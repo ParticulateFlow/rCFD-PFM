@@ -40,7 +40,7 @@
 
         short   recurrence_process_on;
         short   data_convection_on;
-        short   face_diffusion_on;
+        short   face_swap_diffusion_on;
         short   data_binarization_on;
         short   data_drifting_on;
         short   balance_correction_on;
@@ -97,6 +97,8 @@
 
         const char    *Balance_filename;
 
+        const char    *Rec_Frames_filename;
+
         const char    *Dict_filename;
 
     } File_Dict_type;
@@ -104,6 +106,8 @@
     typedef struct Phase_Dict_struct
     {
         int         number_of_data;
+
+        int         number_of_concentration_data;
 
         double      time_step;
 
@@ -149,7 +153,11 @@
 
         short   *random_walk;           /* [i_phase] */
 
+        double  *random_walk_velocity_ratio;
+
         short   C2C_format;
+
+        short   avoid_information_lock_cells_on;
 
     } Tracer_Dict_type;
 
@@ -179,10 +187,15 @@
     {
         short   format;
 
+        short   monitor_rec_frames_on;
+        short   adapt_vof_stitching_on;
+
         short   min_seq_length;
         short   max_seq_length;
 
         short   off_diagonal_band_width;
+
+        short   number_of_adapt_vof_loops;
 
     } Rec_Dict_type;
 
@@ -198,7 +211,7 @@
     {
         short       type;
 
-        double      physical_diff;
+        double      face_swap_diffusion;
 
         double      binarization_art_diff;
 
@@ -275,6 +288,8 @@
 
         short       balance_file_opened;
 
+        short       rec_frames_monitor_file_opened;
+
         double      global_time;
 
         double      *timestep_width;
@@ -299,6 +314,8 @@
         double      *weight_after_swap;
 
         double      ***vof;             /* [i_frame][i_cell][i_phase] */
+
+        double      **vof_changed;      /* [i_phase][i_cell] */
 
         double      ***data;            /* [i_phase][i_cell][i_data] */
         double      ***data_shift;
@@ -439,7 +456,13 @@
     typedef struct Rec_struct
     {
         int     *global_frame;              /* [i_island] */
+
+        int     *prev_global_frame;
+
         int     frame_in_sequence;
+
+        short   jumped_at_last_frame;
+
         int     sequence_length;
 
         int     ****jumps;                  /* [state, state2, island, frame] */

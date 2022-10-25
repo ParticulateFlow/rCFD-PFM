@@ -125,7 +125,7 @@
 
         //Tracer_Dict.random_walk_velocity_ratio[gas] = 0.1;
 
-        Tracer_Dict.avoid_information_lock_cells_on = 1;        
+        Tracer_Dict.avoid_information_lock_cells_on = 1;
 #endif
     }
 
@@ -342,7 +342,7 @@
             double  primary_inflow, secondary_inflow;
 
 #endif
-        
+
             // initializations
             {
                 volume_in = 0.0; volume_in2 = 0.0; volume_out = 0.0;

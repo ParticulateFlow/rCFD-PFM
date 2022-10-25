@@ -927,17 +927,17 @@ DEFINE_ON_DEMAND(rCFD_run)
                                                 relax_adaption = 1.0;
                                             }
 
-											loop_int_cells{
+                                            loop_int_cells{
 
-												if(_C.vof_changed[i_phase][i_cell] > 0.0){
+                                                if(_C.vof_changed[i_phase][i_cell] > 0.0){
 
-													if(mixing_mass_after_stitching < mixing_mass_before_stitching){
+                                                    if(mixing_mass_after_stitching < mixing_mass_before_stitching){
 
-														_C.data[_i_data] = _C.data[_i_data] + relax_adaption * (data_max_of_neighbors[i_cell] - _C.data[_i_data]);
-													}
-												}
-											}
-											
+                                                        _C.data[_i_data] = _C.data[_i_data] + relax_adaption * (data_max_of_neighbors[i_cell] - _C.data[_i_data]);
+                                                    }
+                                                }
+                                            }
+
                                         }
                                     }
 

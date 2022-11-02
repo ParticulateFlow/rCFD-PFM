@@ -18,7 +18,7 @@
 */
 
     #define     Global_Version_Year     2022
-    #define     Global_Version_Month    8
+    #define     Global_Version_Month    10
 
     enum{
         no_verbose,

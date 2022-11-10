@@ -8,7 +8,7 @@
 (define rCFD_user_src_dir "./user_src")
 (define ANSYS_Fluent_case_dir "./ansys_fluent")
 (define ANSYS_Fluent_case_file "LabScale_FB")
-(define number_of_rCFD_episodes 15000)  ;; (5 * 15 s * 200 = 15000)
+(define number_of_rCFD_episodes 3000)  ;; (15 s * 200 = 3000)
 (define i 0)
 ;;
 (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))

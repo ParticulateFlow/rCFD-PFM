@@ -73,7 +73,7 @@
 
         Solver_Dict.number_of_frames =                     49;
 
-        Solver_Dict.number_of_runs =                       735;
+        Solver_Dict.number_of_runs =                       48;
 
         Solver_Dict.max_fill_loops =                       5;
 

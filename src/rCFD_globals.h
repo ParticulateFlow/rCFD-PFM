@@ -24,6 +24,7 @@
 
     static  Topo_Dict_type      Topo_Dict;
 
+    static  rCFD_UDF_type       rCFD_UDF;
 
 #if RP_NODE
     static  Tracer_Dict_type    Tracer_Dict;

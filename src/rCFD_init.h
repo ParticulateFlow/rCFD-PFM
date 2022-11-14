@@ -5,6 +5,7 @@
 #include "rCFD_globals.h"
 #include "rCFD_macros.h"
 #include "rCFD_parallel.h"
+#include "rCFD_user_defaults.h"
 #include "rCFD_user.h"
 #include "rCFD_layer.h"
 
@@ -15,66 +16,290 @@
     www.particulate-flow.at
 */
 
-void init_all(void)
+void init_all_for_prep(void)
 {
-    /* D1. Solver_Dict & Solver */
+    rCFD_user_register_default_functions();
+    rCFD_user_register_functions();
+
+    /* 1. Create dictionaries and define file names */
+    {
+        rCFD_default_File_Dict();
+
+        rCFD_UDF._rCFD_user_set_File_Dict();
+    }
+
+    /* 2. Solver_Dict & Solver */
     {
         rCFD_default_Solver_Dict();
 
-        rCFD_user_set_Solver_Dict();
+        Solver_Dict.mode = preparation_mode;
+
+        rCFD_UDF._rCFD_user_set_Solver_Dict();
+
+        /*  TODO this might be changed in future,
+            but at the moment we restrict ourselves to use
+            just the base cell layer for the generation of c2c patterns */
+
+        const short number_of_layers_for_preparation = 1;
+
+        if(Solver_Dict.number_of_layers > number_of_layers_for_preparation){
+
+            Solver_Dict.number_of_layers = number_of_layers_for_preparation;
+
+            Message0("\nWARNING: reducing number of layers to %d for preparation step\n",number_of_layers_for_preparation);
+
+        }
 
         rCFD_default_Solver();
     }
 
-    /* D2. File_Dict */
+    /* 3. Start transcript file */
     {
-        rCFD_default_File_Dict();
+        FILE    *f_trn = fopen(File_Dict.Prep_Transscript_filename, "w" );
 
-        rCFD_user_set_File_Dict();
+        if(f_trn){
+
+            fprintf(f_trn,"rCFD_prep");
+
+            fprintf(f_trn,"\n\n   Version: %4d.%02d", Solver_Dict.version_year, Solver_Dict.version_month);
+
+            time_t      current_time = time(NULL);
+
+            char        *c_time_string = ctime(&current_time);
+
+            fprintf(f_trn,"\n\n   rCFD_prep starts @ %s", c_time_string);
+
+            fclose(f_trn);
+        }
     }
 
-    /* D3. Phase_Dict */
+    /* 4. Phase_Dict */
     {
 #if RP_NODE
         Phase_Dict = (Phase_Dict_type*)malloc(Solver_Dict.number_of_phases * sizeof(Phase_Dict_type));
 
         rCFD_default_Phase_Dict();
 
-        rCFD_user_set_Phase_Dict();
+        rCFD_UDF._rCFD_user_set_Phase_Dict();
 #endif
     }
 
-    /* D4. Tracer_Dict */
+    /* 5. Tracer_Dict */
     {
 #if RP_NODE
         Tracer_Dict.random_walk = (short*)malloc(Solver_Dict.number_of_phases * sizeof(short));
 
+        Tracer_Dict.random_walk_velocity_ratio = (double*)malloc(Solver_Dict.number_of_phases * sizeof(double));
+
         rCFD_default_Tracer_Dict();
 
-        rCFD_user_set_Tracer_Dict();
+        rCFD_UDF._rCFD_user_set_Tracer_Dict();
 #endif
     }
 
-    /* D5. Norm_Dict */
+    /* 6. Norm_Dict */
     {
 #if RP_NODE
         rCFD_default_Norm_Dict();
 
-        rCFD_user_set_Norm_Dict();
+        rCFD_UDF._rCFD_user_set_Norm_Dict();
 #endif
     }
 
-    /* D6. Rec_Dict */
+    /* 7. Rec_Dict */
     {
         rCFD_default_Rec_Dict();
 
-        rCFD_user_set_Rec_Dict();
+        rCFD_UDF._rCFD_user_set_Rec_Dict();
     }
 
-    /* D7. Data_Dict */
+    /* 8. Topo_Dict */
+    {
+        rCFD_default_Topo_Dict();
+
+        rCFD_UDF._rCFD_user_set_Topo_Dict();
+
+#if RP_NODE
+
+        Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_Dict_type));
+
+        rCFD_default_Cell_Dict_L0();
+
+        int i_layer;
+
+        loop_layers{
+
+            rCFD_UDF._rCFD_user_set_Cell_Dict(i_layer);
+        }
+
+        Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_Dict_type));
+
+        rCFD_default_Face_Dict_L0();
+
+        loop_layers{
+
+            rCFD_UDF._rCFD_user_set_Face_Dict(i_layer);
+        }
+#endif
+    }
+
+    /* 9. Topo */
+    {
+        rCFD_default_Topo();
+
+#if RP_NODE
+        int i_layer;
+
+        Topo.Cell = (Cell_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_type));
+
+        Topo.Face = (Face_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_type));
+
+        i_layer = 0;
+
+        /* 9.1. allocate cells for L0 */
+        {
+            rCFD_allocate_layer(i_layer);
+        }
+
+        /* 9.2. set cell default values for L0 */
+        {
+            rCFD_default_Cell_L0();
+        }
+
+        /* 9.3. allocate faces for L0 */
+        {
+            _F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
+
+            _F.c1 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
+
+            _F.area = malloc_r_2d(_Face_Dict.number_of_faces, 3);
+        }
+
+        /* 9.4. set face default values for L0 */
+        {
+            rCFD_default_Face_L0();
+        }
+
+#endif
+    }
+
+    /* 10. Tracers */
     {
 #if RP_NODE
-        int i_phase;
+
+        Tracer.monitor_counter = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
+
+        Tracer.number_of_shifts = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
+
+        Tracer.shifts = (C2C_shift_type**)malloc(Solver_Dict.number_of_phases * sizeof(C2C_shift_type*));
+
+        rCFD_default_Tracer();
+
+#endif
+    }
+
+    /* 11. Norms */
+    {
+#if RP_NODE
+        Domain  *d=Get_Domain(1);
+        Thread  *t;
+        cell_t  i_cell;
+
+        int     number_of_norms = 0;
+
+        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell,t){
+
+            if((i_cell % Norm_Dict.coarse_graining) == 0){
+
+                number_of_norms++;
+            }
+
+        }end_c_loop_int(i_cell,t)}}
+
+        Norms.number_of_norms = number_of_norms;
+
+        Norms.norm = (double*)malloc(number_of_norms * sizeof(double));
+
+        rCFD_default_Norms();
+
+#endif
+    }
+
+    /* 12. Parallel grid communication */
+    {
+#if RP_NODE
+
+        init_parallel_grid_L0();
+#endif
+    }
+
+}
+
+void init_all_for_run(void)
+{
+    rCFD_user_register_default_functions();
+    rCFD_user_register_functions();
+
+    /* 1. Create dictionaries and define file names */
+    {
+        rCFD_default_File_Dict();
+
+        rCFD_UDF._rCFD_user_set_File_Dict();
+    }
+
+    /* 2. Solver_Dict & Solver */
+    {
+        rCFD_default_Solver_Dict();
+
+        Solver_Dict.mode = run_mode;
+
+        rCFD_UDF._rCFD_user_set_Solver_Dict();
+
+        rCFD_default_Solver();
+    }
+
+    /* 3. Start transcript file */
+    {
+        FILE    *f_trn = fopen(File_Dict.Run_Transscript_filename, "w" );
+
+        if(f_trn){
+
+            fprintf(f_trn,"rCFD_run");
+
+            fprintf(f_trn,"\n\n   Version: %4d.%02d", Solver_Dict.version_year, Solver_Dict.version_month);
+
+            time_t      current_time = time(NULL);
+
+            char        *c_time_string = ctime(&current_time);
+
+            fprintf(f_trn,"\n\n   rCFD_run starts @ %s", c_time_string);
+
+            fclose(f_trn);
+        }
+    }
+
+    /* 4. Phase_Dict */
+    {
+#if RP_NODE
+        Phase_Dict = (Phase_Dict_type*)malloc(Solver_Dict.number_of_phases * sizeof(Phase_Dict_type));
+
+        rCFD_default_Phase_Dict();
+
+        rCFD_UDF._rCFD_user_set_Phase_Dict();
+#endif
+    }
+
+    /* 5. Rec_Dict */
+    {
+        rCFD_default_Rec_Dict();
+
+        rCFD_UDF._rCFD_user_set_Rec_Dict();
+    }
+
+    /* 6. Data_Dict */
+    {
+#if RP_NODE
+        int i_phase, i_data;
 
         Data_Dict = (Data_Dict_type**)malloc(Solver_Dict.number_of_phases * sizeof(Data_Dict_type*));
 
@@ -85,11 +310,25 @@ void init_all(void)
 
         rCFD_default_Data_Dict();
 
-        rCFD_user_set_Data_Dict();
+        rCFD_UDF._rCFD_user_set_Data_Dict();
+
+        /* adapt Phase_Dict because of user Data_Dict input */
+        loop_phases{
+
+            Phase_Dict[i_phase].number_of_concentration_data = 0;
+
+            loop_data{
+
+                if(Data_Dict[i_phase][i_data].type == concentration_data){
+
+                    Phase_Dict[i_phase].number_of_concentration_data ++;
+                }
+            }
+        }
 #endif
     }
 
-    /* D8. Balance_Dict */
+    /* 7. Balance_Dict */
     {
 #if RP_NODE
         int i_phase;
@@ -103,33 +342,46 @@ void init_all(void)
 
         rCFD_default_Balance_Dict();
 
-        rCFD_user_set_Balance_Dict();
+        rCFD_UDF._rCFD_user_set_Balance_Dict();
 #endif
     }
 
-    /* D9. Topo_Dict */
+    /* 8. Topo_Dict */
     {
         rCFD_default_Topo_Dict();
 
-        rCFD_user_set_Topo_Dict();
+        rCFD_UDF._rCFD_user_set_Topo_Dict();
 
 #if RP_NODE
-        Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_Dict_type));
 
-        Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_Dict_type));
+        Topo_Dict.Cell_Dict = (Cell_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_Dict_type));
 
         rCFD_default_Cell_Dict_L0();
 
+        int i_layer;
+
+        loop_layers{
+
+            rCFD_UDF._rCFD_user_set_Cell_Dict(i_layer);
+        }
+
+        Topo_Dict.Face_Dict = (Face_Dict_type*)malloc(Solver_Dict.number_of_layers * sizeof(Face_Dict_type));
+
         rCFD_default_Face_Dict_L0();
+
+        loop_layers{
+
+            rCFD_UDF._rCFD_user_set_Face_Dict(i_layer);
+        }
 #endif
     }
 
-    /* G1. Topo */
+    /* 9. Topo */
     {
         rCFD_default_Topo();
 
 #if RP_NODE
-        int i_layer, i_face;
+        int i_layer;
 
         Topo.Cell = (Cell_type*)malloc(Solver_Dict.number_of_layers * sizeof(Cell_type));
 
@@ -137,36 +389,31 @@ void init_all(void)
 
         i_layer = 0;
 
-        /* T.1. allocate cells for L0 */
+        /* 9.1. allocate cells for L0 */
         {
             rCFD_allocate_layer(i_layer);
         }
 
-        /* T.2. set cell default values for L0 */
+        /* 9.2. set cell default values for L0 */
         {
             rCFD_default_Cell_L0();
         }
 
-        /* T.3. allocate faces for L0 */
+        /* 9.3. allocate faces for L0 */
         {
             _F.c0 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
 
             _F.c1 = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
 
-            _F.area = (double**)malloc(_Face_Dict.number_of_faces * sizeof(double*));
-
-            loop_faces{
-
-                _F.area[i_face] = (double*)malloc( 3 * sizeof(double));
-            }
+            _F.area = malloc_r_2d(_Face_Dict.number_of_faces, 3);
         }
 
-        /* T.4. set face default values for L0 */
+        /* 9.4. set face default values for L0 */
         {
             rCFD_default_Face_L0();
         }
 
-        /* T.5. set pointers of upper grid layers to NULL */
+        /* 9.5. set pointers of upper grid layers to NULL */
         if(Solver_Dict.number_of_layers > 1){
 
             loop_layers_but_L0{
@@ -209,83 +456,31 @@ void init_all(void)
 #endif
     }
 
-    /* G3. Tracer */
+    /* 10. Rec */
     {
-#if RP_NODE
-
-        Tracer.monitor_counter = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-
-        Tracer.number_of_shifts = (int*)malloc(Solver_Dict.number_of_phases * sizeof(int));
-
-        Tracer.shifts = (C2C_shift_type**)malloc(Solver_Dict.number_of_phases * sizeof(C2C_shift_type*));
-
-        rCFD_default_Tracer();
-
-#endif
-    }
-
-    /* G4. Norms */
-    {
-#if RP_NODE
-        Domain  *d=Get_Domain(1);
-        Thread  *t;
-        cell_t  i_cell;
-
-        int     number_of_norms = 0;
-
-        thread_loop_c(t,d){if(FLUID_CELL_THREAD_P(t)){begin_c_loop_int(i_cell,t){
-
-            if((i_cell % Norm_Dict.coarse_graining) == 0){
-
-                number_of_norms++;
-            }
-
-        }end_c_loop_int(i_cell,t)}}
-
-        Norms.number_of_norms = number_of_norms;
-
-        Norms.norm = (double*)malloc(number_of_norms * sizeof(double));
-
-        rCFD_default_Norms();
-
-#endif
-    }
-
-    /* G5. Rec */
-    {
-        int     i_state, i_state2, i_island;
+        int     i_island;
 
         Rec.global_frame = (int*)malloc(Solver_Dict.number_of_islands * sizeof(int));
+
+        Rec.prev_global_frame = (int*)malloc(Solver_Dict.number_of_islands * sizeof(int));
 
         loop_islands{
 
             Rec.global_frame[i_island] = 0;
+
+            Rec.prev_global_frame[i_island] = 0;
         }
 
-        Rec.jumps = (int****)malloc(Solver_Dict.number_of_states * sizeof(int***));
-
-        loop_states{
-
-            Rec.jumps[i_state] = (int***)malloc(Solver_Dict.number_of_states * sizeof(int**));
-
-            loop_states2{
-
-                Rec.jumps[i_state][i_state2] = (int**)malloc(Solver_Dict.number_of_islands * sizeof(int*));
-
-                loop_islands{
-
-                    Rec.jumps[i_state][i_state2][i_island] = (int*)malloc(Solver_Dict.number_of_frames * sizeof(int));
-                }
-            }
-        }
+        Rec.jumps = malloc_i_4d(Solver_Dict.number_of_states, Solver_Dict.number_of_states,
+                                Solver_Dict.number_of_islands, Solver_Dict.number_of_frames);
 
         rCFD_default_Rec();
     }
 
-    /* G6. Balance (first initialization) */
+    /* 11. Balance (first initialization) */
     {
 #if RP_NODE
-        int i_phase, i_data, i_node, i_node2;
+        int i_phase, i_data;
 
         Balance = (Balance_type**)malloc(Solver_Dict.number_of_phases * sizeof(Balance_type*));
 
@@ -305,20 +500,13 @@ void init_all(void)
                 /* per node balancing */
                 else if(Balance_Dict[i_phase][i_data].type == per_node_balancing){
 
-                    Balance[i_phase][i_data].node2node_flux = (double**)malloc((node_last + 1) * sizeof(double*));
-                    Balance[i_phase][i_data].node2node_data_flux = (double**)malloc((node_last + 1) * sizeof(double*));
+                    int nbytes = compute_node_count * compute_node_count * sizeof(double);
 
-                    for(i_node = 0; i_node < (node_last + 1); i_node++){
+                    Balance[i_phase][i_data].node2node_flux      = malloc_r_2d(compute_node_count, compute_node_count);
+                    Balance[i_phase][i_data].node2node_data_flux = malloc_r_2d(compute_node_count, compute_node_count);
 
-                        Balance[i_phase][i_data].node2node_flux[i_node] = (double*)malloc((node_last + 1) * sizeof(double));
-                        Balance[i_phase][i_data].node2node_data_flux[i_node] = (double*)malloc((node_last + 1) * sizeof(double));
-
-                        for(i_node2 = 0; i_node2 < (node_last + 1); i_node2++){
-
-                            Balance[i_phase][i_data].node2node_flux[i_node][i_node2] = 0.0;
-                            Balance[i_phase][i_data].node2node_data_flux[i_node][i_node2] = 0.0;
-                        }
-                    }
+                    memset(Balance[i_phase][i_data].node2node_flux[0],      0, nbytes);
+                    memset(Balance[i_phase][i_data].node2node_data_flux[0], 0, nbytes);
                 }
 
                 Balance[i_phase][i_data].mass_integral = 0.0;
@@ -341,14 +529,14 @@ void init_all(void)
 #endif
     }
 
-    /* G1 + G6: Init data fields and update balances */
+    /* 12. Initialize data fields and update balances */
     {
 #if RP_NODE
         int i_layer, i_frame, i_phase, i_data, i_cell;
 
         i_layer = 0;    /* user initialization just for base layer of grid, might be changed to loop_layers in future */
 
-        rCFD_user_init_Data(i_layer);
+        rCFD_UDF._rCFD_user_init_Data(i_layer);
 
         i_frame = 0;
 
@@ -400,11 +588,11 @@ void init_all(void)
             }
         }
 
-        rCFD_user_post();   /* post-process initialization */
+        rCFD_UDF._rCFD_user_post();    /* post-process initialization */
 #endif
     }
 
-    /* P: Parallel grid communication */
+    /* 13. Parallel grid communication */
     {
 #if RP_NODE
 
@@ -412,7 +600,7 @@ void init_all(void)
 #endif
     }
 
-    /* L: Initialize layers */
+    /* 14. Initialize layers */
     if(Solver_Dict.number_of_layers > 1){
 #if RP_NODE
 
@@ -455,14 +643,12 @@ void init_all(void)
         while(upper_layer < Solver_Dict.number_of_layers)
         {
 
-            /* L.1 create temporary faces_of_cell structure (tmp_faces_of_cell) */
+            /* 14.1 create temporary faces_of_cell structure (tmp_faces_of_cell) */
             {
 
-                tmp_faces_of_cell = (int**)malloc(_Cell_Dict.number_of_cells * sizeof(int*));
+                tmp_faces_of_cell = malloc_i_2d(_Cell_Dict.number_of_cells, Solver_Dict.max_number_of_faces_per_cell);
 
                 loop_cells{
-
-                    tmp_faces_of_cell[i_cell] = (int*)malloc(Solver_Dict.max_number_of_faces_per_cell * sizeof(int));
 
                     for(i_cell_face = 0; i_cell_face < Solver_Dict.max_number_of_faces_per_cell; i_cell_face++){
 
@@ -538,7 +724,7 @@ void init_all(void)
                 }
             }
 
-            /* L.2 create cell clusters, set number of upper layer cells */
+            /* 14.2 create cell clusters, set number of upper layer cells */
             {
                 /* initialize _C.marked and _C.parent_cell */
                 loop_cells{
@@ -635,7 +821,7 @@ void init_all(void)
                 }
             }
 
-            /* L.3 allocate and initialize upper layer grid vars */
+            /* 14.3 allocate and initialize upper layer grid vars */
             {
                 rCFD_allocate_layer(upper_layer);
 
@@ -672,7 +858,7 @@ void init_all(void)
                 }
             }
 
-            /* L.4 fill upper layer grid vars (by first set of clusters) */
+            /* 14.4 fill upper layer grid vars (by first set of clusters) */
             {
                 max_number_of_children = 0;
                 min_number_of_children = 9999;
@@ -723,7 +909,7 @@ void init_all(void)
 
             }
 
-            /* L.5 add still unassigned cells */
+            /* 14.5 add still unassigned cells */
             {
                 i_tmp2 = 0;
 
@@ -828,7 +1014,7 @@ void init_all(void)
 
             }
 
-            /* L.5.a fill upper layer vof (TODO island id)*/
+            /* 14.5.a fill upper layer vof (TODO island id)*/
             {
                 /* init vof(upper_layer) */
                 loop_frames{
@@ -881,7 +1067,7 @@ void init_all(void)
 
             }
 
-            /* L.6 fill upper layer list of child_index */
+            /* 14.6 fill upper layer list of child_index */
             {
                 /* allocate upper layer list of child_index */
                 loop_cells_of_upper_layer{
@@ -973,7 +1159,7 @@ void init_all(void)
                 }
             }
 
-            /* L.6.a re-distribute upper-layer's children */
+            /* 14.6.a re-distribute upper-layer's children */
             {
                 i_redist = 0;
 
@@ -1155,7 +1341,7 @@ void init_all(void)
                 }
             }
 
-            /* L.7 create tmp_parent_xy vars for upper_layer faces */
+            /* 14.7 create tmp_parent_xy vars for upper_layer faces */
             {
                 tmp_parent_face_index = (int*)malloc(_Face_Dict.number_of_faces * sizeof(int));
 
@@ -1164,11 +1350,9 @@ void init_all(void)
                     tmp_parent_face_index[i_face] = -1;
                 }
 
-                tmp_parent_cell_cell_index = (int**)malloc(Topo_Dict.Cell_Dict[upper_layer].number_of_cells * sizeof(int*));
+                tmp_parent_cell_cell_index = malloc_i_2d(Topo_Dict.Cell_Dict[upper_layer].number_of_cells, Solver_Dict.max_number_of_faces_per_cell);
 
                 loop_cells_of_upper_layer{
-
-                    tmp_parent_cell_cell_index[i_cell] = (int*)malloc(Solver_Dict.max_number_of_faces_per_cell * sizeof(int));
 
                     for(i_cell_face = 0; i_cell_face < Solver_Dict.max_number_of_faces_per_cell; i_cell_face++){
 
@@ -1176,11 +1360,9 @@ void init_all(void)
                     }
                 }
 
-                tmp_parent_cell_face_index = (int**)malloc(Topo_Dict.Cell_Dict[upper_layer].number_of_cells * sizeof(int*));
+                tmp_parent_cell_face_index = malloc_i_2d(Topo_Dict.Cell_Dict[upper_layer].number_of_cells, Solver_Dict.max_number_of_faces_per_cell);
 
                 loop_cells_of_upper_layer{
-
-                    tmp_parent_cell_face_index[i_cell] = (int*)malloc(Solver_Dict.max_number_of_faces_per_cell * sizeof(int));
 
                     for(i_cell_face = 0; i_cell_face < Solver_Dict.max_number_of_faces_per_cell; i_cell_face++){
 
@@ -1195,7 +1377,7 @@ void init_all(void)
 
             }
 
-            /* L.8 fill tmp_parent_xy vars */
+            /* 14.8 fill tmp_parent_xy vars */
             {
                 parent_face_count = 0;
 
@@ -1275,17 +1457,12 @@ void init_all(void)
                 }
             }
 
-            /* L.9 create and fill upper faces */
+            /* 14.9 create and fill upper faces */
             {
                 Topo.Face[upper_layer].c0 = (int*)malloc(Topo_Dict.Face_Dict[upper_layer].number_of_faces * sizeof(int));
                 Topo.Face[upper_layer].c1 = (int*)malloc(Topo_Dict.Face_Dict[upper_layer].number_of_faces * sizeof(int));
 
-                Topo.Face[upper_layer].area = (double**)malloc(Topo_Dict.Face_Dict[upper_layer].number_of_faces * sizeof(double*));
-
-                loop_faces_of_upper_layer{
-
-                    Topo.Face[upper_layer].area[i_face] = (double*)malloc (3 * sizeof(double));
-                }
+                Topo.Face[upper_layer].area = malloc_r_2d(Topo_Dict.Face_Dict[upper_layer].number_of_faces, 3);
 
                 loop_faces{
 
@@ -1315,7 +1492,7 @@ void init_all(void)
 
             }
 
-            /* L.10 consistency checks */
+            /* 14.10 consistency checks */
             {
 
                 if(Topo_Dict.Cell_Dict[upper_layer].number_of_cells < Solver_Dict.min_number_of_cells_per_layer){
@@ -1345,51 +1522,16 @@ void init_all(void)
                 }
             }
 
-            /* L.11 free local vars */
+            /* 14.11 free local vars */
             {
-                if(tmp_faces_of_cell != NULL){
+                free_i_2d(tmp_faces_of_cell);
 
-                    loop_cells{
+                free(tmp_parent_face_index);
 
-                        if(tmp_faces_of_cell[i_cell] != NULL){
+                free_i_2d(tmp_parent_cell_cell_index);
 
-                            free(tmp_faces_of_cell[i_cell]);
-                        }
-                    }
+                free_i_2d(tmp_parent_cell_face_index);
 
-                    free(tmp_faces_of_cell);
-                }
-
-                if(tmp_parent_face_index != NULL){
-
-                    free(tmp_parent_face_index);
-                }
-
-                if(tmp_parent_cell_cell_index != NULL){
-
-                    loop_cells_of_upper_layer{
-
-                        if(tmp_parent_cell_cell_index[i_cell] != NULL){
-
-                            free(tmp_parent_cell_cell_index[i_cell]);
-                        }
-                    }
-
-                    free(tmp_parent_cell_cell_index);
-                }
-
-                if(tmp_parent_cell_face_index != NULL){
-
-                    loop_cells_of_upper_layer{
-
-                        if(tmp_parent_cell_face_index[i_cell] != NULL){
-
-                            free(tmp_parent_cell_face_index[i_cell]);
-                        }
-                    }
-
-                    free(tmp_parent_cell_face_index);
-                }
 
                 if(debug_this_code){
 
@@ -1445,11 +1587,12 @@ void init_all(void)
 
             i_layer = 0;
 
-            rCFD_user_post();
+            rCFD_UDF._rCFD_user_post();
             /* data[0] should visualize clusters */
         }
 #endif
     }
 
 }
+
 #endif

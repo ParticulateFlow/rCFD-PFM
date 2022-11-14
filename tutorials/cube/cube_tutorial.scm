@@ -74,7 +74,9 @@
         rCFD_macros.h
         rCFD_init.h
         rCFD_layer.h
+        rCFD_memory.h
         rCFD_free.h
+        rCFD_user_defaults.h
         \"\" ")
 )
 
@@ -174,7 +176,7 @@
     ;; At the moment, we do not consider other case-specific (non rCFD) execute-at-end udf's
     
     (ti-menu-load-string "/define/user-defined/function-hooks/execute-at-end 
-        \"rCFD_write_Norms::libudf_rcfd_prep\" 
+        \"rCFD_write_fields::libudf_rcfd_prep\" 
         \"rCFD_write_C2Cs::libudf_rcfd_prep\"
         \"\""
     )
@@ -272,7 +274,9 @@
         rCFD_macros.h
         rCFD_init.h
         rCFD_layer.h
+        rCFD_memory.h
         rCFD_free.h
+        rCFD_user_defaults.h
         \"\" ")
 )
 

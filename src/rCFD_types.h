@@ -12,6 +12,11 @@
 
     /* A. Global Dicts */
 
+    enum{ /* solver modes */
+        preparation_mode,
+        run_mode
+    };
+
     typedef struct Solver_Dict_struct
     {
         short   version_year, version_month;
@@ -21,6 +26,8 @@
         char    run_transcript_filename[80];
 
         /* main characteristics */
+
+        short   mode;
 
         short   number_of_frames;
         short   number_of_states;
@@ -33,7 +40,7 @@
 
         short   recurrence_process_on;
         short   data_convection_on;
-        short   face_diffusion_on;
+        short   face_swap_diffusion_on;
         short   data_binarization_on;
         short   data_drifting_on;
         short   balance_correction_on;
@@ -72,27 +79,35 @@
 
     typedef struct File_Dict_struct
     {
-        char    *tracer_start_position_filename;
+        const char    *tracer_start_position_filename;
 
-        char    *C2C_filename;
+        const char    *Prep_Transscript_filename;
 
-        char    *Norm_filename;
+        const char    *Run_Transscript_filename;
 
-        char    *vof_filename;
+        const char    *C2C_filename;
 
-        char    *Jump_filename;
+        const char    *Norm_filename;
 
-        char    *Matrix_filename;
+        const char    *vof_filename;
 
-        char    *Balance_filename;
+        const char    *Jump_filename;
 
-        char    *Dict_filename;
+        const char    *Matrix_filename;
+
+        const char    *Balance_filename;
+
+        const char    *Rec_Frames_filename;
+
+        const char    *Dict_filename;
 
     } File_Dict_type;
 
     typedef struct Phase_Dict_struct
     {
         int         number_of_data;
+
+        int         number_of_concentration_data;
 
         double      time_step;
 
@@ -104,14 +119,25 @@
 
         double      reference_temperature;
 
+        double      vof_max;
+
+        short       hindered_drift_on;
+
         int         number_of_user_vars;
 
         double      *user;
 
     } Phase_Dict_type;
 
+    enum{ /* tracer guiding format */
+        guide_by_force_format,
+        guide_by_value_format
+    };
+
     typedef struct Tracer_Dict_struct
     {
+        short   format;
+
         int     number_of_Tracers_per_cell;
 
         short   region_of_interest_exists;
@@ -127,7 +153,11 @@
 
         short   *random_walk;           /* [i_phase] */
 
+        double  *random_walk_velocity_ratio;
+
         short   C2C_format;
+
+        short   avoid_information_lock_cells_on;
 
     } Tracer_Dict_type;
 
@@ -146,17 +176,26 @@
 
     } Norm_Dict_type;
 
-    enum{ /* rec methods */
-        quarter_jumps,
-        number_of_rec_methods
+    enum{ /* rec format */
+        quarter_jumps_format,
+        off_diagonal_band_format,
+        replay_format,
+        number_of_rec_formats
     };
 
     typedef struct Rec_Dict_struct
     {
-        short   method;
+        short   format;
+
+        short   monitor_rec_frames_on;
+        short   adapt_vof_stitching_on;
 
         short   min_seq_length;
         short   max_seq_length;
+
+        short   off_diagonal_band_width;
+
+        short   number_of_adapt_vof_loops;
 
     } Rec_Dict_type;
 
@@ -172,7 +211,7 @@
     {
         short       type;
 
-        double      physical_diff;
+        double      face_swap_diffusion;
 
         double      binarization_art_diff;
 
@@ -247,6 +286,10 @@
 
         int         global_run_counter;
 
+        short       balance_file_opened;
+
+        short       rec_frames_monitor_file_opened;
+
         double      global_time;
 
         double      *timestep_width;
@@ -259,6 +302,7 @@
     {
         double      **x;
         double      *volume;
+        double      *grid_spacing;
 
         double      **average_velocity; /* [i_phase][i_cell] */
         double      **crossing_time;
@@ -270,6 +314,8 @@
         double      *weight_after_swap;
 
         double      ***vof;             /* [i_frame][i_cell][i_phase] */
+
+        double      **vof_changed;      /* [i_phase][i_cell] */
 
         double      ***data;            /* [i_phase][i_cell][i_data] */
         double      ***data_shift;
@@ -410,11 +456,59 @@
     typedef struct Rec_struct
     {
         int     *global_frame;              /* [i_island] */
+
+        int     *prev_global_frame;
+
         int     frame_in_sequence;
+
+        short   jumped_at_last_frame;
+
         int     sequence_length;
 
         int     ****jumps;                  /* [state, state2, island, frame] */
 
     } Rec_type;
+
+    typedef struct rCFD_UDF_struct
+    {
+        void (*_rCFD_user_set_Solver_Dict)(void);
+
+        void (*_rCFD_user_set_File_Dict)(void);
+
+        void (*_rCFD_user_set_Phase_Dict)(void);
+
+        void (*_rCFD_user_set_Tracer_Dict)(void);
+
+        void (*_rCFD_user_set_Norm_Dict)(void);
+
+        void (*_rCFD_user_set_Rec_Dict)(void);
+
+        void (*_rCFD_user_set_Data_Dict)(void);
+
+        void (*_rCFD_user_set_Balance_Dict)(void);
+
+        void (*_rCFD_user_set_Topo_Dict)(void);
+
+        void (*_rCFD_user_set_Cell_Dict)(const short i_layer);
+
+        void (*_rCFD_user_set_Face_Dict)(const short i_layer);
+
+        void (*_rCFD_user_pre_proc)(void);
+
+        void (*_rCFD_user_init_Data)(const short i_layer);
+
+        short (*_rCFD_user_set_layer)(const short current_layer);
+
+        void (*_rCFD_user_access_data_before_shift)(const short i_phase, const short i_layer);
+
+        void (*_rCFD_user_access_data_after_swap)(const short i_phase, const short i_layer);
+
+        void (*_rCFD_user_post)(void);
+
+        double (*_rCFD_user_set_random_walk_velocity)(void);
+
+        void (*_rCFD_user_set_Norm)(void);
+
+    } rCFD_UDF_type;
 
 #endif

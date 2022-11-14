@@ -63,11 +63,6 @@
         Solver_Dict.control_conc_sum_on =                  0;
     }
 
-    void rCFD_user_set_File_Dict(void)
-    {
-
-    }
-
     void rCFD_user_set_Phase_Dict(void)
     {
 #if RP_NODE
@@ -87,21 +82,6 @@
             }
         }
 #endif
-    }
-
-    void rCFD_user_set_Tracer_Dict(void)
-    {
-
-    }
-
-    void rCFD_user_set_Norm_Dict(void)
-    {
-
-    }
-
-    void rCFD_user_set_Rec_Dict(void)
-    {
-
     }
 
     void rCFD_user_set_Data_Dict(void)
@@ -185,20 +165,6 @@
 #endif
     }
 
-    void rCFD_user_set_Topo_Dict(void)
-    {
-
-    }
-
-    void rCFD_user_set_Cell_Dict(const short i_layer)
-    {
-
-    }
-
-    void rCFD_user_set_Face_Dict(const short i_layer)
-    {
-
-    }
 #endif
 
     /* user init */
@@ -321,10 +287,6 @@
     /*************************************************************************************/
 
 #if 1
-    short rCFD_user_set_layer(const short current_layer)
-    {
-        return 0;
-    }
 
     void rCFD_user_access_data_before_shift(const short i_phase, const short i_layer)
     {
@@ -483,11 +445,6 @@
 #endif
     }
 
-    void rCFD_user_access_data_after_swap(const short i_phase, const short i_layer)
-    {
-
-    }
-
     void rCFD_user_post(void)
     {
 #if RP_NODE
@@ -528,21 +485,19 @@
     }
 #endif
 
-    /* user sub models */
+    /* register user functions */
     /*************************************************************************************/
 
-#if 1
-
-    double rCFD_user_set_random_walk_velocity(void)
+    void rCFD_user_register_functions()
     {
-        return 0.0;
+        REGISTER_RCFD_UDF( rCFD_user_set_Solver_Dict );
+        REGISTER_RCFD_UDF( rCFD_user_set_Phase_Dict );
+        REGISTER_RCFD_UDF( rCFD_user_set_Data_Dict );
+        REGISTER_RCFD_UDF( rCFD_user_set_Balance_Dict );
+        REGISTER_RCFD_UDF( rCFD_user_pre_proc );
+        REGISTER_RCFD_UDF( rCFD_user_init_Data );
+        REGISTER_RCFD_UDF( rCFD_user_access_data_before_shift );
+        REGISTER_RCFD_UDF( rCFD_user_post );
     }
-
-    void rCFD_user_set_Norm(void)
-    {
-
-    }
-
-#endif
 
 #endif

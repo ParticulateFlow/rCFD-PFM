@@ -111,7 +111,7 @@
     (ti-menu-load-string (format  #f "!cp ~a/~a.cas.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))
     (ti-menu-load-string (format  #f "!cp ~a/~a.dat.h5 ." ANSYS_Fluent_case_dir ANSYS_Fluent_case_file))
 
-    (ti-menu-load-string (format  #f "!cp ~a/rCFD_user_test.h ./rCFD_user.h" rCFD_user_src_dir))
+    (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_user_src_dir))
 
     (ti-menu-load-string (format  #f "!cp ~a/rCFD_C2C_prep.c ."    rCFD_src_dir))
     (ti-menu-load-string (format  #f "!cp ~a/*.h ."                rCFD_src_dir))
@@ -348,7 +348,7 @@
 
     (ti-menu-load-string (format  #f "!cp ~a/*.c ." rCFD_src_dir))
     (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_src_dir))
-    (ti-menu-load-string (format  #f "!cp ~a/rCFD_user_test.h ./rCFD_user.h" rCFD_user_src_dir))
+    (ti-menu-load-string (format  #f "!cp ~a/*.h ." rCFD_user_src_dir))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
